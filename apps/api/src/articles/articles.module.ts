@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { LlmModule } from '../llm/llm.module';
+import { EntitiesModule } from '../entities/entities.module';
 import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
 import { ArticleProcessor } from './article-processor.service';
 
 @Module({
-  imports: [LlmModule],
+  imports: [LlmModule, EntitiesModule],
   controllers: [ArticlesController],
   providers: [ArticlesService, ArticleProcessor],
   exports: [ArticleProcessor],

@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
-import { articleEntity, articles, entities } from '../db/schema';
+import { articleEntity, articles } from '../db/schema';
 import { LlmService } from '../llm/llm.service';
+import { EntityResolverService } from '../entities/entity-resolver.service';
 import type { FetchedItem } from '../feeds/feed-fetcher.service';
 
 type ProcessOutcome = 'inserted' | 'llm_error';
@@ -15,23 +16,15 @@ export class ArticleProcessor {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly llm: LlmService,
+    private readonly resolver: EntityResolverService,
   ) {}
 
-  /**
-   * Called by FeedPullWorker for items that passed pre-filter + dedup.
-   * Drives the real LLM extraction pipeline.
-   *
-   * Flow: insert article (status='ready') -> call LlmService.analyzeArticle ->
-   *   on success: update with summary + importance, insert entities (trivial dedup
-   *               via ON CONFLICT on entities_user_canonical_unique), insert mentions
-   *   on error:   flip status to 'llm_error'; entity inserts skipped
-   */
   async process(
     userId: string,
     feedId: string,
     item: FetchedItem,
   ): Promise<ProcessOutcome> {
-    // 1. Insert article with status='ready'; we may flip to 'llm_error' below
+    // 1. Insert article with status='ready'; we may flip to 'llm_error' below.
     const [article] = await this.db
       .insert(articles)
       .values({
@@ -45,7 +38,7 @@ export class ArticleProcessor {
       })
       .returning({ id: articles.id });
 
-    // 2. Call LLM (cache lookup happens inside LlmService)
+    // 2. Call LLM (cache lookup happens inside LlmService).
     let analysis;
     try {
       analysis = await this.llm.analyzeArticle({
@@ -60,45 +53,20 @@ export class ArticleProcessor {
       this.log.warn(
         JSON.stringify({ event: 'article.llm_error', articleId: article.id, userId, error: msg }),
       );
-      await this.db
-        .update(articles)
-        .set({ status: 'llm_error' })
-        .where(eq(articles.id, article.id));
+      await this.db.update(articles).set({ status: 'llm_error' }).where(eq(articles.id, article.id));
       return 'llm_error';
     }
 
-    // 3. Update article with summary + importance
+    // 3. Update article with summary + importance.
     await this.db
       .update(articles)
       .set({ summary: analysis.summary, importance: analysis.importance })
       .where(eq(articles.id, article.id));
 
-    // 4. Insert entities (trivial dedup via the entities_user_canonical_unique index)
+    // 4. Resolve each LLM-emitted entity through EntityResolver (handles dedup +
+    //    alias ingest), then record the article<->entity mention.
     for (const e of analysis.entities) {
-      // Try insert; on conflict (same user, same canonical name) skip and fetch existing
-      const inserted = await this.db
-        .insert(entities)
-        .values({ userId, canonicalName: e.canonicalName, type: e.type })
-        .onConflictDoNothing()
-        .returning({ id: entities.id });
-
-      let entityId = inserted[0]?.id;
-      if (!entityId) {
-        // Conflict path: look up the existing row
-        const [existing] = await this.db
-          .select({ id: entities.id })
-          .from(entities)
-          .where(
-            and(
-              eq(entities.userId, userId),
-              eq(entities.canonicalName, e.canonicalName),
-            ),
-          )
-          .limit(1);
-        entityId = existing?.id;
-      }
-      if (!entityId) continue; // defensive; shouldn't happen
-
+      const entityId = await this.resolver.resolveOrInsertEntity(userId, e);
       await this.db
         .insert(articleEntity)
         .values({ articleId: article.id, entityId })
