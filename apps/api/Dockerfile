@@ -18,7 +18,8 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
-RUN cd apps/api && pnpm build
+# Build shared first (emits dist/) so api's imports resolve to compiled JS.
+RUN cd packages/shared && pnpm build && cd ../.. && cd apps/api && pnpm build
 
 # Runtime stage
 FROM base AS runtime
