@@ -22,6 +22,7 @@ import {
   buildConfirmationUrl,
   generateRawToken,
 } from './confirmation-token.utils';
+import { AxesSeederService } from '../axes/axes-seeder.service';
 
 const RESEND_COOLDOWN_MS = 60_000;
 
@@ -33,6 +34,7 @@ export class AuthService {
     @Inject(DB) private readonly db: Db,
     private readonly jwt: JwtService,
     private readonly tokens: ConfirmationTokenStore,
+    private readonly axesSeeder: AxesSeederService,
   ) {}
 
   async register(
@@ -63,6 +65,7 @@ export class AuthService {
         createdAt: users.createdAt,
       });
     const token = this.signToken({ sub: created.id, email: created.email });
+    await this.axesSeeder.seedDefaultsFor(created.id);
     const devModeConfirmLink = await this.issueConfirmationLink(created.id);
     return {
       user: {

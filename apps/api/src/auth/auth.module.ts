@@ -6,9 +6,11 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfirmationTokenStore } from './confirmation-token.store';
 import { loadEnv } from '../common/config/env';
+import { AxesModule } from '../axes/axes.module';
 
 @Module({
   imports: [
+    AxesModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => {
