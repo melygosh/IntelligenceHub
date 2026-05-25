@@ -11,7 +11,6 @@ import FeedsPage from './pages/feeds/FeedsPage';
 import CategoriesPage from './pages/categories/CategoriesPage';
 import AxesPage from './pages/axes/AxesPage';
 import DigestsPage from './pages/digests/DigestsPage';
-import QueuesPage from './pages/admin/QueuesPage';
 
 export default function App() {
   return (
@@ -34,7 +33,6 @@ export default function App() {
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/settings/axes" element={<AxesPage />} />
         <Route path="/digests" element={<DigestsPage />} />
-        <Route path="/admin/queues" element={<QueuesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
