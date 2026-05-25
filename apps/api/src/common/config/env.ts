@@ -13,6 +13,7 @@ const EnvSchema = z.object({
     .transform((v) => v.toLowerCase() === 'true'),
   APP_BASE_URL: z.string().url(),
   WEB_BASE_URL: z.string().url(),
+  PREFILTER_MIN_LENGTH: z.coerce.number().int().positive().default(200),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
