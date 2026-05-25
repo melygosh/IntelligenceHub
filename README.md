@@ -4,10 +4,10 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 4 — real RSS pulling with heuristic pre-filter, URL +
-> content-hash dedup, feed pause/resume + status tracking.
-> LLM pipeline (Day 5) + entity dedup (Day 6) + categories/axes (Day 8) + digests (Day 12)
-> still pending.
+> **Current phase:** Phase 2 Day 5 — real LLM-driven article extraction via our own
+> abstraction layer with both Anthropic and OpenAI adapters, content-hash response
+> cache, and per-call telemetry.
+> Entity dedup (Day 6) + categories/axes (Day 8) + digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -19,10 +19,12 @@ feed + knowledge graph + on-demand digests.
 ```bash
 cp .env.example .env
 
-# Fill in three required secrets in .env:
+# Fill in the required secrets in .env:
 #   POSTGRES_PASSWORD  (your choice; the DATABASE_URL below must use the same value)
 #   JWT_SECRET         (generate with: openssl rand -base64 32)
-#   BULL_BOARD_PASS    (your choice; not used Day 1, but compose validates it)
+#   BULL_BOARD_PASS    (your choice; protects /admin/queues)
+#   ANTHROPIC_API_KEY  (required when LLM_PROVIDER=anthropic — the default)
+#   OPENAI_API_KEY     (required when LLM_PROVIDER=openai)
 # Important: update DATABASE_URL's embedded password to match POSTGRES_PASSWORD.
 
 docker compose up --build
@@ -45,7 +47,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 1)
+## What works (end of Phase 2 Day 5)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -62,8 +64,20 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   `status='ready'` or `status='filtered' + filter_reason`. Each row shows status
   (active / paused / error), title, last-pull timestamp; pause/resume + delete +
   manual pull-now actions. Try `https://hnrss.org/frontpage` to see real articles
-  flow through. Entity extraction is still stubbed (cycles Microsoft / Anthropic /
-  OpenAI for `ready` articles — Day 5 swaps to real LLM extraction).
+  flow through.
+- **LLM extraction pipeline:** each `ready` article is analysed by a single LLM call
+  that returns a structured `{summary, importance, entities[]}`. Our own abstraction
+  layer (no third-party agent framework — per spec) ships two adapters:
+  Anthropic (via `@anthropic-ai/sdk`, structured output via `tool_use`, system prompt
+  marked `cache_control: ephemeral`) and OpenAI (via `openai`, structured output via
+  `response_format.json_schema`, automatic prefix caching). Active provider via
+  `LLM_PROVIDER` env (`anthropic` or `openai`); the other adapter stays inert.
+  Response shape is Zod-validated at the boundary; an invalid response is retried
+  once, then the article flips to `status='llm_error'`.
+- **Cost controls (FR-10):** content-hash response cache (`llm_response_cache`) — a
+  repeated article body short-circuits before reaching the model. Per-call telemetry
+  in `llm_calls` records provider, model, status, input/output/cache tokens, latency,
+  and error message (ready for the Phase 3 telemetry dashboard).
 - **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
@@ -80,8 +94,9 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
 ## Stack
 
-- **Backend:** NestJS 11, Drizzle ORM, PostgreSQL 16, Redis 7, BullMQ (wired Day 2),
-  argon2, JWT via httpOnly cookie. Lint enforces Google TypeScript Style Guide (`gts`).
+- **Backend:** NestJS 11, Drizzle ORM, PostgreSQL 16, Redis 7, BullMQ, argon2, JWT
+  via httpOnly cookie. LLM via `@anthropic-ai/sdk` + `openai` behind our own service
+  abstraction (no agent framework). Lint enforces Google TypeScript Style Guide (`gts`).
 - **Frontend:** React + Vite, Tailwind CSS v4, React Router v7, Redux Toolkit + RTK
   Query, react-hook-form + Zod.
 - **Shared:** Zod schemas in `packages/shared` (compiled to `dist/` so Node can resolve
