@@ -7,8 +7,11 @@ import type {
 import type {
   ArticleListResponse,
   AuthResponse,
+  Category,
+  CategoryList,
   ConfirmEmailRequest,
   ConfirmEmailResponse,
+  CreateCategoryRequest,
   CreateFeedRequest,
   Feed,
   FeedListResponse,
@@ -49,7 +52,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -114,6 +117,18 @@ export const api = createApi({
       query: () => ({ url: '/graph', method: 'GET' }),
       providesTags: ['Articles'],
     }),
+    getCategories: build.query<CategoryList, void>({
+      query: () => '/categories',
+      providesTags: ['Categories'],
+    }),
+    createCategory: build.mutation<Category, CreateCategoryRequest>({
+      query: (body) => ({ url: '/categories', method: 'POST', body }),
+      invalidatesTags: ['Categories'],
+    }),
+    deleteCategory: build.mutation<void, string>({
+      query: (id) => ({ url: `/categories/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Categories', 'Articles'],
+    }),
   }),
 });
 
@@ -131,4 +146,7 @@ export const {
   useUpdateFeedMutation,
   useGetArticlesQuery,
   useGetGraphQuery,
+  useGetCategoriesQuery,
+  useCreateCategoryMutation,
+  useDeleteCategoryMutation,
 } = api;
