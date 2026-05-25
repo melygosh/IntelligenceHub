@@ -129,6 +129,7 @@ export const api = createApi({
         const qs = params.toString();
         return `/graph${qs ? `?${qs}` : ''}`;
       },
+      providesTags: ['Articles'],
     }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
