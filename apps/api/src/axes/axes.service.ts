@@ -94,8 +94,8 @@ export class AxesService {
         values: valueRows.map((v) => ({ id: v.id, value: v.value, position: v.position })),
       };
     } catch (err) {
-      const msg = (err as Error).message;
-      if (msg.includes('axis_user_name_unique')) {
+      const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
+      if (cause?.code === '23505' && cause.constraint === 'axis_user_name_unique') {
         throw new ConflictException({ error: 'duplicate_name' });
       }
       throw err;
@@ -122,8 +122,8 @@ export class AxesService {
       try {
         await this.db.update(axis).set({ name }).where(eq(axis.id, id));
       } catch (err) {
-        const msg = (err as Error).message;
-        if (msg.includes('axis_user_name_unique')) {
+        const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
+        if (cause?.code === '23505' && cause.constraint === 'axis_user_name_unique') {
           throw new ConflictException({ error: 'duplicate_name' });
         }
         throw err;

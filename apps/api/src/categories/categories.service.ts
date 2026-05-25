@@ -59,8 +59,8 @@ export class CategoriesService {
         createdAt: row.createdAt.toISOString(),
       };
     } catch (err) {
-      const msg = (err as Error).message;
-      if (msg.includes('category_user_name_unique')) {
+      const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
+      if (cause?.code === '23505' && cause.constraint === 'category_user_name_unique') {
         throw new ConflictException({ error: 'duplicate_name' });
       }
       throw err;
