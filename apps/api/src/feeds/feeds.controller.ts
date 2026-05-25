@@ -23,10 +23,11 @@ import {
 import { FeedsService } from './feeds.service';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
 import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
 
 @Controller('feeds')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
 export class FeedsController {
   constructor(private readonly feedsService: FeedsService) {}
 
