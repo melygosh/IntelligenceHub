@@ -4,10 +4,10 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 5 — real LLM-driven article extraction via our own
-> abstraction layer with both Anthropic and OpenAI adapters, content-hash response
-> cache, and per-call telemetry.
-> Entity dedup (Day 6) + categories/axes (Day 8) + digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 6 — entity dedup via LLM-emitted aliases plus
+> deterministic normalization and Jaro-Winkler fuzzy match. The graph collapses
+> "Microsoft" / "MSFT" / "Microsoft Corp." style variants into a single node per user.
+> Categories/axes (Day 8) + digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -47,7 +47,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 5)
+## What works (end of Phase 2 Day 6)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -78,6 +78,14 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   repeated article body short-circuits before reaching the model. Per-call telemetry
   in `llm_calls` records provider, model, status, input/output/cache tokens, latency,
   and error message (ready for the Phase 3 telemetry dashboard).
+- **Entity dedup (FR-6):** every LLM-extracted entity passes through `EntityResolver`,
+  which normalizes the canonical name (NFKC + lowercase + Latin-suffix strip), looks
+  for an existing exact / alias / type-scoped likely-match (token-prefix shortcut OR
+  Jaro-Winkler ≥ 0.95), and only inserts a new row when no equivalent exists.
+  Aliases are emitted by the LLM in the same call as the rest of the analysis
+  (no extra LLM calls — FR-10 compliant) and recorded in the `entity_alias` table
+  for future lookups. A smoke test against `https://hnrss.org/frontpage` reliably
+  collapses `Microsoft` / `MSFT` / `Microsoft Corp.` into a single entity per user.
 - **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
