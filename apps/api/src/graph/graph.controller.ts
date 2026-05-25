@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import type { GraphResponse } from '@intelligencehub/shared';
 import { GraphService } from './graph.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -8,10 +8,13 @@ import { CurrentUser, type AuthUserContext } from '../common/decorators/current-
 @Controller('graph')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
 export class GraphController {
-  constructor(private readonly graphService: GraphService) {}
+  constructor(private readonly graph: GraphService) {}
 
   @Get()
-  async get(@CurrentUser() user: AuthUserContext): Promise<GraphResponse> {
-    return this.graphService.buildMine(user.userId);
+  async get(
+    @CurrentUser() user: AuthUserContext,
+    @Query('category', new ParseUUIDPipe({ optional: true })) category?: string,
+  ): Promise<GraphResponse> {
+    return this.graph.buildMine(user.userId, category);
   }
 }
