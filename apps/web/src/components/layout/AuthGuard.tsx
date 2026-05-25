@@ -15,12 +15,17 @@ export default function AuthGuard({ children }: Props) {
     );
   }
 
-  const status = isError && typeof error === 'object' && error && 'status' in error
-    ? (error as { status?: number }).status
-    : undefined;
+  const status =
+    isError && typeof error === 'object' && error && 'status' in error
+      ? (error as { status?: number }).status
+      : undefined;
 
   if (!data || status === 401) {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  if (!data.emailConfirmed) {
+    return <Navigate to="/auth/check-email" replace />;
   }
 
   return <>{children}</>;

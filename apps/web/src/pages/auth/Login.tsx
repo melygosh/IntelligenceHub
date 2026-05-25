@@ -27,13 +27,15 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (me) navigate('/articles', { replace: true });
+    if (me?.emailConfirmed) navigate('/articles', { replace: true });
+    else if (me) navigate('/auth/check-email', { replace: true });
   }, [me, navigate]);
 
   async function onSubmit(values: typeof LoginRequest._type) {
     try {
-      await loginUser(values).unwrap();
-      navigate('/articles', { replace: true });
+      const result = await loginUser(values).unwrap();
+      if (result.user.emailConfirmed) navigate('/articles', { replace: true });
+      else navigate('/auth/check-email', { replace: true });
     } catch {
       // shown via `error` state below
     }

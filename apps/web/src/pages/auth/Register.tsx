@@ -28,13 +28,20 @@ export default function Register() {
   });
 
   useEffect(() => {
-    if (me) navigate('/articles', { replace: true });
+    if (me?.emailConfirmed) navigate('/articles', { replace: true });
+    else if (me) navigate('/auth/check-email', { replace: true });
   }, [me, navigate]);
 
   async function onSubmit(values: typeof RegisterRequest._type) {
     try {
-      await registerUser(values).unwrap();
-      navigate('/articles', { replace: true });
+      const result = await registerUser(values).unwrap();
+      if (result.devModeConfirmLink) {
+        sessionStorage.setItem('devModeConfirmLink', result.devModeConfirmLink);
+      }
+      navigate('/auth/check-email', {
+        replace: true,
+        state: { devModeConfirmLink: result.devModeConfirmLink },
+      });
     } catch {
       // shown via `error` state below
     }

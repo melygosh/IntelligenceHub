@@ -1,7 +1,14 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+} from '@reduxjs/toolkit/query/react';
+import type {
   ArticleListResponse,
   AuthResponse,
+  ConfirmEmailRequest,
+  ConfirmEmailResponse,
   CreateFeedRequest,
   Feed,
   FeedListResponse,
@@ -9,16 +16,39 @@ import type {
   LoginRequest,
   PullFeedResponse,
   RegisterRequest,
+  ResendConfirmationResponse,
   UpdateFeedRequest,
   UserResponse,
 } from '@intelligencehub/shared';
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: '/api',
+  credentials: 'include',
+});
+
+const baseQueryWithUnconfirmedHandling: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+  if (
+    result.error &&
+    result.error.status === 403 &&
+    typeof result.error.data === 'object' &&
+    result.error.data &&
+    (result.error.data as { error?: string }).error === 'email_unconfirmed' &&
+    typeof window !== 'undefined' &&
+    !window.location.pathname.startsWith('/auth/')
+  ) {
+    window.location.assign('/auth/check-email');
+  }
+  return result;
+};
+
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
-    credentials: 'include',
-  }),
+  baseQuery: baseQueryWithUnconfirmedHandling,
   tagTypes: ['Me', 'Feeds', 'Articles'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
@@ -36,6 +66,13 @@ export const api = createApi({
     getMe: build.query<UserResponse, void>({
       query: () => ({ url: '/auth/me', method: 'GET' }),
       providesTags: ['Me'],
+    }),
+    confirmEmail: build.mutation<ConfirmEmailResponse, ConfirmEmailRequest>({
+      query: (body) => ({ url: '/auth/confirm', method: 'POST', body }),
+      invalidatesTags: ['Me'],
+    }),
+    resendConfirmation: build.mutation<ResendConfirmationResponse, void>({
+      query: () => ({ url: '/auth/resend-confirmation', method: 'POST' }),
     }),
     getFeeds: build.query<FeedListResponse, void>({
       query: () => ({ url: '/feeds', method: 'GET' }),
@@ -85,6 +122,8 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useGetMeQuery,
+  useConfirmEmailMutation,
+  useResendConfirmationMutation,
   useGetFeedsQuery,
   useCreateFeedMutation,
   useDeleteFeedMutation,

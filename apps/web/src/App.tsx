@@ -3,6 +3,8 @@ import Shell from './components/layout/Shell';
 import AuthGuard from './components/layout/AuthGuard';
 import Register from './pages/auth/Register';
 import Login from './pages/auth/Login';
+import CheckEmail from './pages/auth/CheckEmail';
+import Confirm from './pages/auth/Confirm';
 import ArticlesList from './pages/articles/ArticlesList';
 import ArticleDetail from './pages/articles/ArticleDetail';
 import EntityDetail from './pages/entities/EntityDetail';
@@ -17,6 +19,8 @@ export default function App() {
     <Routes>
       <Route path="/auth/register" element={<Register />} />
       <Route path="/auth/login" element={<Login />} />
+      <Route path="/auth/check-email" element={<CheckEmail />} />
+      <Route path="/auth/confirm" element={<Confirm />} />
       <Route
         element={
           <AuthGuard>
