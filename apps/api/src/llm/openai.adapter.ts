@@ -52,7 +52,10 @@ export class OpenAiAdapter {
       messages: [
         // Static instructions first → OpenAI's automatic prefix caching fires for prefixes >=1024 tokens
         { role: 'system', content: ANALYZE_ARTICLE_SYSTEM_PROMPT },
-        { role: 'user', content: userPromptFor(input.title, body) },
+        {
+          role: 'user',
+          content: userPromptFor(input.title, body, input.userCategories, input.userAxes),
+        },
       ],
       response_format: {
         type: 'json_schema',

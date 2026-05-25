@@ -18,6 +18,7 @@ export class LlmResponseCacheService {
     provider: LlmProvider,
     model: string,
     operation: LlmOperation,
+    configHash: string,
   ): Promise<ArticleAnalysisResult | null> {
     const [row] = await this.db
       .select({ responseJson: llmResponseCache.responseJson })
@@ -28,6 +29,7 @@ export class LlmResponseCacheService {
           eq(llmResponseCache.provider, provider),
           eq(llmResponseCache.model, model),
           eq(llmResponseCache.operation, operation),
+          eq(llmResponseCache.configHash, configHash),
         ),
       )
       .limit(1);
@@ -39,11 +41,19 @@ export class LlmResponseCacheService {
     provider: LlmProvider,
     model: string,
     operation: LlmOperation,
+    configHash: string,
     response: ArticleAnalysisResult,
   ): Promise<void> {
     await this.db
       .insert(llmResponseCache)
-      .values({ contentHash, provider, model, operation, responseJson: response })
+      .values({
+        contentHash,
+        provider,
+        model,
+        operation,
+        responseJson: response,
+        configHash,
+      })
       .onConflictDoNothing();
   }
 }

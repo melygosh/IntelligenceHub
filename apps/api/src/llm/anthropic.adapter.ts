@@ -68,7 +68,12 @@ export class AnthropicAdapter {
         },
       ],
       tool_choice: { type: 'tool', name: 'record_analysis' },
-      messages: [{ role: 'user', content: userPromptFor(input.title, body) }],
+      messages: [
+        {
+          role: 'user',
+          content: userPromptFor(input.title, body, input.userCategories, input.userAxes),
+        },
+      ],
     });
 
     const latencyMs = Date.now() - t0;

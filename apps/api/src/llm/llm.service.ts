@@ -46,7 +46,8 @@ export class LlmService implements ILlmService {
       input.contentHash,
       this.provider,
       this.activeModel,
-      'analyze_article_v2',
+      'analyze_article_v3',
+      input.configHash,
     );
     if (cached) {
       this.log.log(
@@ -80,7 +81,8 @@ export class LlmService implements ILlmService {
           input.contentHash,
           this.provider,
           result.model,
-          'analyze_article_v2',
+          'analyze_article_v3',
+          input.configHash,
           result.data,
         );
         return result.data;
@@ -149,7 +151,7 @@ export class LlmService implements ILlmService {
       articleId: args.articleId,
       provider: this.provider,
       model: args.model,
-      operation: 'analyze_article_v2',
+      operation: 'analyze_article_v3',
       status: args.status,
       inputTokens: args.telemetry.inputTokens,
       outputTokens: args.telemetry.outputTokens,

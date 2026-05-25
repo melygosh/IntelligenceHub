@@ -198,16 +198,23 @@ export const llmCalls = pgTable('llm_calls', {
     .defaultNow(),
 });
 
-export const llmResponseCache = pgTable('llm_response_cache', {
-  contentHash: text('content_hash').primaryKey(),
-  provider: text('provider').notNull(),
-  model: text('model').notNull(),
-  operation: text('operation').notNull(),
-  responseJson: jsonb('response_json').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const llmResponseCache = pgTable(
+  'llm_response_cache',
+  {
+    contentHash: text('content_hash').notNull(),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    operation: text('operation').notNull(),
+    responseJson: jsonb('response_json').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    configHash: text('config_hash').notNull().default(''),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.contentHash, t.configHash] }),
+  }),
+);
 
 export type Feed = typeof feeds.$inferSelect;
 export type NewFeed = typeof feeds.$inferInsert;
