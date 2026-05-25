@@ -4,7 +4,7 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  emailConfirmed: boolean('email_confirmed').notNull().default(true), // auto-confirm in Phase 1
+  emailConfirmed: boolean('email_confirmed').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -84,6 +84,24 @@ export const entityAlias = pgTable(
 
 export type EntityAlias = typeof entityAlias.$inferSelect;
 export type NewEntityAlias = typeof entityAlias.$inferInsert;
+
+export const emailConfirmationToken = pgTable(
+  'email_confirmation_token',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tokenHashUnique: uniqueIndex('email_confirmation_token_hash_unique').on(t.tokenHash),
+  }),
+);
+
+export type EmailConfirmationToken = typeof emailConfirmationToken.$inferSelect;
+export type NewEmailConfirmationToken = typeof emailConfirmationToken.$inferInsert;
 
 export const llmCalls = pgTable('llm_calls', {
   id: uuid('id').primaryKey().defaultRandom(),
