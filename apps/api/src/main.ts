@@ -12,7 +12,8 @@ async function bootstrap(): Promise<void> {
     origin: [env.WEB_BASE_URL],
     credentials: true,
   });
-  app.setGlobalPrefix('api', { exclude: ['/admin/queues(.*)?'] });
+  // path-to-regexp 8.x (NestJS 11) uses named splats: '*path' replaces the old '(.*)?'.
+  app.setGlobalPrefix('api', { exclude: ['/admin/queues', '/admin/queues/*path'] });
 
   await app.listen(env.API_PORT);
   console.warn(`[bootstrap] API listening on ${env.API_PORT}`);
