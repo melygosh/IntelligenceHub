@@ -54,7 +54,8 @@ services:
       LLM_TOKEN_LIMIT_PER_ARTICLE: ${LLM_TOKEN_LIMIT_PER_ARTICLE}
       FEED_PULL_INTERVAL_SECONDS: ${FEED_PULL_INTERVAL_SECONDS}
     ports:
-      - "3000:3000"
+      # Host port 3010 to avoid clashes with other local servers on 3000/3005.
+      - "3010:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,9 +68,12 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: ih-web
     environment:
-      VITE_API_BASE_URL: ${APP_BASE_URL}
+      # Vite proxy target inside the docker network — must use the api service hostname,
+      # not localhost (localhost inside the web container = the web container itself).
+      VITE_API_BASE_URL: http://api:3000
     ports:
-      - "5173:5173"
+      # Host port 5174 to avoid clashing with any local Vite dev server on 5173.
+      - "5174:5173"
     depends_on:
       - api
 
