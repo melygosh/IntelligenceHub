@@ -19,6 +19,7 @@ export const ArticleListItem = z.object({
   ts: z.string().datetime(),
   feedId: z.string().uuid(),
   entities: z.array(ArticleEntitySummary),
+  categoryNames: z.array(z.string()).default([]),
 });
 export type ArticleListItem = z.infer<typeof ArticleListItem>;
 
