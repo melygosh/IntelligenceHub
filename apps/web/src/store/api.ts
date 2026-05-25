@@ -7,10 +7,13 @@ import type {
 import type {
   ArticleListResponse,
   AuthResponse,
+  Axis,
+  AxisList,
   Category,
   CategoryList,
   ConfirmEmailRequest,
   ConfirmEmailResponse,
+  CreateAxisRequest,
   CreateCategoryRequest,
   CreateFeedRequest,
   Feed,
@@ -20,6 +23,7 @@ import type {
   PullFeedResponse,
   RegisterRequest,
   ResendConfirmationResponse,
+  UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
 } from '@intelligencehub/shared';
@@ -52,7 +56,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories', 'Axes'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -129,6 +133,22 @@ export const api = createApi({
       query: (id) => ({ url: `/categories/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Categories', 'Articles'],
     }),
+    getAxes: build.query<AxisList, void>({
+      query: () => '/axes',
+      providesTags: ['Axes'],
+    }),
+    createAxis: build.mutation<Axis, CreateAxisRequest>({
+      query: (body) => ({ url: '/axes', method: 'POST', body }),
+      invalidatesTags: ['Axes'],
+    }),
+    updateAxis: build.mutation<Axis, { id: string; patch: UpdateAxisRequest }>({
+      query: ({ id, patch }) => ({ url: `/axes/${id}`, method: 'PATCH', body: patch }),
+      invalidatesTags: ['Axes', 'Articles'],
+    }),
+    deleteAxis: build.mutation<void, string>({
+      query: (id) => ({ url: `/axes/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Axes', 'Articles'],
+    }),
   }),
 });
 
@@ -149,4 +169,8 @@ export const {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
+  useGetAxesQuery,
+  useCreateAxisMutation,
+  useUpdateAxisMutation,
+  useDeleteAxisMutation,
 } = api;
