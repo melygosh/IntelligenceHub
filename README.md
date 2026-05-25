@@ -4,8 +4,10 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 1 done — walking skeleton complete.
-> Real RSS parsing + LLM pipeline + dedup + categories/axes/digests land in Phase 2.
+> **Current phase:** Phase 2 Day 4 — real RSS pulling with heuristic pre-filter, URL +
+> content-hash dedup, feed pause/resume + status tracking.
+> LLM pipeline (Day 5) + entity dedup (Day 6) + categories/axes (Day 8) + digests (Day 12)
+> still pending.
 
 ## Prerequisites
 
@@ -53,10 +55,18 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   cross-user access returns 404 throughout.
 - Vite dev server proxies `/api/*` and `/admin/queues/*` to the api container so the
   browser only ever talks to `http://localhost:5174`.
-- **Feeds (`/feeds`):** add an RSS feed by URL, see it in the list, click **Pull now**
-  → a `feed.pull` BullMQ job runs in the api container and inserts a stubbed article
-  + entity row (cycling through Microsoft / Anthropic / OpenAI per pull) scoped to your
-  user. Delete a feed.
+- **Feeds (`/feeds`):** add an RSS/Atom feed by URL — the puller worker fetches it
+  (10s timeout, custom UA), parses items, normalises URLs (strips tracking params),
+  computes content hashes, dedups against existing articles, runs a heuristic
+  pre-filter (length / emptiness / spam / link density), and persists each item with
+  `status='ready'` or `status='filtered' + filter_reason`. Each row shows status
+  (active / paused / error), title, last-pull timestamp; pause/resume + delete +
+  manual pull-now actions. Try `https://hnrss.org/frontpage` to see real articles
+  flow through. Entity extraction is still stubbed (cycles Microsoft / Anthropic /
+  OpenAI for `ready` articles — Day 5 swaps to real LLM extraction).
+- **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
+  — returns the discovered channel title + normalised URL + item count, or a
+  structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
 - **Articles (`/articles`):** see your articles ordered by publication time, each row
   showing importance dot, mono timestamp, entity chips with per-type glyphs.
 - **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
