@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 const EnvSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3000),
+  BULL_BOARD_USER: z.string().min(1),
+  BULL_BOARD_PASS: z.string().min(1),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),

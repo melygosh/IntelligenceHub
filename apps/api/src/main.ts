@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { loadEnv } from './common/config/env';
+import { basicAuth } from './common/middleware/basic-auth.middleware';
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
@@ -12,6 +13,10 @@ async function bootstrap(): Promise<void> {
     origin: [env.WEB_BASE_URL],
     credentials: true,
   });
+
+  // Bull Board basic auth — must be applied BEFORE the route is reached.
+  app.use('/admin/queues', basicAuth(env.BULL_BOARD_USER, env.BULL_BOARD_PASS, 'IntelligenceHub Queues'));
+
   // path-to-regexp 8.x (NestJS 11) uses named splats: '*path' replaces the old '(.*)?'.
   app.setGlobalPrefix('api', { exclude: ['/admin/queues', '/admin/queues/*path'] });
 

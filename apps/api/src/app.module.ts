@@ -4,8 +4,9 @@ import { AuthModule } from './auth/auth.module';
 import { QueueModule } from './queue/queue.module';
 import { FeedsModule } from './feeds/feeds.module';
 import { WorkersModule } from './workers/workers.module';
+import { BullBoardModule } from './admin/bull-board.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register()],
 })
 export class AppModule {}
