@@ -4,8 +4,8 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 1 Day 2 — feeds + queue + stub worker + Bull Board.
-> The `/articles` list and `/graph` page land Day 3; real RSS/LLM lands Phase 2.
+> **Current phase:** Phase 1 done — walking skeleton complete.
+> Real RSS parsing + LLM pipeline + dedup + categories/axes/digests land in Phase 2.
 
 ## Prerequisites
 
@@ -43,21 +43,30 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (Phase 1 Day 1)
+## What works (end of Phase 1)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
 - Register / log in / log out flow with JWT in an httpOnly cookie (`ih_auth`).
-- Session survives page reload.
-- Multi-tenant isolation is enforced at the data layer — `users`, `feeds`, `articles`,
-  `entities`, `article_entity` all carry `user_id`. Cross-user access returns 404.
+- Session survives page reload. Multi-tenant isolation enforced at the data layer —
+  `users`, `feeds`, `articles`, `entities`, `article_entity` all carry `user_id`;
+  cross-user access returns 404 throughout.
 - Vite dev server proxies `/api/*` and `/admin/queues/*` to the api container so the
   browser only ever talks to `http://localhost:5174`.
-- Add an RSS feed via `/feeds`, click **Pull now** → a `feed.pull` BullMQ job runs in
-  the api container and inserts a stubbed article + entity row (cycling through
-  Microsoft / Anthropic / OpenAI per pull) scoped to your user.
-- Queue dashboard at **http://localhost:3010/admin/queues** (Bull Board) behind HTTP
+- **Feeds (`/feeds`):** add an RSS feed by URL, see it in the list, click **Pull now**
+  → a `feed.pull` BullMQ job runs in the api container and inserts a stubbed article
+  + entity row (cycling through Microsoft / Anthropic / OpenAI per pull) scoped to your
+  user. Delete a feed.
+- **Articles (`/articles`):** see your articles ordered by publication time, each row
+  showing importance dot, mono timestamp, entity chips with per-type glyphs.
+- **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
+  connected by mention edges; pan/zoom/mini-map; deterministic spiral layout for the
+  walking skeleton (auto-layout lands Phase 2 Day 9).
+- **Bull Board:** queue dashboard at **http://localhost:3010/admin/queues** behind HTTP
   Basic auth — credentials via `BULL_BOARD_USER` / `BULL_BOARD_PASS` in `.env`.
+- **Editorial design system:** cream paper, Instrument Serif headlines, IBM Plex Mono
+  metadata, single deep-moss accent. Applied consistently across auth pages, sidebar,
+  topbar, feeds, articles, graph.
 
 ## Stack
 
