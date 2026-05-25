@@ -5,8 +5,9 @@ import { QueueModule } from './queue/queue.module';
 import { FeedsModule } from './feeds/feeds.module';
 import { WorkersModule } from './workers/workers.module';
 import { BullBoardModule } from './admin/bull-board.module';
+import { ArticlesModule } from './articles/articles.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register()],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule],
 })
 export class AppModule {}
