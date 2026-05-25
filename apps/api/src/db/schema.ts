@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -15,6 +15,11 @@ export const feeds = pgTable('feeds', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
+  title: text('title'),
+  status: text('status').notNull().default('active'),
+  lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
+  lastPullError: text('last_pull_error'),
+  pullIntervalSeconds: integer('pull_interval_seconds').notNull().default(900),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -26,6 +31,9 @@ export const articles = pgTable('articles', {
   title: text('title').notNull(),
   summary: text('summary'),
   importance: text('importance'),
+  contentHash: text('content_hash'),
+  status: text('status').notNull().default('ready'),
+  filterReason: text('filter_reason'),
   ts: timestamp('ts', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
