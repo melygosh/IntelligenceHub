@@ -7,6 +7,7 @@ export type Importance = z.infer<typeof Importance>;
 export const ExtractedEntity = z.object({
   canonicalName: z.string().min(1).max(120),
   type: EntityKind,
+  aliases: z.array(z.string().min(1).max(120)).max(10).default([]),
 });
 export type ExtractedEntity = z.infer<typeof ExtractedEntity>;
 
@@ -35,4 +36,4 @@ export interface LlmService {
 }
 
 export type LlmProvider = 'anthropic' | 'openai';
-export type LlmOperation = 'analyze_article' | 'match_entities' | 'build_digest';
+export type LlmOperation = 'analyze_article' | 'analyze_article_v2' | 'match_entities' | 'build_digest';
