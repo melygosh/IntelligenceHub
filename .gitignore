@@ -38,3 +38,6 @@ coverage/
 
 # Drizzle
 drizzle/
+
+# Local design/planning docs (per user preference, not part of the deliverable repo)
+docs/
