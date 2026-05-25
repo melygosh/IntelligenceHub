@@ -22,6 +22,13 @@
       "when": 1779721872151,
       "tag": "0002_youthful_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779725405576,
+      "tag": "0003_clammy_sentry",
+      "breakpoints": true
     }
   ]
 }
