@@ -29,27 +29,26 @@ export type AnthropicCallResult = {
 @Injectable()
 export class AnthropicAdapter {
   private readonly log = new Logger(AnthropicAdapter.name);
-  private readonly client: Anthropic;
+  // Lazy: only constructed if/when this adapter is actually used, so a missing
+  // ANTHROPIC_API_KEY does not crash boot when LLM_PROVIDER=openai.
+  private client: Anthropic | undefined;
   readonly model: string;
   private readonly maxTokens: number;
 
   constructor() {
     const env = loadEnv();
-    if (!env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY required when LLM_PROVIDER=anthropic');
-    }
-    this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
     this.model = env.LLM_MODEL_ANTHROPIC;
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
   }
 
   async analyzeArticle(input: ArticleAnalysisInput): Promise<AnthropicCallResult> {
+    const client = this.getClient();
     const t0 = Date.now();
     const body = this.truncateForBudget(input.body);
 
     // Structured output via tool_use: declare a single tool, force the model to call it,
     // parse the tool_input as our typed result. This is Anthropic's native way to constrain JSON.
-    const response = await this.client.messages.create({
+    const response = await client.messages.create({
       model: this.model,
       max_tokens: this.maxTokens,
       system: [
@@ -108,5 +107,15 @@ export class AnthropicAdapter {
     const headroomChars = (this.maxTokens - 1000) * 4;
     if (body.length <= headroomChars) return body;
     return body.slice(0, headroomChars) + '\n\n[truncated]';
+  }
+
+  private getClient(): Anthropic {
+    if (this.client) return this.client;
+    const env = loadEnv();
+    if (!env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY required when LLM_PROVIDER=anthropic');
+    }
+    this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    return this.client;
   }
 }
