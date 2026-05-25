@@ -4,11 +4,10 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 7 — email confirmation flow (US-1). Registration
-> emits a confirmation link (logged + surfaced in dev mode on the
-> `/auth/check-email` page), unconfirmed users are blocked from business routes
-> until they click the link, with a resend button and 60s cooldown.
-> Categories/axes (Day 8) + digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 8a — categories + axes CRUD with 4 seeded axes per user;
+> LLM `analyzeArticle` (operation v3) emits per-article category + axis-value assignments
+> using each user's config; article list + graph filterable by category. Regeneration
+> (Day 8b) and digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -48,7 +47,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 7)
+## What works (end of Phase 2 Day 8a)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -96,6 +95,15 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   `RequireConfirmedEmailGuard`; the frontend api wrapper redirects them to
   `/auth/check-email`. Resend endpoint is rate-limited (60s cooldown — register
   itself starts the window) and invalidates prior tokens on success.
+- **Categories + axes (FR-8, US-4, US-5):** per-user category CRUD and axis CRUD
+  (with values) via `/categories` and `/settings/axes`. 4 axes seeded on
+  registration (content type / reader level / region / tonality). The
+  `analyzeArticle` LLM call (now operation `v3`) takes each user's config inline,
+  returns `categoryNames[]` and `axisAssignments[]`, and the cache key includes a
+  `config_hash` so two users with identical configs still share the cache while
+  changes invalidate per-user correctly. Article list and graph are filterable by
+  category. Regeneration of already-tagged articles after axis/category changes
+  lands in Day 8b.
 - **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
