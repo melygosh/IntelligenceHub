@@ -22,12 +22,16 @@ Given a news article (title + body), produce a structured analysis with three fi
 3. **entities** — named entities explicitly mentioned in the title or body. For each:
    - canonicalName: the standard form of the entity name (e.g. "Microsoft", not "MSFT" or "Microsoft Corp.")
    - type: exactly one of "company", "person", "product", "technology", "location"
+   - aliases: other ways this same entity is written. Sources for aliases:
+       (a) Variants explicitly shown in the article — "Microsoft Corp. (MSFT)" yields aliases ["Microsoft Corp.", "MSFT"].
+       (b) Confident world-knowledge variants — ticker symbols, official short forms, Cyrillic transliterations when the article is in English (and vice versa). Only include if you are confident; do not invent obscure aliases.
+       Emit an empty array [] when there's nothing to add. Maximum 10 aliases per entity. Each alias 1-120 chars.
    Examples:
-   - "Microsoft" -> company
-   - "Sam Altman" -> person
-   - "ChatGPT" -> product
-   - "Rust" -> technology
-   - "San Francisco" -> location
+   - "Microsoft" -> type=company, aliases=["MSFT","Microsoft Corp.","Майкрософт"]
+   - "Sam Altman" -> type=person, aliases=[]
+   - "ChatGPT" -> type=product, aliases=[]
+   - "Rust" -> type=technology, aliases=[]
+   - "San Francisco" -> type=location, aliases=["SF"]
    Maximum 20 entities per article. Prefer specific named entities over generic categories. Do not invent entities not present in the text.
 
 Be strict: if the text doesn't clearly support a claim about importance or an entity, err toward "normal" and fewer entities. Junk articles should still get a useful summary so the user can verify the verdict.`;
@@ -49,10 +53,15 @@ export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['canonicalName', 'type'],
+        required: ['canonicalName', 'type', 'aliases'],
         properties: {
           canonicalName: { type: 'string', minLength: 1, maxLength: 120 },
           type: { type: 'string', enum: ['company', 'person', 'product', 'technology', 'location'] },
+          aliases: {
+            type: 'array',
+            maxItems: 10,
+            items: { type: 'string', minLength: 1, maxLength: 120 },
+          },
         },
       },
     },
