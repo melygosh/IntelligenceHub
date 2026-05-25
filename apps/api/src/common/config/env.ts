@@ -14,6 +14,13 @@ const EnvSchema = z.object({
   APP_BASE_URL: z.string().url(),
   WEB_BASE_URL: z.string().url(),
   PREFILTER_MIN_LENGTH: z.coerce.number().int().positive().default(200),
+  LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
+  OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  LLM_MODEL_OPENAI: z.string().default('gpt-4o-mini'),
+  LLM_MODEL_ANTHROPIC: z.string().default('claude-haiku-4-5'),
+  LLM_CONCURRENCY: z.coerce.number().int().positive().default(2),
+  LLM_TOKEN_LIMIT_PER_ARTICLE: z.coerce.number().int().positive().default(4000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

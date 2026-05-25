@@ -23,6 +23,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
     "@bull-board/api": "^7.1.5",
     "@bull-board/express": "^7.1.5",
     "@bull-board/nestjs": "^7.1.5",
@@ -38,6 +39,7 @@
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.10.1",
+    "openai": "^6.39.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.21.0",
