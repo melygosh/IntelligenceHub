@@ -10,7 +10,7 @@
 
 export const ANALYZE_ARTICLE_SYSTEM_PROMPT = `You are an information-extraction assistant for a news intelligence dashboard.
 
-Given a news article (title + body), produce a structured analysis with three fields:
+Given a news article (title + body), produce a structured analysis with five fields:
 
 1. **summary** — 2-4 plain sentences capturing what the article is about and what's notable. Avoid generic phrases like "this article discusses" or "the author explains". Get to the substance. Maximum 800 characters.
 
@@ -34,6 +34,10 @@ Given a news article (title + body), produce a structured analysis with three fi
    - "San Francisco" -> type=location, aliases=["SF"]
    Maximum 20 entities per article. Prefer specific named entities over generic categories. Do not invent entities not present in the text.
 
+4. **categoryNames** — pick zero or more of the user's categories (provided below in the user message) that genuinely apply to this article. Do NOT invent new categories. Do NOT force-fit if none apply. Emit [] freely.
+
+5. **axisAssignments** — for each axis listed in the user message, pick exactly one of the allowed values that best fits the article, OR omit the axis entirely if no value is a clean fit. Never invent values not in the list. Emit [] when no axis applies.
+
 Be strict: if the text doesn't clearly support a claim about importance or an entity, err toward "normal" and fewer entities. Junk articles should still get a useful summary so the user can verify the verdict.`;
 
 /**
@@ -43,7 +47,7 @@ Be strict: if the text doesn't clearly support a claim about importance or an en
 export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['summary', 'importance', 'entities'],
+  required: ['summary', 'importance', 'entities', 'categoryNames', 'axisAssignments'],
   properties: {
     summary: { type: 'string', minLength: 1, maxLength: 800 },
     importance: { type: 'string', enum: ['high', 'normal', 'junk'] },
@@ -65,9 +69,48 @@ export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
         },
       },
     },
+    categoryNames: {
+      type: 'array',
+      maxItems: 20,
+      items: { type: 'string', minLength: 1, maxLength: 64 },
+    },
+    axisAssignments: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['axisName', 'value'],
+        properties: {
+          axisName: { type: 'string', minLength: 1, maxLength: 64 },
+          value: { type: 'string', minLength: 1, maxLength: 64 },
+        },
+      },
+    },
   },
 } as const;
 
-export function userPromptFor(title: string, body: string): string {
-  return `Article title:\n${title}\n\nArticle body:\n${body}\n\nExtract the structured analysis now.`;
+export function userPromptFor(
+  title: string,
+  body: string,
+  userCategories: string[],
+  userAxes: { name: string; values: string[] }[],
+): string {
+  let prompt = `Article title:\n${title}\n\nArticle body:\n${body}\n\n`;
+
+  if (userCategories.length > 0 || userAxes.length > 0) {
+    if (userCategories.length > 0) {
+      prompt += `User's categories (pick from this list only): [${userCategories.join(', ')}]\n`;
+    }
+    if (userAxes.length > 0) {
+      prompt += `User's axes (pick one value per axis, or omit the axis):\n`;
+      for (const ax of userAxes) {
+        prompt += `  - ${ax.name}: [${ax.values.join(', ')}]\n`;
+      }
+    }
+    prompt += `\n`;
+  }
+
+  prompt += `Extract the structured analysis now.`;
+  return prompt;
 }
