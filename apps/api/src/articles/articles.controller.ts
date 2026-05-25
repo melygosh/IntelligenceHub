@@ -1,4 +1,10 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { ArticleListResponse } from '@intelligencehub/shared';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -8,11 +14,14 @@ import { CurrentUser, type AuthUserContext } from '../common/decorators/current-
 @Controller('articles')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) {}
+  constructor(private readonly articles: ArticlesService) {}
 
   @Get()
-  async list(@CurrentUser() user: AuthUserContext): Promise<ArticleListResponse> {
-    const articles = await this.articlesService.listMine(user.userId);
-    return { articles };
+  async list(
+    @CurrentUser() user: AuthUserContext,
+    @Query('category', new ParseUUIDPipe({ optional: true })) category?: string,
+  ): Promise<ArticleListResponse> {
+    const items = await this.articles.listMine(user.userId, category);
+    return { articles: items };
   }
 }
