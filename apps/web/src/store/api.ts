@@ -1,9 +1,11 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
+  ArticleListResponse,
   AuthResponse,
   CreateFeedRequest,
   Feed,
   FeedListResponse,
+  GraphResponse,
   LoginRequest,
   PullFeedResponse,
   RegisterRequest,
@@ -50,6 +52,14 @@ export const api = createApi({
       query: (id) => ({ url: `/feeds/${id}/pull`, method: 'POST' }),
       invalidatesTags: ['Articles'],
     }),
+    getArticles: build.query<ArticleListResponse, void>({
+      query: () => ({ url: '/articles', method: 'GET' }),
+      providesTags: ['Articles'],
+    }),
+    getGraph: build.query<GraphResponse, void>({
+      query: () => ({ url: '/graph', method: 'GET' }),
+      providesTags: ['Articles'],
+    }),
   }),
 });
 
@@ -62,4 +72,6 @@ export const {
   useCreateFeedMutation,
   useDeleteFeedMutation,
   usePullFeedMutation,
+  useGetArticlesQuery,
+  useGetGraphQuery,
 } = api;
