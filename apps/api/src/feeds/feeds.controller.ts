@@ -7,13 +7,18 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
   CreateFeedRequest,
+  type Feed,
   type FeedListResponse,
   type PullFeedResponse,
+  UpdateFeedRequest,
+  ValidateFeedRequest,
+  type ValidateFeedResponse,
 } from '@intelligencehub/shared';
 import { FeedsService } from './feeds.service';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -35,11 +40,26 @@ export class FeedsController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @CurrentUser() user: AuthUserContext,
-    // Pipe applied to @Body() only — method-level @UsePipes would also try to validate
-    // @CurrentUser() against the schema and fail.
     @Body(new ZodValidationPipe(CreateFeedRequest)) body: typeof CreateFeedRequest._type,
-  ): Promise<{ id: string; url: string; createdAt: string }> {
+  ): Promise<Feed> {
     return this.feedsService.create(user.userId, body.url);
+  }
+
+  @Post('validate')
+  @HttpCode(HttpStatus.OK)
+  async validate(
+    @Body(new ZodValidationPipe(ValidateFeedRequest)) body: typeof ValidateFeedRequest._type,
+  ): Promise<ValidateFeedResponse> {
+    return this.feedsService.validate(body.url);
+  }
+
+  @Patch(':id')
+  async update(
+    @CurrentUser() user: AuthUserContext,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(UpdateFeedRequest)) body: typeof UpdateFeedRequest._type,
+  ): Promise<Feed> {
+    return this.feedsService.updateStatus(user.userId, id, body.status);
   }
 
   @Delete(':id')
