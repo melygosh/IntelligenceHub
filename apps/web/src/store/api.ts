@@ -1,7 +1,11 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   AuthResponse,
+  CreateFeedRequest,
+  Feed,
+  FeedListResponse,
   LoginRequest,
+  PullFeedResponse,
   RegisterRequest,
   UserResponse,
 } from '@intelligencehub/shared';
@@ -12,7 +16,7 @@ export const api = createApi({
     baseUrl: '/api',
     credentials: 'include',
   }),
-  tagTypes: ['Me'],
+  tagTypes: ['Me', 'Feeds', 'Articles'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -24,11 +28,27 @@ export const api = createApi({
     }),
     logout: build.mutation<void, void>({
       query: () => ({ url: '/auth/logout', method: 'POST' }),
-      invalidatesTags: ['Me'],
+      invalidatesTags: ['Me', 'Feeds', 'Articles'],
     }),
     getMe: build.query<UserResponse, void>({
       query: () => ({ url: '/auth/me', method: 'GET' }),
       providesTags: ['Me'],
+    }),
+    getFeeds: build.query<FeedListResponse, void>({
+      query: () => ({ url: '/feeds', method: 'GET' }),
+      providesTags: ['Feeds'],
+    }),
+    createFeed: build.mutation<Feed, CreateFeedRequest>({
+      query: (body) => ({ url: '/feeds', method: 'POST', body }),
+      invalidatesTags: ['Feeds'],
+    }),
+    deleteFeed: build.mutation<void, string>({
+      query: (id) => ({ url: `/feeds/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Feeds'],
+    }),
+    pullFeed: build.mutation<PullFeedResponse, string>({
+      query: (id) => ({ url: `/feeds/${id}/pull`, method: 'POST' }),
+      invalidatesTags: ['Articles'],
     }),
   }),
 });
@@ -38,4 +58,8 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useGetMeQuery,
+  useGetFeedsQuery,
+  useCreateFeedMutation,
+  useDeleteFeedMutation,
+  usePullFeedMutation,
 } = api;
