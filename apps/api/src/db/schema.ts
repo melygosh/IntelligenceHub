@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -38,13 +38,19 @@ export const articles = pgTable('articles', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const entities = pgTable('entities', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  canonicalName: text('canonical_name').notNull(),
-  type: text('type').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const entities = pgTable(
+  'entities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    canonicalName: text('canonical_name').notNull(),
+    type: text('type').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCanonicalUnique: uniqueIndex('entities_user_canonical_unique').on(t.userId, t.canonicalName),
+  }),
+);
 
 export const articleEntity = pgTable(
   'article_entity',
@@ -56,6 +62,40 @@ export const articleEntity = pgTable(
     pk: primaryKey({ columns: [t.articleId, t.entityId] }),
   }),
 );
+
+export const llmCalls = pgTable('llm_calls', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  articleId: uuid('article_id').references(() => articles.id, {
+    onDelete: 'set null',
+  }),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  operation: text('operation').notNull(),
+  status: text('status').notNull(),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+  cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+  cacheCreationTokens: integer('cache_creation_tokens').notNull().default(0),
+  latencyMs: integer('latency_ms').notNull(),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const llmResponseCache = pgTable('llm_response_cache', {
+  contentHash: text('content_hash').primaryKey(),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  operation: text('operation').notNull(),
+  responseJson: jsonb('response_json').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export type Feed = typeof feeds.$inferSelect;
 export type NewFeed = typeof feeds.$inferInsert;
