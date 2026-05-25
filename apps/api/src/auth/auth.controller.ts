@@ -11,16 +11,22 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import {
+  ConfirmEmailRequest,
   LoginRequest,
   RegisterRequest,
   type AuthResponse,
+  type ConfirmEmailResponse,
+  type ResendConfirmationResponse,
   type UserResponse,
 } from '@intelligencehub/shared';
 import { AuthService } from './auth.service';
 import { AUTH_COOKIE_NAME } from './types';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 import { loadEnv } from '../common/config/env';
 
 @Controller('auth')
@@ -34,9 +40,12 @@ export class AuthController {
     @Body() body: typeof RegisterRequest._type,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
-    const { user, token } = await this.auth.register(body.email, body.password);
+    const { user, token, devModeConfirmLink } = await this.auth.register(
+      body.email,
+      body.password,
+    );
     this.setAuthCookie(res, token);
-    return { user };
+    return { user, devModeConfirmLink };
   }
 
   @Post('login')
@@ -63,10 +72,29 @@ export class AuthController {
     return this.auth.getUser(user.userId);
   }
 
+  @Post('confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirm(
+    @Body(new ZodValidationPipe(ConfirmEmailRequest))
+    body: typeof ConfirmEmailRequest._type,
+  ): Promise<ConfirmEmailResponse> {
+    const user = await this.auth.confirmEmail(body.token);
+    return { user };
+  }
+
+  @Post('resend-confirmation')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async resend(
+    @CurrentUser() user: AuthUserContext,
+  ): Promise<ResendConfirmationResponse> {
+    return this.auth.resendConfirmation(user.userId);
+  }
+
   private setAuthCookie(res: Response, token: string): void {
     res.cookie(AUTH_COOKIE_NAME, token, {
       ...this.cookieBaseOptions(),
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d, matches default JWT_EXPIRES_IN
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
     });
   }
 

@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { ConfirmationTokenStore } from './confirmation-token.store';
 import { loadEnv } from '../common/config/env';
 
 @Module({
@@ -23,6 +24,6 @@ import { loadEnv } from '../common/config/env';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, ConfirmationTokenStore],
 })
 export class AuthModule {}
