@@ -1,7 +1,36 @@
-import { useGetArticlesQuery } from '../../store/api';
+import { useState } from 'react';
+import { useGetArticlesQuery, useGetCategoriesQuery } from '../../store/api';
 import type { ArticleListItem, ArticleEntitySummary } from '@intelligencehub/shared';
 
 const Sep = () => <span className="text-border2">·</span>;
+
+function CategoryFilter({
+  selected,
+  onChange,
+}: {
+  selected: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  const { data } = useGetCategoriesQuery();
+  return (
+    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+      <label htmlFor="cat-filter">filter by category:</label>
+      <select
+        id="cat-filter"
+        value={selected ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
+        className="border border-border bg-paper px-1.5 py-0.5 text-[10.5px] text-ink focus:border-ink focus:outline-none"
+      >
+        <option value="">All categories</option>
+        {data?.categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 const TYPE_GLYPH: Record<ArticleEntitySummary['type'], React.ReactNode> = {
   company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
@@ -59,6 +88,21 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
               </span>
             </>
           ) : null}
+          {article.categoryNames.length > 0 ? (
+            <>
+              <Sep />
+              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                {article.categoryNames.map((n) => (
+                  <span
+                    key={n}
+                    className="border border-border bg-paper px-1 py-px font-mono text-[10px] uppercase tracking-[0.06em] text-muted"
+                  >
+                    {n}
+                  </span>
+                ))}
+              </span>
+            </>
+          ) : null}
         </div>
       </div>
     </li>
@@ -66,7 +110,8 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
 }
 
 export default function ArticlesList() {
-  const { data, isLoading } = useGetArticlesQuery();
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const { data, isLoading } = useGetArticlesQuery({ categoryId });
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -83,6 +128,9 @@ export default function ArticlesList() {
               <span className="tnum text-ink">{data.articles.length} total</span>
             </>
           ) : null}
+        </div>
+        <div className="mt-2">
+          <CategoryFilter selected={categoryId} onChange={setCategoryId} />
         </div>
       </header>
 

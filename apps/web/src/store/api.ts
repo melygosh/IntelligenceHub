@@ -113,13 +113,22 @@ export const api = createApi({
       query: ({ id, body }) => ({ url: `/feeds/${id}`, method: 'PATCH', body }),
       invalidatesTags: ['Feeds'],
     }),
-    getArticles: build.query<ArticleListResponse, void>({
-      query: () => ({ url: '/articles', method: 'GET' }),
+    getArticles: build.query<ArticleListResponse, { categoryId?: string } | void>({
+      query: (arg) => {
+        const params = new URLSearchParams();
+        if (arg && arg.categoryId) params.set('category', arg.categoryId);
+        const qs = params.toString();
+        return `/articles${qs ? `?${qs}` : ''}`;
+      },
       providesTags: ['Articles'],
     }),
-    getGraph: build.query<GraphResponse, void>({
-      query: () => ({ url: '/graph', method: 'GET' }),
-      providesTags: ['Articles'],
+    getGraph: build.query<GraphResponse, { categoryId?: string } | void>({
+      query: (arg) => {
+        const params = new URLSearchParams();
+        if (arg && arg.categoryId) params.set('category', arg.categoryId);
+        const qs = params.toString();
+        return `/graph${qs ? `?${qs}` : ''}`;
+      },
     }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',

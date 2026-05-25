@@ -1,8 +1,36 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useGetGraphQuery } from '../../store/api';
+import { useGetCategoriesQuery, useGetGraphQuery } from '../../store/api';
 import type { GraphEdge, GraphNode } from '@intelligencehub/shared';
+
+function CategoryFilter({
+  selected,
+  onChange,
+}: {
+  selected: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  const { data } = useGetCategoriesQuery();
+  return (
+    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+      <label htmlFor="graph-cat-filter">filter by category:</label>
+      <select
+        id="graph-cat-filter"
+        value={selected ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
+        className="border border-border bg-paper px-1.5 py-0.5 text-[10.5px] text-ink focus:border-ink focus:outline-none"
+      >
+        <option value="">All categories</option>
+        {data?.categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 function nodeStyle(node: GraphNode): React.CSSProperties {
   const base: React.CSSProperties = {
@@ -54,7 +82,8 @@ function truncate(s: string, n: number): string {
 }
 
 export default function GraphPage() {
-  const { data, isLoading } = useGetGraphQuery();
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const { data, isLoading } = useGetGraphQuery({ categoryId });
   const nodes = useMemo(() => (data ? layoutNodes(data.nodes) : []), [data]);
   const edges = useMemo(() => (data ? layoutEdges(data.edges) : []), [data]);
 
@@ -72,6 +101,9 @@ export default function GraphPage() {
               · {data.nodes.length} nodes · {data.edges.length} edges
             </span>
           ) : null}
+        </div>
+        <div className="mt-2">
+          <CategoryFilter selected={categoryId} onChange={setCategoryId} />
         </div>
       </header>
 
