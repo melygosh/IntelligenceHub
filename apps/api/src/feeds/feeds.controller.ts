@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
   Post,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import {
   CreateFeedRequest,
@@ -34,10 +33,11 @@ export class FeedsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(CreateFeedRequest))
   async create(
     @CurrentUser() user: AuthUserContext,
-    @Body() body: typeof CreateFeedRequest._type,
+    // Pipe applied to @Body() only — method-level @UsePipes would also try to validate
+    // @CurrentUser() against the schema and fail.
+    @Body(new ZodValidationPipe(CreateFeedRequest)) body: typeof CreateFeedRequest._type,
   ): Promise<{ id: string; url: string; createdAt: string }> {
     return this.feedsService.create(user.userId, body.url);
   }
