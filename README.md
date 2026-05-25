@@ -4,8 +4,8 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 1 Day 1 — walking skeleton (auth + shell only).
-> Feeds, articles, queue workers, and the graph land in subsequent days.
+> **Current phase:** Phase 1 Day 2 — feeds + queue + stub worker + Bull Board.
+> The `/articles` list and `/graph` page land Day 3; real RSS/LLM lands Phase 2.
 
 ## Prerequisites
 
@@ -49,10 +49,15 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 - API auto-applies Drizzle migrations on container start.
 - Register / log in / log out flow with JWT in an httpOnly cookie (`ih_auth`).
 - Session survives page reload.
-- Multi-tenant isolation is enforced at the data layer — Day 1 has only the `users`
-  table, but every subsequent table (lands Day 2+) will carry `user_id` from creation.
+- Multi-tenant isolation is enforced at the data layer — `users`, `feeds`, `articles`,
+  `entities`, `article_entity` all carry `user_id`. Cross-user access returns 404.
 - Vite dev server proxies `/api/*` and `/admin/queues/*` to the api container so the
   browser only ever talks to `http://localhost:5174`.
+- Add an RSS feed via `/feeds`, click **Pull now** → a `feed.pull` BullMQ job runs in
+  the api container and inserts a stubbed article + entity row (cycling through
+  Microsoft / Anthropic / OpenAI per pull) scoped to your user.
+- Queue dashboard at **http://localhost:3010/admin/queues** (Bull Board) behind HTTP
+  Basic auth — credentials via `BULL_BOARD_USER` / `BULL_BOARD_PASS` in `.env`.
 
 ## Stack
 
