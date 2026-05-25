@@ -9,6 +9,7 @@ import type {
   LoginRequest,
   PullFeedResponse,
   RegisterRequest,
+  UpdateFeedRequest,
   UserResponse,
 } from '@intelligencehub/shared';
 
@@ -52,6 +53,10 @@ export const api = createApi({
       query: (id) => ({ url: `/feeds/${id}/pull`, method: 'POST' }),
       invalidatesTags: ['Articles'],
     }),
+    updateFeed: build.mutation<Feed, { id: string; body: UpdateFeedRequest }>({
+      query: ({ id, body }) => ({ url: `/feeds/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Feeds'],
+    }),
     getArticles: build.query<ArticleListResponse, void>({
       query: () => ({ url: '/articles', method: 'GET' }),
       providesTags: ['Articles'],
@@ -72,6 +77,7 @@ export const {
   useCreateFeedMutation,
   useDeleteFeedMutation,
   usePullFeedMutation,
+  useUpdateFeedMutation,
   useGetArticlesQuery,
   useGetGraphQuery,
 } = api;
