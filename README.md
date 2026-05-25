@@ -4,9 +4,10 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 6 — entity dedup via LLM-emitted aliases plus
-> deterministic normalization and Jaro-Winkler fuzzy match. The graph collapses
-> "Microsoft" / "MSFT" / "Microsoft Corp." style variants into a single node per user.
+> **Current phase:** Phase 2 Day 7 — email confirmation flow (US-1). Registration
+> emits a confirmation link (logged + surfaced in dev mode on the
+> `/auth/check-email` page), unconfirmed users are blocked from business routes
+> until they click the link, with a resend button and 60s cooldown.
 > Categories/axes (Day 8) + digests (Day 12) still pending.
 
 ## Prerequisites
@@ -47,7 +48,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 6)
+## What works (end of Phase 2 Day 7)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -86,6 +87,15 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   (no extra LLM calls — FR-10 compliant) and recorded in the `entity_alias` table
   for future lookups. A smoke test against `https://hnrss.org/frontpage` reliably
   collapses `Microsoft` / `MSFT` / `Microsoft Corp.` into a single entity per user.
+- **Email confirmation (US-1):** registration creates an unconfirmed account with
+  an `email_confirmation_token` row (sha256-hashed, 24h expiry, one-time use). In
+  dev mode (`APP_DEV_MODE=true`) the link is logged as a structured
+  `auth.confirmation_link` event AND surfaced in the registration response so the
+  `/auth/check-email` page can display it with a "DEV MODE" pill. Unconfirmed users
+  get `403 {error: 'email_unconfirmed'}` on every business route via
+  `RequireConfirmedEmailGuard`; the frontend api wrapper redirects them to
+  `/auth/check-email`. Resend endpoint is rate-limited (60s cooldown — register
+  itself starts the window) and invalidates prior tokens on success.
 - **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
