@@ -50,8 +50,20 @@ export const api = createApi({
       invalidatesTags: ['Feeds'],
     }),
     pullFeed: build.mutation<PullFeedResponse, string>({
+      // The pull endpoint only enqueues — the worker updates feed.title/lastPullAt/status
+      // asynchronously. Refetch Feeds + Articles after a delay so the UI reflects the
+      // worker's results. 3s is enough for a typical RSS feed (10s parser timeout).
       query: (id) => ({ url: `/feeds/${id}/pull`, method: 'POST' }),
-      invalidatesTags: ['Articles'],
+      async onQueryStarted(_id, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          return;
+        }
+        setTimeout(() => {
+          dispatch(api.util.invalidateTags(['Feeds', 'Articles']));
+        }, 3000);
+      },
     }),
     updateFeed: build.mutation<Feed, { id: string; body: UpdateFeedRequest }>({
       query: ({ id, body }) => ({ url: `/feeds/${id}`, method: 'PATCH', body }),
