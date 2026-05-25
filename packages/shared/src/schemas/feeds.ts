@@ -8,6 +8,10 @@ export type CreateFeedRequest = z.infer<typeof CreateFeedRequest>;
 export const Feed = z.object({
   id: z.string().uuid(),
   url: z.string().url(),
+  title: z.string().nullable(),
+  status: z.enum(['active', 'paused', 'error']),
+  lastPullAt: z.string().datetime().nullable(),
+  lastPullError: z.string().nullable(),
   createdAt: z.string().datetime(),
 });
 export type Feed = z.infer<typeof Feed>;
@@ -22,3 +26,28 @@ export const PullFeedResponse = z.object({
   feedId: z.string().uuid(),
 });
 export type PullFeedResponse = z.infer<typeof PullFeedResponse>;
+
+export const ValidateFeedRequest = z.object({
+  url: z.string().url().max(2048),
+});
+export type ValidateFeedRequest = z.infer<typeof ValidateFeedRequest>;
+
+export const ValidateFeedResponse = z.discriminatedUnion('ok', [
+  z.object({
+    ok: z.literal(true),
+    title: z.string(),
+    normalisedUrl: z.string().url(),
+    itemCount: z.number().int().nonnegative(),
+  }),
+  z.object({
+    ok: z.literal(false),
+    reason: z.enum(['unreachable', 'not_a_feed', 'malformed_url', 'empty']),
+    detail: z.string(),
+  }),
+]);
+export type ValidateFeedResponse = z.infer<typeof ValidateFeedResponse>;
+
+export const UpdateFeedRequest = z.object({
+  status: z.enum(['active', 'paused']),
+});
+export type UpdateFeedRequest = z.infer<typeof UpdateFeedRequest>;
