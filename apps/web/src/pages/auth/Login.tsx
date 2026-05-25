@@ -6,6 +6,12 @@ import { LoginRequest } from '@intelligencehub/shared';
 import { useGetMeQuery, useLoginMutation } from '../../store/api';
 import { errorMessage, isMutationErrorMessage } from '../../lib/auth';
 
+const fieldClass =
+  'w-full border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
+const labelClass =
+  'mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-muted';
+const errorClass = 'mt-1 font-mono text-[10.5px] text-critical';
+
 export default function Login() {
   const { data: me } = useGetMeQuery();
   const navigate = useNavigate();
@@ -34,59 +40,76 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-sm space-y-4 rounded border border-gray-200 bg-white p-6 shadow-sm"
+        className="w-full max-w-[360px] border border-border bg-surface p-6"
+        noValidate
       >
-        <h1 className="text-lg font-semibold">Sign in</h1>
+        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+          Sign in
+        </div>
+        <h1 className="pretty mb-5 font-serif text-[22px] leading-tight text-ink">Welcome back</h1>
 
-        <div className="space-y-1">
-          <label className="block text-sm text-gray-700" htmlFor="email">
-            Email
-          </label>
+        <label className="mb-3 block" htmlFor="email">
+          <span className={labelClass}>Email</span>
           <input
             id="email"
             type="email"
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            autoComplete="email"
+            autoFocus
+            className={fieldClass}
             {...register('email')}
           />
           {errorMessage(errors.email) ? (
-            <p className="text-xs text-red-600">{errorMessage(errors.email)}</p>
+            <span className={errorClass}>{errorMessage(errors.email)}</span>
           ) : null}
-        </div>
+        </label>
 
-        <div className="space-y-1">
-          <label className="block text-sm text-gray-700" htmlFor="password">
-            Password
-          </label>
+        <label className="mb-4 block" htmlFor="password">
+          <span className={labelClass}>Password</span>
           <input
             id="password"
             type="password"
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            autoComplete="current-password"
+            className={fieldClass}
             {...register('password')}
           />
           {errorMessage(errors.password) ? (
-            <p className="text-xs text-red-600">{errorMessage(errors.password)}</p>
+            <span className={errorClass}>{errorMessage(errors.password)}</span>
           ) : null}
-        </div>
+        </label>
 
-        {error ? <p className="text-sm text-red-600">{isMutationErrorMessage(error)}</p> : null}
+        {error ? (
+          <div className="mb-3 border border-critical/30 bg-critical-bg px-2.5 py-1.5 font-mono text-[11px] text-critical">
+            {isMutationErrorMessage(error)}
+          </div>
+        ) : null}
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center gap-2 bg-accent px-3 py-2 font-mono text-[13px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
         >
-          {isLoading ? 'Signing in…' : 'Sign in'}
+          {isLoading ? (
+            <>
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+              <span>signing in…</span>
+            </>
+          ) : (
+            <>
+              <span>sign in</span>
+              <span>→</span>
+            </>
+          )}
         </button>
 
-        <p className="text-center text-xs text-gray-500">
+        <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[11px] text-muted">
           No account?{' '}
-          <Link className="underline" to="/auth/register">
-            Create one
+          <Link to="/auth/register" className="ml-1.5 text-accent hover:text-accent-deep">
+            Create one →
           </Link>
-        </p>
+        </div>
       </form>
     </div>
   );
