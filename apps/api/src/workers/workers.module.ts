@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
+import { FeedsModule } from '../feeds/feeds.module';
 import { FeedPullWorker } from './feed-pull.worker';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: QUEUE_NAMES.FEED_PULL })],
+  imports: [BullModule.registerQueue({ name: QUEUE_NAMES.FEED_PULL }), FeedsModule],
   providers: [FeedPullWorker],
 })
 export class WorkersModule {}
