@@ -8,8 +8,9 @@ import { BullBoardModule } from './admin/bull-board.module';
 import { ArticlesModule } from './articles/articles.module';
 import { GraphModule } from './graph/graph.module';
 import { LlmModule } from './llm/llm.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, GraphModule, LlmModule],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, GraphModule, LlmModule, CategoriesModule],
 })
 export class AppModule {}
