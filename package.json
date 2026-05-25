@@ -5,7 +5,7 @@
   "description": "News Intelligence Hub — UA-Skills tournament submission",
   "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "pnpm -r --parallel dev",
