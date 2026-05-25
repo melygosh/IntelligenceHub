@@ -63,6 +63,28 @@ export const articleEntity = pgTable(
   }),
 );
 
+export const entityAlias = pgTable(
+  'entity_alias',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    entityId: uuid('entity_id').notNull().references(() => entities.id, { onDelete: 'cascade' }),
+    aliasNormalized: text('alias_normalized').notNull(),
+    aliasOriginal: text('alias_original').notNull(),
+    source: text('source').notNull(), // 'llm' | 'normalization' | 'user'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userAliasNormalizedUnique: uniqueIndex('entity_alias_user_normalized_unique').on(
+      t.userId,
+      t.aliasNormalized,
+    ),
+  }),
+);
+
+export type EntityAlias = typeof entityAlias.$inferSelect;
+export type NewEntityAlias = typeof entityAlias.$inferInsert;
+
 export const llmCalls = pgTable('llm_calls', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, {
