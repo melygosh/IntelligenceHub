@@ -6,8 +6,9 @@ import { FeedsModule } from './feeds/feeds.module';
 import { WorkersModule } from './workers/workers.module';
 import { BullBoardModule } from './admin/bull-board.module';
 import { ArticlesModule } from './articles/articles.module';
+import { GraphModule } from './graph/graph.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, GraphModule],
 })
 export class AppModule {}
