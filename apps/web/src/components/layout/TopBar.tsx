@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useGetMeQuery, useLogoutMutation } from '../../store/api';
+import { api, useGetMeQuery, useLogoutMutation } from '../../store/api';
 
 function breadcrumbsFor(pathname: string): string[] {
   if (pathname === '/' || pathname === '') return ['Articles'];
@@ -22,6 +23,7 @@ export default function TopBar() {
   const [logout, { isLoading }] = useLogoutMutation();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,6 +39,9 @@ export default function TopBar() {
 
   async function handleLogout() {
     await logout();
+    // Wipe cached query data so the Login page doesn't see stale `me` and bounce us
+    // back to /articles (which would 401 and bounce again — an infinite redirect loop).
+    dispatch(api.util.resetApiState());
     navigate('/auth/login', { replace: true });
   }
 
