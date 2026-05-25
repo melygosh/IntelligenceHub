@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Parser from 'rss-parser';
-import { contentHash, normaliseUrl } from '@intelligencehub/shared';
+import { normaliseUrl } from '@intelligencehub/shared';
+import { contentHash } from './content-hash';
 
 export type FetchedItem = {
   url: string;
