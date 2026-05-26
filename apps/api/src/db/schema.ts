@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index, customType, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+const tsvector = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return 'tsvector';
+  },
+});
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -46,6 +53,9 @@ export const articles = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     configHash: text('config_hash'),
     body: text('body'),
+    searchVector: tsvector('search_vector').generatedAlwaysAs(
+      sql`to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))`,
+    ),
     duplicateOf: uuid('duplicate_of').references((): AnyPgColumn => articles.id, {
       onDelete: 'set null',
     }),
@@ -55,6 +65,7 @@ export const articles = pgTable(
     feedIdx: index('articles_feed_idx').on(t.feedId),
     userContentHashIdx: index('articles_user_contenthash_idx').on(t.userId, t.contentHash),
     userUrlIdx: index('articles_user_url_idx').on(t.userId, t.url),
+    searchVectorIdx: index('articles_search_vector_idx').using('gin', t.searchVector),
   }),
 );
 
