@@ -139,13 +139,25 @@ export class LlmService implements ILlmService {
               },
               operation: 'build_digest_v1',
             });
-            await this.cache.writeDigest(
-              contentHash,
-              this.provider,
-              model,
-              'build_digest_v1',
-              result,
-            );
+            try {
+              await this.cache.writeDigest(
+                contentHash,
+                this.provider,
+                model,
+                'build_digest_v1',
+                result,
+              );
+            } catch (cacheErr) {
+              this.log.warn(
+                JSON.stringify({
+                  event: 'llm.digest_cache_write_failed',
+                  userId: input.userId,
+                  provider: this.provider,
+                  error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+                }),
+              );
+              // Swallow — primary call succeeded, result is valid even without cache.
+            }
             return {
               result,
               inputTokens: telemetry.inputTokens,
@@ -231,14 +243,26 @@ export class LlmService implements ILlmService {
           status: 'success',
           telemetry: result.telemetry,
         });
-        await this.cache.write(
-          input.contentHash,
-          this.provider,
-          result.model,
-          'analyze_article_v3',
-          input.configHash,
-          result.data,
-        );
+        try {
+          await this.cache.write(
+            input.contentHash,
+            this.provider,
+            result.model,
+            'analyze_article_v3',
+            input.configHash,
+            result.data,
+          );
+        } catch (cacheErr) {
+          this.log.warn(
+            JSON.stringify({
+              event: 'llm.cache_write_failed',
+              articleId: input.articleId,
+              provider: this.provider,
+              error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+            }),
+          );
+          // Swallow — primary call succeeded, result is valid even without cache.
+        }
         return result.data;
       } catch (err) {
         lastError = err as Error;
@@ -335,14 +359,26 @@ export class LlmService implements ILlmService {
         provider,
         failoverReason,
       });
-      await this.cache.write(
-        input.contentHash,
-        provider,
-        result.model,
-        'analyze_article_v3',
-        input.configHash,
-        result.data,
-      );
+      try {
+        await this.cache.write(
+          input.contentHash,
+          provider,
+          result.model,
+          'analyze_article_v3',
+          input.configHash,
+          result.data,
+        );
+      } catch (cacheErr) {
+        this.log.warn(
+          JSON.stringify({
+            event: 'llm.cache_write_failed',
+            articleId: input.articleId,
+            provider,
+            error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+          }),
+        );
+        // Swallow — fallback call succeeded, result is valid even without cache.
+      }
       return result.data;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -399,7 +435,19 @@ export class LlmService implements ILlmService {
         provider,
         failoverReason,
       });
-      await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v1', result);
+      try {
+        await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v1', result);
+      } catch (cacheErr) {
+        this.log.warn(
+          JSON.stringify({
+            event: 'llm.digest_cache_write_failed',
+            userId: input.userId,
+            provider,
+            error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+          }),
+        );
+        // Swallow — fallback call succeeded, result is valid even without cache.
+      }
       return {
         result,
         inputTokens: telemetry.inputTokens,
@@ -439,26 +487,22 @@ export class LlmService implements ILlmService {
     errorMessage?: string;
     provider?: LlmProvider;
     failoverReason?: string;
-  }): Promise<{ id: string }> {
-    const [row] = await this.db
-      .insert(llmCalls)
-      .values({
-        userId: args.userId,
-        articleId: args.articleId,
-        provider: args.provider ?? this.provider,
-        model: args.model,
-        operation: args.operation ?? 'analyze_article_v3',
-        status: args.status,
-        inputTokens: args.telemetry.inputTokens,
-        outputTokens: args.telemetry.outputTokens,
-        cacheReadTokens: args.telemetry.cacheReadTokens,
-        cacheCreationTokens: args.telemetry.cacheCreationTokens,
-        latencyMs: args.telemetry.latencyMs,
-        errorMessage: args.errorMessage,
-        failoverReason: args.failoverReason,
-      })
-      .returning({ id: llmCalls.id });
-    return row;
+  }): Promise<void> {
+    await this.db.insert(llmCalls).values({
+      userId: args.userId,
+      articleId: args.articleId,
+      provider: args.provider ?? this.provider,
+      model: args.model,
+      operation: args.operation ?? 'analyze_article_v3',
+      status: args.status,
+      inputTokens: args.telemetry.inputTokens,
+      outputTokens: args.telemetry.outputTokens,
+      cacheReadTokens: args.telemetry.cacheReadTokens,
+      cacheCreationTokens: args.telemetry.cacheCreationTokens,
+      latencyMs: args.telemetry.latencyMs,
+      errorMessage: args.errorMessage,
+      failoverReason: args.failoverReason,
+    });
   }
 
   private async withSemaphore<T>(fn: () => Promise<T>): Promise<T> {
