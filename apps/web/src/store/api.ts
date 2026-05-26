@@ -5,6 +5,7 @@ import type {
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
 import type {
+  ArticleDetail,
   ArticleListResponse,
   AuthResponse,
   Axis,
@@ -16,6 +17,7 @@ import type {
   CreateAxisRequest,
   CreateCategoryRequest,
   CreateFeedRequest,
+  EntityDetail,
   Feed,
   FeedListResponse,
   GraphResponse,
@@ -58,7 +60,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories', 'Axes', 'Regeneration'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -133,6 +135,14 @@ export const api = createApi({
       },
       providesTags: ['Articles'],
     }),
+    getArticle: build.query<ArticleDetail, string>({
+      query: (id) => `/articles/${id}`,
+      providesTags: (_r, _e, id) => [{ type: 'Article', id }],
+    }),
+    getEntity: build.query<EntityDetail, string>({
+      query: (id) => `/entities/${id}`,
+      providesTags: (_r, _e, id) => [{ type: 'Entity', id }],
+    }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
       providesTags: ['Categories'],
@@ -186,6 +196,8 @@ export const {
   usePullFeedMutation,
   useUpdateFeedMutation,
   useGetArticlesQuery,
+  useGetArticleQuery,
+  useGetEntityQuery,
   useGetGraphQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
