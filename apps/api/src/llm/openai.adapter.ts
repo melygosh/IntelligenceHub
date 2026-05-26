@@ -129,7 +129,7 @@ export class OpenAiAdapter {
             properties: {
               summary: {
                 type: 'array',
-                items: { type: 'string' },
+                items: { type: 'string', minLength: 20 },
                 minItems: 2,
                 maxItems: 3,
               },

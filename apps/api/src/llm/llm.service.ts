@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   type ArticleAnalysisInput,
@@ -133,37 +134,43 @@ export class LlmService implements ILlmService {
           };
         } catch (err) {
           lastErr = err instanceof Error ? err : new Error(String(err));
+          const status = this.classifyError(err);
+          await this.recordTelemetry({
+            userId: input.userId,
+            articleId: null,
+            model: this.activeModel,
+            status,
+            telemetry: {
+              inputTokens: 0,
+              outputTokens: 0,
+              cacheReadTokens: 0,
+              cacheCreationTokens: 0,
+              latencyMs: Date.now() - t0,
+            },
+            operation: 'build_digest_v1',
+            errorMessage: lastErr.message,
+          });
           this.log.warn(
             JSON.stringify({
               event: 'llm.digest_attempt_failed',
               userId: input.userId,
               attempt,
+              reason: status,
               error: lastErr.message,
             }),
           );
+          // Retry only on validation failure (likely transient model wobble).
+          // Rate limit / timeout / network errors are not retried here — the SDK already
+          // auto-retries those once or twice with backoff.
+          if (status !== 'invalid_response') break;
         }
       }
 
-      await this.recordTelemetry({
-        userId: input.userId,
-        articleId: null,
-        model: this.activeModel,
-        status: 'error',
-        telemetry: {
-          inputTokens: 0,
-          outputTokens: 0,
-          cacheReadTokens: 0,
-          cacheCreationTokens: 0,
-          latencyMs: Date.now() - t0,
-        },
-        operation: 'build_digest_v1',
-        errorMessage: lastErr?.message ?? 'unknown',
-      });
       throw lastErr ?? new Error('buildDigest failed without throwing');
     });
   }
 
-  private async hashDigestInput(input: BuildDigestLlmInput): Promise<string> {
+  private hashDigestInput(input: BuildDigestLlmInput): string {
     // Deterministic content hash: same period + scope + article subset → same hash.
     // Articles ordered by title to neutralise upstream ordering changes.
     const articles = [...input.articles].sort((a, b) => a.title.localeCompare(b.title));
@@ -172,7 +179,6 @@ export class LlmService implements ILlmService {
       scopeLabel: input.scopeLabel,
       articles: articles.map((a) => ({ title: a.title, summary: a.summary ?? '' })),
     });
-    const { createHash } = await import('node:crypto');
     return createHash('sha256').update(canonical).digest('hex');
   }
 
