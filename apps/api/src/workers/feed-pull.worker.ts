@@ -90,6 +90,7 @@ export class FeedPullWorker extends WorkerHost {
         .update(feeds)
         .set({
           title: fetched.title,
+          iconUrl: fetched.iconUrl,
           status: 'active',
           lastPullAt: new Date(),
           lastPullError: null,

@@ -23,7 +23,12 @@ export class FeedsService {
     private readonly fetcher: FeedFetcher,
   ) {}
 
-  async create(userId: string, url: string, title?: string): Promise<Feed> {
+  async create(
+    userId: string,
+    url: string,
+    title?: string,
+    iconUrl?: string,
+  ): Promise<Feed> {
     const normalised = normaliseUrl(url);
     const [existing] = await this.db
       .select({ id: feeds.id })
@@ -35,7 +40,13 @@ export class FeedsService {
     }
     const [created] = await this.db
       .insert(feeds)
-      .values({ userId, url: normalised, status: 'active', title: title ?? null })
+      .values({
+        userId,
+        url: normalised,
+        status: 'active',
+        title: title ?? null,
+        iconUrl: iconUrl ?? null,
+      })
       .returning();
     // Kick off an immediate pull so articles + future channel-title updates flow
     // within seconds instead of waiting for the next scheduled cycle.
@@ -134,6 +145,7 @@ export class FeedsService {
       return {
         ok: true,
         title: fetched.title,
+        iconUrl: fetched.iconUrl,
         normalisedUrl: normaliseUrl(url),
         itemCount: fetched.items.length,
       };
@@ -155,6 +167,7 @@ export class FeedsService {
       id: row.id,
       url: row.url,
       title: row.title,
+      iconUrl: row.iconUrl,
       status: row.status as Feed['status'],
       lastPullAt: row.lastPullAt?.toISOString() ?? null,
       lastPullError: row.lastPullError,

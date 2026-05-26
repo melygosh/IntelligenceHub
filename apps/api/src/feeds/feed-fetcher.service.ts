@@ -14,6 +14,7 @@ export type FetchedItem = {
 
 export type FetchedFeed = {
   title: string;
+  iconUrl: string | null;
   items: FetchedItem[];
 };
 
@@ -22,9 +23,14 @@ export type FetchErrorReason = 'unreachable' | 'not_a_feed' | 'malformed_url' | 
 @Injectable()
 export class FeedFetcher {
   private readonly log = new Logger(FeedFetcher.name);
+  // customFields surfaces Atom's top-level <icon> + <logo> elements; rss-parser
+  // already exposes RSS 2.0 <image><url> as `parsed.image.url` by default.
   private readonly parser = new Parser({
     timeout: 10_000,
     headers: { 'User-Agent': 'IntelligenceHub/0.1 (+https://intelligencehub.local)' },
+    customFields: {
+      feed: ['icon', 'logo'],
+    },
   });
 
   /**
@@ -79,7 +85,14 @@ export class FeedFetcher {
       });
     }
 
-    return { title: title || items[0]?.title || 'Untitled feed', items };
+    const iconUrl = extractIconUrl(
+      parsed as unknown as Record<string, unknown>,
+    );
+    return {
+      title: title || items[0]?.title || 'Untitled feed',
+      iconUrl,
+      items,
+    };
   }
 
   private makeError(reason: FetchErrorReason, detail: string): Error & { reason: FetchErrorReason; detail: string } {
@@ -88,4 +101,30 @@ export class FeedFetcher {
     err.detail = detail;
     return err;
   }
+}
+
+/**
+ * Extract the channel-level icon URL.
+ * - RSS 2.0: <channel><image><url>...</url></image> → `parsed.image.url`
+ * - Atom: top-level <icon> or <logo> → surfaced via customFields
+ * Returns null if none is present or the value isn't a usable absolute URL.
+ */
+function extractIconUrl(parsed: Record<string, unknown>): string | null {
+  const candidates: unknown[] = [
+    (parsed.image as { url?: unknown } | undefined)?.url,
+    parsed.icon,
+    parsed.logo,
+  ];
+  for (const c of candidates) {
+    if (typeof c !== 'string') continue;
+    const trimmed = c.trim();
+    if (!trimmed) continue;
+    try {
+      new URL(trimmed);
+    } catch {
+      continue;
+    }
+    return trimmed;
+  }
+  return null;
 }

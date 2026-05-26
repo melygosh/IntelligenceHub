@@ -195,7 +195,13 @@ const REASON_LABEL: Record<
 type Stage =
   | { kind: 'idle' }
   | { kind: 'validating' }
-  | { kind: 'valid'; title: string; normalisedUrl: string; itemCount: number }
+  | {
+      kind: 'valid';
+      title: string;
+      iconUrl: string | null;
+      normalisedUrl: string;
+      itemCount: number;
+    }
   | { kind: 'invalid'; reason: keyof typeof REASON_LABEL; detail: string };
 
 function CheckIcon() {
@@ -247,6 +253,7 @@ function AddFeedForm() {
         setStage({
           kind: 'valid',
           title: res.title,
+          iconUrl: res.iconUrl,
           normalisedUrl: res.normalisedUrl,
           itemCount: res.itemCount,
         });
@@ -268,7 +275,11 @@ function AddFeedForm() {
     if (stage.kind !== 'valid') return;
     const label = stage.title;
     try {
-      await createFeed({ url: stage.normalisedUrl, title: stage.title }).unwrap();
+      await createFeed({
+        url: stage.normalisedUrl,
+        title: stage.title,
+        iconUrl: stage.iconUrl ?? undefined,
+      }).unwrap();
       setUrl('');
       reset();
       pushToast({ severity: 'success', title: 'Feed added', subtitle: label });
