@@ -1,0 +1,360 @@
+import { Inject, Logger } from '@nestjs/common';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job } from 'bullmq';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import {
+  QUEUE_NAMES,
+  type DigestKeyArticle,
+  type DigestTopCategory,
+  type DigestTopEntity,
+  type EntityKind,
+} from '@intelligencehub/shared';
+import { DB } from '../db/db.module';
+import type { Db } from '../db/client';
+import {
+  articleCategory,
+  articleEntity,
+  articles,
+  category,
+  digestRun,
+  entities,
+} from '../db/schema';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+import { LlmService } from '../llm/llm.service';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+import { EventsService } from '../events/events.service';
+
+type JobData = { digestRunId: string };
+
+@Processor(QUEUE_NAMES.DIGEST_BUILD)
+export class DigestBuilderWorker extends WorkerHost {
+  private readonly log = new Logger(DigestBuilderWorker.name);
+
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly llm: LlmService,
+    private readonly events: EventsService,
+  ) {
+    super();
+  }
+
+  async process(job: Job<JobData>): Promise<void> {
+    const { digestRunId } = job.data;
+    const t0 = Date.now();
+
+    const [run] = await this.db
+      .select()
+      .from(digestRun)
+      .where(eq(digestRun.id, digestRunId))
+      .limit(1);
+    if (!run) {
+      this.log.error(JSON.stringify({ event: 'digest.build.run_missing', digestRunId }));
+      return;
+    }
+
+    this.log.log(
+      JSON.stringify({
+        event: 'digest.build.start',
+        digestRunId,
+        userId: run.userId,
+        jobId: job.id,
+      }),
+    );
+
+    try {
+      // 1. Query in-scope articles
+      const inScope = await this.queryInScope(run);
+      if (inScope.length === 0) {
+        await this.db
+          .update(digestRun)
+          .set({
+            status: 'failed',
+            errorMessage: 'No articles in scope for the selected period and filters.',
+            latencyMs: Date.now() - t0,
+            finishedAt: new Date(),
+          })
+          .where(eq(digestRun.id, digestRunId));
+        this.events.publish(run.userId, {
+          type: 'digest.status_changed',
+          payload: { digestId: digestRunId, status: 'failed' },
+        });
+        this.log.warn(JSON.stringify({ event: 'digest.build.empty_scope', digestRunId }));
+        return;
+      }
+
+      const inScopeIds = inScope.map((a) => a.id);
+
+      // 2. Aggregate top entities (top-20 by mention count in scope)
+      const topEntities = await this.aggregateTopEntities(run.userId, inScopeIds);
+
+      // 3. Aggregate top categories (top-10 by article count in scope)
+      const topCategories = await this.aggregateTopCategories(run.userId, inScopeIds);
+
+      // 4. Pick top-10 key articles by importance then recency
+      const keyArticles = this.pickKeyArticles(inScope, 10);
+
+      // 5. Call LLM
+      const scopeLabel = await this.buildScopeLabel(run, topCategories, topEntities);
+      const llmInput = {
+        userId: run.userId,
+        period: run.period as 'day' | 'week' | 'month',
+        scopeLabel,
+        articles: inScope.map((a) => ({ title: a.title, summary: a.summary })),
+      };
+      const llmResult = await this.llm.buildDigest(llmInput);
+
+      // 6. Persist
+      await this.db
+        .update(digestRun)
+        .set({
+          status: 'ready',
+          summary: JSON.stringify(llmResult.result.summary),
+          topEntitiesJson: topEntities,
+          topCategoriesJson: topCategories,
+          keyArticlesJson: keyArticles,
+          articleCount: inScope.length,
+          entityCount: topEntities.length,
+          inputTokens: llmResult.inputTokens,
+          outputTokens: llmResult.outputTokens,
+          latencyMs: Date.now() - t0,
+          model: llmResult.model,
+          finishedAt: new Date(),
+        })
+        .where(eq(digestRun.id, digestRunId));
+
+      this.events.publish(run.userId, {
+        type: 'digest.status_changed',
+        payload: { digestId: digestRunId, status: 'ready' },
+      });
+
+      this.log.log(
+        JSON.stringify({
+          event: 'digest.build.done',
+          digestRunId,
+          userId: run.userId,
+          jobId: job.id,
+          articleCount: inScope.length,
+          entityCount: topEntities.length,
+          tokens: llmResult.inputTokens + llmResult.outputTokens,
+          durationMs: Date.now() - t0,
+        }),
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await this.db
+        .update(digestRun)
+        .set({
+          status: 'failed',
+          errorMessage: msg,
+          latencyMs: Date.now() - t0,
+          finishedAt: new Date(),
+        })
+        .where(eq(digestRun.id, digestRunId));
+      this.events.publish(run.userId, {
+        type: 'digest.status_changed',
+        payload: { digestId: digestRunId, status: 'failed' },
+      });
+      this.log.error(
+        JSON.stringify({ event: 'digest.build.failed', digestRunId, error: msg }),
+      );
+      throw err;
+    }
+  }
+
+  private async queryInScope(
+    run: typeof digestRun.$inferSelect,
+  ): Promise<
+    Array<{
+      id: string;
+      title: string;
+      summary: string | null;
+      ts: Date;
+      importance: string | null;
+    }>
+  > {
+    const scopeFilterIds = (run.scopeFilterIds ?? []) as string[];
+    const hasFilter = scopeFilterIds.length > 0;
+    const userId = run.userId;
+    const from = run.windowFrom;
+    const to = run.windowTo;
+
+    if (!hasFilter) {
+      return await this.db
+        .select({
+          id: articles.id,
+          title: articles.title,
+          summary: articles.summary,
+          ts: articles.ts,
+          importance: articles.importance,
+        })
+        .from(articles)
+        .where(
+          and(
+            eq(articles.userId, userId),
+            eq(articles.status, 'ready'),
+            gte(articles.ts, from),
+            lte(articles.ts, to),
+          ),
+        )
+        .orderBy(desc(articles.ts));
+    }
+
+    if (run.scopeKind === 'category') {
+      return await this.db
+        .selectDistinct({
+          id: articles.id,
+          title: articles.title,
+          summary: articles.summary,
+          ts: articles.ts,
+          importance: articles.importance,
+        })
+        .from(articles)
+        .innerJoin(articleCategory, eq(articleCategory.articleId, articles.id))
+        .where(
+          and(
+            eq(articles.userId, userId),
+            eq(articles.status, 'ready'),
+            gte(articles.ts, from),
+            lte(articles.ts, to),
+            inArray(articleCategory.categoryId, scopeFilterIds),
+          ),
+        )
+        .orderBy(desc(articles.ts));
+    }
+
+    // scopeKind === 'entity'
+    return await this.db
+      .selectDistinct({
+        id: articles.id,
+        title: articles.title,
+        summary: articles.summary,
+        ts: articles.ts,
+        importance: articles.importance,
+      })
+      .from(articles)
+      .innerJoin(articleEntity, eq(articleEntity.articleId, articles.id))
+      .where(
+        and(
+          eq(articles.userId, userId),
+          eq(articles.status, 'ready'),
+          gte(articles.ts, from),
+          lte(articles.ts, to),
+          inArray(articleEntity.entityId, scopeFilterIds),
+        ),
+      )
+      .orderBy(desc(articles.ts));
+  }
+
+  private async aggregateTopEntities(
+    userId: string,
+    articleIds: string[],
+  ): Promise<DigestTopEntity[]> {
+    if (articleIds.length === 0) return [];
+    const rows = await this.db
+      .select({
+        id: entities.id,
+        canonicalName: entities.canonicalName,
+        type: entities.type,
+        mentionCount: sql<number>`COUNT(${articleEntity.articleId})::int`,
+      })
+      .from(articleEntity)
+      .innerJoin(entities, eq(entities.id, articleEntity.entityId))
+      .where(
+        and(
+          eq(entities.userId, userId),
+          inArray(articleEntity.articleId, articleIds),
+        ),
+      )
+      .groupBy(entities.id, entities.canonicalName, entities.type)
+      .orderBy(sql`COUNT(${articleEntity.articleId}) DESC`)
+      .limit(20);
+    return rows.map((r) => ({
+      id: r.id,
+      canonicalName: r.canonicalName,
+      type: r.type as EntityKind,
+      mentionCount: r.mentionCount,
+    }));
+  }
+
+  private async aggregateTopCategories(
+    userId: string,
+    articleIds: string[],
+  ): Promise<DigestTopCategory[]> {
+    if (articleIds.length === 0) return [];
+    const rows = await this.db
+      .select({
+        id: category.id,
+        name: category.name,
+        articleCount: sql<number>`COUNT(${articleCategory.articleId})::int`,
+      })
+      .from(articleCategory)
+      .innerJoin(category, eq(category.id, articleCategory.categoryId))
+      .where(
+        and(
+          eq(category.userId, userId),
+          inArray(articleCategory.articleId, articleIds),
+        ),
+      )
+      .groupBy(category.id, category.name)
+      .orderBy(sql`COUNT(${articleCategory.articleId}) DESC`)
+      .limit(10);
+    return rows;
+  }
+
+  private pickKeyArticles(
+    inScope: Array<{
+      id: string;
+      title: string;
+      ts: Date;
+      importance: string | null;
+    }>,
+    limit: number,
+  ): DigestKeyArticle[] {
+    const importanceRank = (i: string | null): number => {
+      if (i === 'high') return 0;
+      if (i === 'normal') return 1;
+      if (i === 'junk') return 2;
+      return 3;
+    };
+    return [...inScope]
+      .sort((a, b) => {
+        const r = importanceRank(a.importance) - importanceRank(b.importance);
+        if (r !== 0) return r;
+        return b.ts.getTime() - a.ts.getTime();
+      })
+      .slice(0, limit)
+      .map((a) => ({
+        id: a.id,
+        title: a.title,
+        ts: a.ts.toISOString(),
+        importance: a.importance as 'high' | 'normal' | 'junk' | null,
+      }));
+  }
+
+  private async buildScopeLabel(
+    run: typeof digestRun.$inferSelect,
+    topCategories: DigestTopCategory[],
+    topEntities: DigestTopEntity[],
+  ): Promise<string> {
+    const scopeFilterIds = (run.scopeFilterIds ?? []) as string[];
+    if (scopeFilterIds.length === 0) {
+      return `All articles (${topCategories.length} categories, ${topEntities.length} entities)`;
+    }
+    if (run.scopeKind === 'category') {
+      const cats = await this.db
+        .select({ name: category.name })
+        .from(category)
+        .where(
+          and(eq(category.userId, run.userId), inArray(category.id, scopeFilterIds)),
+        );
+      return `Categories: ${cats.map((c) => c.name).join(', ')}`;
+    }
+    const ents = await this.db
+      .select({ name: entities.canonicalName })
+      .from(entities)
+      .where(
+        and(eq(entities.userId, run.userId), inArray(entities.id, scopeFilterIds)),
+      );
+    return `Entities: ${ents.map((e) => e.name).join(', ')}`;
+  }
+}
