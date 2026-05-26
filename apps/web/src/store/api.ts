@@ -25,6 +25,7 @@ import type {
   FeedListResponse,
   GraphResponse,
   LoginRequest,
+  PullAllFeedsResponse,
   PullFeedResponse,
   RegenerationRun,
   RegisterRequest,
@@ -107,9 +108,10 @@ export const api = createApi({
       invalidatesTags: ['Feeds'],
     }),
     pullFeed: build.mutation<PullFeedResponse, string>({
-      // The pull endpoint only enqueues — the worker updates feed.title/lastPullAt/status
-      // asynchronously. Refetch Feeds + Articles after a delay so the UI reflects the
-      // worker's results. 3s is enough for a typical RSS feed (10s parser timeout).
+      // The pull endpoint only enqueues — the worker publishes a feed.pull.done
+      // SSE event on completion which invalidates Feeds + Articles via
+      // useFeedPullEvents. The 3s setTimeout fallback covers the rare case
+      // where the SSE channel isn't connected.
       query: (id) => ({ url: `/feeds/${id}/pull`, method: 'POST' }),
       async onQueryStarted(_id, { dispatch, queryFulfilled }) {
         try {
@@ -121,6 +123,9 @@ export const api = createApi({
           dispatch(api.util.invalidateTags(['Feeds', 'Articles']));
         }, 3000);
       },
+    }),
+    pullAllFeeds: build.mutation<PullAllFeedsResponse, void>({
+      query: () => ({ url: '/feeds/pull-all', method: 'POST' }),
     }),
     updateFeed: build.mutation<Feed, { id: string; body: UpdateFeedRequest }>({
       query: ({ id, body }) => ({ url: `/feeds/${id}`, method: 'PATCH', body }),
@@ -235,6 +240,7 @@ export const {
   useValidateFeedMutation,
   useDeleteFeedMutation,
   usePullFeedMutation,
+  usePullAllFeedsMutation,
   useUpdateFeedMutation,
   useGetArticlesQuery,
   useGetArticleQuery,

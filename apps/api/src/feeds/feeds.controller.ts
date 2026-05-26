@@ -15,6 +15,7 @@ import {
   CreateFeedRequest,
   type Feed,
   type FeedListResponse,
+  type PullAllFeedsResponse,
   type PullFeedResponse,
   UpdateFeedRequest,
   ValidateFeedRequest,
@@ -70,6 +71,14 @@ export class FeedsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<void> {
     await this.feedsService.deleteMine(user.userId, id);
+  }
+
+  @Post('pull-all')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async pullAll(
+    @CurrentUser() user: AuthUserContext,
+  ): Promise<PullAllFeedsResponse> {
+    return this.feedsService.enqueuePullAll(user.userId);
   }
 
   @Post(':id/pull')

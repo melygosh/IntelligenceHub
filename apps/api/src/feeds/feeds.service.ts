@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { feeds } from '../db/schema';
@@ -48,7 +48,13 @@ export class FeedsService {
   }
 
   async listMine(userId: string): Promise<Feed[]> {
-    const rows = await this.db.select().from(feeds).where(eq(feeds.userId, userId));
+    // Most-recently-pulled first; never-pulled (NULL lastPullAt) sort to the
+    // bottom so the header label "sorted by last pull · desc" matches reality.
+    const rows = await this.db
+      .select()
+      .from(feeds)
+      .where(eq(feeds.userId, userId))
+      .orderBy(sql`${feeds.lastPullAt} DESC NULLS LAST`, desc(feeds.createdAt));
     return rows.map((r) => this.toFeed(r));
   }
 
@@ -92,6 +98,34 @@ export class FeedsService {
       { feedId, userId },
       { removeOnComplete: 100, removeOnFail: 100 },
     );
+  }
+
+  /**
+   * Fan out a pull for every non-paused feed of this user. Paused feeds are
+   * intentionally skipped — the user explicitly opted them out of pulls.
+   */
+  async enqueuePullAll(
+    userId: string,
+  ): Promise<{ enqueued: number; skippedPaused: number }> {
+    const rows = await this.db
+      .select({ id: feeds.id, status: feeds.status })
+      .from(feeds)
+      .where(eq(feeds.userId, userId));
+    let enqueued = 0;
+    let skippedPaused = 0;
+    for (const row of rows) {
+      if (row.status === 'paused') {
+        skippedPaused += 1;
+        continue;
+      }
+      await this.feedPullQueue.add(
+        'pull',
+        { feedId: row.id, userId },
+        { removeOnComplete: 100, removeOnFail: 100 },
+      );
+      enqueued += 1;
+    }
+    return { enqueued, skippedPaused };
   }
 
   async validate(url: string): Promise<ValidateFeedResponse> {

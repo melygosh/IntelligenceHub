@@ -30,6 +30,12 @@ export const PullFeedResponse = z.object({
 });
 export type PullFeedResponse = z.infer<typeof PullFeedResponse>;
 
+export const PullAllFeedsResponse = z.object({
+  enqueued: z.number().int().nonnegative(),
+  skippedPaused: z.number().int().nonnegative(),
+});
+export type PullAllFeedsResponse = z.infer<typeof PullAllFeedsResponse>;
+
 export const ValidateFeedRequest = z.object({
   url: z.string().url().max(2048),
 });
