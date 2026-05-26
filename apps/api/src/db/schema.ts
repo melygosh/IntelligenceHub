@@ -1,6 +1,7 @@
 import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index, customType, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+// Postgres tsvector — Drizzle has no built-in helper; used by articles.searchVector
 const tsvector = customType<{ data: string; driverData: string }>({
   dataType() {
     return 'tsvector';
