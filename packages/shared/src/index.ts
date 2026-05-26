@@ -11,3 +11,4 @@ export * from './schemas/regeneration.js';
 export * from './schemas/entities.js';
 export * from './schemas/digests.js';
 export * from './schemas/events.js';
+export * from './schemas/telemetry.js';

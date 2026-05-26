@@ -51,3 +51,15 @@ export const ArticleDetail = ArticleListItem.extend({
   similarArticles: z.array(SimilarArticleSummary),
 });
 export type ArticleDetail = z.infer<typeof ArticleDetail>;
+
+export const ArticlesPeriod = z.enum(['all', '24h', '7d', '30d', 'custom']);
+export type ArticlesPeriod = z.infer<typeof ArticlesPeriod>;
+
+export const GetArticlesQuery = z.object({
+  category: z.string().uuid().optional(),
+  period: ArticlesPeriod.optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  q: z.string().trim().min(1).max(200).optional(),
+});
+export type GetArticlesQuery = z.infer<typeof GetArticlesQuery>;
