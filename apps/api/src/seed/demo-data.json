@@ -1,0 +1,25 @@
+{
+  "feeds": [
+    { "url": "demo://hn-snapshot", "title": "Hacker News (demo snapshot)" },
+    { "url": "demo://techcrunch-mirror", "title": "TechCrunch (demo snapshot)" },
+    { "url": "demo://verge-mirror", "title": "The Verge (demo snapshot)" }
+  ],
+  "categories": ["AI infra", "Web dev", "Hardware", "Crypto regulation", "DevTools"],
+  "articles": [
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://example.com/demo-article-1",
+      "title": "Skeleton article (replaced in Task 5)",
+      "body": "This is a placeholder body that will be replaced with real HN content in Task 5.",
+      "contentHash": "skeleton-placeholder-hash-1",
+      "ts": "2026-05-24T10:00:00.000Z",
+      "summary": "Placeholder summary.",
+      "importance": "normal",
+      "entities": [
+        { "canonicalName": "Placeholder Co", "type": "company", "aliases": [] }
+      ],
+      "categoryNames": ["AI infra"],
+      "axisAssignments": []
+    }
+  ]
+}

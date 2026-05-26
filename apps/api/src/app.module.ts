@@ -12,8 +12,9 @@ import { LlmModule } from './llm/llm.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AxesModule } from './axes/axes.module';
 import { RegenerationModule } from './regeneration/regeneration.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, EntitiesModule, GraphModule, LlmModule, CategoriesModule, AxesModule, RegenerationModule],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, EntitiesModule, GraphModule, LlmModule, CategoriesModule, AxesModule, RegenerationModule, SeedModule],
 })
 export class AppModule {}
