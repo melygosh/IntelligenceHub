@@ -1,25 +1,987 @@
 {
   "feeds": [
-    { "url": "demo://hn-snapshot", "title": "Hacker News (demo snapshot)" },
-    { "url": "demo://techcrunch-mirror", "title": "TechCrunch (demo snapshot)" },
-    { "url": "demo://verge-mirror", "title": "The Verge (demo snapshot)" }
+    {
+      "url": "demo://hn-snapshot",
+      "title": "Hacker News (demo snapshot)"
+    },
+    {
+      "url": "demo://techcrunch-mirror",
+      "title": "TechCrunch (demo snapshot)"
+    },
+    {
+      "url": "demo://verge-mirror",
+      "title": "The Verge (demo snapshot)"
+    }
   ],
-  "categories": ["AI infra", "Web dev", "Hardware", "Crypto regulation", "DevTools"],
+  "categories": [
+    "AI infra",
+    "Web dev",
+    "Hardware",
+    "Crypto regulation",
+    "DevTools"
+  ],
   "articles": [
     {
       "feedUrl": "demo://hn-snapshot",
-      "url": "https://example.com/demo-article-1",
-      "title": "Skeleton article (replaced in Task 5)",
-      "body": "This is a placeholder body that will be replaced with real HN content in Task 5.",
-      "contentHash": "skeleton-placeholder-hash-1",
-      "ts": "2026-05-24T10:00:00.000Z",
-      "summary": "Placeholder summary.",
+      "url": "https://retrogamecoders.com/overhead-camera-view",
+      "title": "C64 Basic: Game Map Overhead \"Camera View\"",
+      "body": "\n<p>Article URL: <a href=\"https://retrogamecoders.com/overhead-camera-view/\">https://retrogamecoders.com/overhead-camera-view/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279842\">https://news.ycombinator.com/item?id=48279842</a></p>\n<p>Points: 6</p>\n<p># Comments: 0</p>\n",
+      "contentHash": "eb0c1bed3499908529cd23321253151d19ed8c5b78dc9c06612f60c82fbdc5cb",
+      "ts": "2026-05-26T13:47:39.000Z",
+      "summary": "A tutorial on implementing an overhead \"camera view\" game map system in C64 Basic, demonstrating how to create a scrolling view of a game world on the Commodore 64. The article provides technical guidance for retro game developers working with the classic 1980s platform.",
+      "importance": "junk",
+      "entities": [
+        {
+          "canonicalName": "Commodore 64",
+          "type": "product",
+          "aliases": [
+            "C64"
+          ]
+        },
+        {
+          "canonicalName": "Retro Game Coders",
+          "type": "company",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "tutorial"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26",
+      "title": "Spain blocks prediction markets Polymarket, Kalshi over lack of gambling licence",
+      "body": "\n<p>Article URL: <a href=\"https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/\">https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279316\">https://news.ycombinator.com/item?id=48279316</a></p>\n<p>Points: 11</p>\n<p># Comments: 0</p>\n",
+      "contentHash": "f55ba54e6f2dcdf45f4d133edf021b6c846a6838f79c47779a2afcdbd5f9a213",
+      "ts": "2026-05-26T13:08:13.000Z",
+      "summary": "Spain's financial regulator has blocked the prediction markets Polymarket and Kalshi from operating within the country, citing a lack of required gambling licenses. The move represents a regulatory enforcement action against the two platforms, which operate on blockchain-based prediction markets that allow users to bet on real-world events. This is one of the first major jurisdictional blockers against these platforms in Europe.",
       "importance": "normal",
       "entities": [
-        { "canonicalName": "Placeholder Co", "type": "company", "aliases": [] }
+        {
+          "canonicalName": "Spain",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Polymarket",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Kalshi",
+          "type": "product",
+          "aliases": []
+        }
       ],
-      "categoryNames": ["AI infra"],
-      "axisAssignments": []
+      "categoryNames": [
+        "Crypto regulation"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "region",
+          "value": "EU"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs",
+      "title": "Outsourcing plus LocalAI will soon become more economical vs. Frontier labs",
+      "body": "\n<p>Article URL: <a href=\"https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/\">https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278610\">https://news.ycombinator.com/item?id=48278610</a></p>\n<p>Points: 25</p>\n<p># Comments: 15</p>\n",
+      "contentHash": "4dcd7648317b2c4d9ffa66b22bd75ab3d88e3df190706852c7b4a35f563f0663",
+      "ts": "2026-05-26T12:08:33.000Z",
+      "summary": "The article argues that combining outsourced services with local AI models will become more cost-effective than relying on frontier AI labs' API pricing in the near future. This reflects shifting economics in AI deployment as local inference improves and becomes cheaper relative to proprietary cloud-based solutions.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "LocalAI",
+          "type": "technology",
+          "aliases": []
+        },
+        {
+          "canonicalName": "SignalBloom",
+          "type": "company",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "AI infra"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "analysis"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://vllm.ai/blog/2026-05-26-eagle-3-1",
+      "title": "Eagle 3.1: Collaboration Between the EAGLE Team, vLLM Team, and TorchSpec Team",
+      "body": "\n<p>Article URL: <a href=\"https://vllm.ai/blog/2026-05-26-eagle-3-1\">https://vllm.ai/blog/2026-05-26-eagle-3-1</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278407\">https://news.ycombinator.com/item?id=48278407</a></p>\n<p>Points: 28</p>\n<p># Comments: 11</p>\n",
+      "contentHash": "e785c2d5b5bd28131b579c982b6c7788bbc8fd39154879845a50489c160f1856",
+      "ts": "2026-05-26T11:46:10.000Z",
+      "summary": "Eagle 3.1 is a software release resulting from collaboration between the EAGLE Team, vLLM Team, and TorchSpec Team. The article is hosted on vLLM's official blog and has received modest engagement (28 points, 11 comments on Hacker News).",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Eagle",
+          "type": "product",
+          "aliases": [
+            "Eagle 3.1"
+          ]
+        },
+        {
+          "canonicalName": "vLLM",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "TorchSpec",
+          "type": "technology",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "AI infra"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "expert"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier",
+      "title": "Netherlands blocks US takeover of vital digital supplier",
+      "body": "\n<p>Article URL: <a href=\"https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/\">https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278406\">https://news.ycombinator.com/item?id=48278406</a></p>\n<p>Points: 181</p>\n<p># Comments: 52</p>\n",
+      "contentHash": "a4cb195b079fa306c1e7d485817dd2997b45bd23893fcab7fe17fb08808fdf70",
+      "ts": "2026-05-26T11:46:08.000Z",
+      "summary": "The Netherlands has blocked a US acquisition of a critical digital infrastructure supplier, citing national security concerns. The move reflects escalating trade tensions and strategic competition between the US and European nations over control of essential technology assets.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "Netherlands",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "United States",
+          "type": "location",
+          "aliases": [
+            "US",
+            "USA"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Hardware",
+        "Crypto regulation"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "region",
+          "value": "EU"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.githubstatus.com/?today=",
+      "title": "GitHub Actions down again today",
+      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/?today\">https://www.githubstatus.com/?today</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278374\">https://news.ycombinator.com/item?id=48278374</a></p>\n<p>Points: 383</p>\n<p># Comments: 189</p>\n",
+      "contentHash": "d469d2826ea250e31d812a280332eca3cbdae1c93efc9d1830a675883584ea12",
+      "ts": "2026-05-26T11:42:58.000Z",
+      "summary": "GitHub Actions experienced a service outage today. The incident gained significant traction on Hacker News with 383 points and 189 comments, indicating substantial user impact and community concern.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "GitHub",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "GitHub Actions",
+          "type": "product",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.githubstatus.com/incidents/gnftqj9htp0g",
+      "title": "Incident with Actions and Pages",
+      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/incidents/gnftqj9htp0g\">https://www.githubstatus.com/incidents/gnftqj9htp0g</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278090\">https://news.ycombinator.com/item?id=48278090</a></p>\n<p>Points: 39</p>\n<p># Comments: 11</p>\n",
+      "contentHash": "ba1c6f13f3515bffc3f3622a70b2a8f4dc899b597a34f7e57982cd21b88284d7",
+      "ts": "2026-05-26T11:10:19.000Z",
+      "summary": "GitHub experienced an incident affecting Actions and Pages functionality. The incident report was published on GitHub's status page and received discussion on Hacker News with 39 points and 11 comments, indicating community interest in the service disruption.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "GitHub",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "GitHub Actions",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "GitHub Pages",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Hacker News",
+          "type": "product",
+          "aliases": [
+            "news.ycombinator.com",
+            "Y Combinator News",
+            "YCombinator News",
+            "HN"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "DevTools",
+        "Web dev"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify",
+      "title": "Uber president says AI spending is getting 'harder to justify'",
+      "body": "\n<p>Article URL: <a href=\"https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify\">https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48277485\">https://news.ycombinator.com/item?id=48277485</a></p>\n<p>Points: 48</p>\n<p># Comments: 8</p>\n",
+      "contentHash": "0c1a4fc6d593fb18a96ea080cf2d31227d100e13f95e15abeb8599afbf6c021c",
+      "ts": "2026-05-26T10:01:39.000Z",
+      "summary": "Uber's president has publicly stated that the company's AI spending is becoming increasingly difficult to justify, signaling potential re-evaluation of the company's artificial intelligence investment strategy and priorities.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Uber",
+          "type": "company",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "AI infra"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://ni5arga.com/blog/posts/hacking-cbse",
+      "title": "Exposing Critical Vulnerabilities in CBSE's On-Screen Marking Portal",
+      "body": "\n<p>Article URL: <a href=\"https://ni5arga.com/blog/posts/hacking-cbse/\">https://ni5arga.com/blog/posts/hacking-cbse/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48277357\">https://news.ycombinator.com/item?id=48277357</a></p>\n<p>Points: 26</p>\n<p># Comments: 3</p>\n",
+      "contentHash": "70a2f486497fc86ea4e62eff025c0f80e765dcd0f1e855cce819ff3149de9a0a",
+      "ts": "2026-05-26T09:43:40.000Z",
+      "summary": "A security researcher has identified and publicly disclosed critical vulnerabilities in the Central Board of Secondary Education (CBSE) on-screen marking portal, exposing flaws that could allow unauthorized access or data compromise. The findings were shared on a technical blog and discussed on Hacker News, indicating a serious security issue affecting India's largest secondary education examination system.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "CBSE",
+          "type": "company",
+          "aliases": [
+            "Central Board of Secondary Education"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Web dev"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "analysis"
+        },
+        {
+          "axisName": "reader level",
+          "value": "expert"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://dynip.dev/",
+      "title": "DynIP – Dynamic DNS with RFC 2136, IPv6, DNSSEC, and BYOD",
+      "body": "\n<p>Article URL: <a href=\"https://dynip.dev/\">https://dynip.dev/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48276363\">https://news.ycombinator.com/item?id=48276363</a></p>\n<p>Points: 208</p>\n<p># Comments: 88</p>\n",
+      "contentHash": "bf2822beccaf8cb54c56ddf96345d5224c09a6c98f8bf7391013fc8170ac3d4e",
+      "ts": "2026-05-26T07:35:20.000Z",
+      "summary": "DynIP is a dynamic DNS service supporting RFC 2136, IPv6, DNSSEC, and bring-your-own-domain functionality. The project garnered significant community discussion on Hacker News with 208 points and 88 comments, indicating solid technical interest in the DDNS space.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "DynIP",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Hacker News",
+          "type": "product",
+          "aliases": [
+            "news.ycombinator.com",
+            "Y Combinator News",
+            "YCombinator News",
+            "HN"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior",
+      "title": "Motorola phones have started hijacking the Amazon app to insert affiliate codes",
+      "body": "\n<p>Article URL: <a href=\"https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior/\">https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48274794\">https://news.ycombinator.com/item?id=48274794</a></p>\n<p>Points: 280</p>\n<p># Comments: 145</p>\n",
+      "contentHash": "fdbd24b9850ccc5661772bc1948b5ad17d29a1aecb93b94e2839071ef09d198e",
+      "ts": "2026-05-26T03:56:09.000Z",
+      "summary": "Motorola has been caught modifying the Amazon app on its phones to insert affiliate codes, redirecting user transactions to generate revenue for the company. This practice intercepts normal app behavior without user consent and raises privacy and competition concerns.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "Motorola",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Amazon",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Amazon app",
+          "type": "product",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "Hardware",
+        "Crypto regulation"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://earthiongame.com/",
+      "title": "Earthion: A New Mega Drive-Style Shoot-Em-Up",
+      "body": "\n<p>Article URL: <a href=\"https://earthiongame.com/\">https://earthiongame.com/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48274711\">https://news.ycombinator.com/item?id=48274711</a></p>\n<p>Points: 102</p>\n<p># Comments: 47</p>\n",
+      "contentHash": "845a7e9ae7a67b275302c5dc04ce5568fc0332f14fb996d5609bd49cc53e2130",
+      "ts": "2026-05-26T03:42:23.000Z",
+      "summary": "Earthion is a new shoot-em-up video game styled after classic Sega Mega Drive titles. The game has generated modest community interest on Hacker News with 102 points and 47 comments, suggesting some appeal among retro gaming enthusiasts.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Earthion",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Sega Mega Drive",
+          "type": "product",
+          "aliases": [
+            "Mega Drive",
+            "Genesis"
+          ]
+        },
+        {
+          "canonicalName": "Hacker News",
+          "type": "product",
+          "aliases": [
+            "news.ycombinator.com",
+            "Y Combinator News",
+            "YCombinator News",
+            "HN"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Hardware"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly",
+      "title": "Using AI to write better code more slowly",
+      "body": "\n<p>Article URL: <a href=\"https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly/\">https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272984\">https://news.ycombinator.com/item?id=48272984</a></p>\n<p>Points: 858</p>\n<p># Comments: 332</p>\n",
+      "contentHash": "1bae6ceba8b84ba08443d936e44779b36445ad794010277e875d411372136cc8",
+      "ts": "2026-05-25T23:16:59.000Z",
+      "summary": "A blog post exploring the tradeoff between using AI for code generation and code quality. The article, which garnered significant discussion (858 points, 332 comments on Hacker News), argues that AI tools can improve code quality but may slow down development velocity—challenging the assumption that AI-assisted coding is purely a productivity accelerator.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Nolan Lawson",
+          "type": "person",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "AI infra",
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "opinion"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://ente.com/blog/how-shamirs-secret-sharing-works",
+      "title": "How Shamir's Secret Sharing Works",
+      "body": "\n<p>Article URL: <a href=\"https://ente.com/blog/how-shamirs-secret-sharing-works/\">https://ente.com/blog/how-shamirs-secret-sharing-works/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272715\">https://news.ycombinator.com/item?id=48272715</a></p>\n<p>Points: 287</p>\n<p># Comments: 49</p>\n",
+      "contentHash": "87853411db1997a57b2b420a8d800e72e2cdcf303a79505c86bd407d9284111f",
+      "ts": "2026-05-25T22:37:24.000Z",
+      "summary": "An educational explainer on Shamir's Secret Sharing, a cryptographic technique for splitting secrets into shares such that a threshold number of shares can reconstruct the original secret. The article appears on Ente's blog and received significant engagement on Hacker News with 287 points and 49 comments, indicating audience interest in cryptographic methods.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Ente",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Shamir's Secret Sharing",
+          "type": "technology",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Hacker News",
+          "type": "product",
+          "aliases": [
+            "news.ycombinator.com",
+            "Y Combinator News",
+            "YCombinator News",
+            "HN"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "tutorial"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.apa.org/news/press/releases/2014/04/creativity-walk",
+      "title": "Taking a walk may lead to more creativity than sitting, study finds (2014)",
+      "body": "\n<p>Article URL: <a href=\"https://www.apa.org/news/press/releases/2014/04/creativity-walk\">https://www.apa.org/news/press/releases/2014/04/creativity-walk</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272670\">https://news.ycombinator.com/item?id=48272670</a></p>\n<p>Points: 421</p>\n<p># Comments: 179</p>\n",
+      "contentHash": "5cc114ea0ea443b950b369d2ae54373934867ce6f19740a28e5378c23d53ee64",
+      "ts": "2026-05-25T22:30:27.000Z",
+      "summary": "A 2014 study by researchers found that walking increases creative thinking compared to sitting. The research suggests that taking walks may enhance divergent thinking and creative problem-solving abilities.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "American Psychological Association",
+          "type": "company",
+          "aliases": [
+            "APA"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.ferrari.com/en-EN/auto/ferrari-luce",
+      "title": "Ferrari Luce",
+      "body": "\n<p><a href=\"https://www.topgear.com/car-news/electric/its-finally-here-meet-ferrari-luce-maranellos-first-ever-fully-electric-car\" rel=\"nofollow\">https://www.topgear.com/car-news/electric/its-finally-here-m...</a></p>\n<hr>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48271629\">https://news.ycombinator.com/item?id=48271629</a></p>\n<p>Points: 357</p>\n<p># Comments: 663</p>\n",
+      "contentHash": "af79b82a831bec32508d108d792184fe9f461f6167ef9ca2403f889e20ceeaff",
+      "ts": "2026-05-25T21:00:38.000Z",
+      "summary": "Ferrari has unveiled the Luce, its first fully electric vehicle. The announcement marks a significant shift in strategy for the storied Italian luxury automaker as it enters the EV market.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "Ferrari",
+          "type": "company",
+          "aliases": [
+            "Ferrari SpA",
+            "Maranello"
+          ]
+        },
+        {
+          "canonicalName": "Ferrari Luce",
+          "type": "product",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "Hardware"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://thefrontpage.dev/",
+      "title": "Hacker News front page as a site",
+      "body": "\n<p>Article URL: <a href=\"https://thefrontpage.dev/\">https://thefrontpage.dev/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48271127\">https://news.ycombinator.com/item?id=48271127</a></p>\n<p>Points: 357</p>\n<p># Comments: 98</p>\n",
+      "contentHash": "038abe13d2417d924b0e3204179ac878d5b002966105cf5efade3506a27d4780",
+      "ts": "2026-05-25T20:12:29.000Z",
+      "summary": "A Hacker News user created a site that presents the Hacker News front page as a standalone website at thefrontpage.dev. The post received 357 points and 98 comments on Hacker News, indicating notable community interest in the project.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Hacker News",
+          "type": "product",
+          "aliases": [
+            "news.ycombinator.com",
+            "Y Combinator News",
+            "YCombinator News",
+            "HN"
+          ]
+        },
+        {
+          "canonicalName": "thefrontpage.dev",
+          "type": "product",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "Web dev",
+        "DevTools"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us",
+      "title": "A successful Japanese trial of a ramjet engine designed for Mach‑5 aircraft",
+      "body": "\n<p>Article URL: <a href=\"https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us/\">https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48270812\">https://news.ycombinator.com/item?id=48270812</a></p>\n<p>Points: 200</p>\n<p># Comments: 151</p>\n",
+      "contentHash": "e1fbc5cf80197b163fc11586adc3dbb904e54ef39e9cfe6ac6cb2a9dc2ff6653",
+      "ts": "2026-05-25T19:43:45.000Z",
+      "summary": "Japan has successfully tested a ramjet engine designed to power Mach-5 hypersonic aircraft, with potential to enable 2-hour transatlantic flights to the United States. This represents a significant milestone in hypersonic propulsion technology development.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "Japan",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "United States",
+          "type": "location",
+          "aliases": [
+            "US",
+            "USA"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Hardware"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910",
+      "title": "Norway's 2 petabytes of Huawei flash storage and LLM training",
+      "body": "\n<p>Article URL: <a href=\"https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910\">https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48270770\">https://news.ycombinator.com/item?id=48270770</a></p>\n<p>Points: 302</p>\n<p># Comments: 195</p>\n",
+      "contentHash": "d489782625c2bee8ec1b4f42a4b50ff82574013a162dabe8d5f9a2f47dd75632",
+      "ts": "2026-05-25T19:37:57.000Z",
+      "summary": "Norway is deploying 2 petabytes of Huawei flash storage for large language model training, according to a report from Blocks and Files. The significant infrastructure investment highlights China-based hardware usage in critical AI infrastructure within Europe, raising potential geopolitical and supply-chain considerations.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Norway",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Huawei",
+          "type": "company",
+          "aliases": [
+            "Huawei Technologies"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "AI infra",
+        "Hardware"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "expert"
+        },
+        {
+          "axisName": "region",
+          "value": "EU"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://hn-snapshot",
+      "url": "https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law",
+      "title": "California moves to exempt Linux from its age-verification law after backlash",
+      "body": "\n<p>Article URL: <a href=\"https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law\">https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48269961\">https://news.ycombinator.com/item?id=48269961</a></p>\n<p>Points: 966</p>\n<p># Comments: 420</p>\n",
+      "contentHash": "f985807c95754916baf93b61e067a13dd6a536e0a641d948002b56f53c870fc7",
+      "ts": "2026-05-25T18:19:58.000Z",
+      "summary": "California is moving to exempt Linux from its age-verification law following significant backlash over requirements that operating systems collect user age data. The amendment is being proposed by the same legislator who authored the original law, suggesting a retreat from the earlier mandate that faced criticism from the open-source and tech communities.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "California",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Linux",
+          "type": "technology",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "Crypto regulation"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://techcrunch-mirror",
+      "url": "https://retrogamecoders.com/overhead-camera-view?utm_source=techcrunch",
+      "title": "C64 Basic: Game Map Overhead \"Camera View\"",
+      "body": "\n<p>Article URL: <a href=\"https://retrogamecoders.com/overhead-camera-view/\">https://retrogamecoders.com/overhead-camera-view/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279842\">https://news.ycombinator.com/item?id=48279842</a></p>\n<p>Points: 6</p>\n<p># Comments: 0</p>\n",
+      "contentHash": "eb0c1bed3499908529cd23321253151d19ed8c5b78dc9c06612f60c82fbdc5cb",
+      "ts": "2026-05-26T13:48:39.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://retrogamecoders.com/overhead-camera-view"
+    },
+    {
+      "feedUrl": "demo://verge-mirror",
+      "url": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26?utm_source=verge",
+      "title": "Spain blocks prediction markets Polymarket, Kalshi over lack of gambling licence",
+      "body": "\n<p>Article URL: <a href=\"https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/\">https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279316\">https://news.ycombinator.com/item?id=48279316</a></p>\n<p>Points: 11</p>\n<p># Comments: 0</p>\n",
+      "contentHash": "f55ba54e6f2dcdf45f4d133edf021b6c846a6838f79c47779a2afcdbd5f9a213",
+      "ts": "2026-05-26T13:09:13.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26"
+    },
+    {
+      "feedUrl": "demo://techcrunch-mirror",
+      "url": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs?utm_source=techcrunch",
+      "title": "Outsourcing plus LocalAI will soon become more economical vs. Frontier labs",
+      "body": "\n<p>Article URL: <a href=\"https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/\">https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278610\">https://news.ycombinator.com/item?id=48278610</a></p>\n<p>Points: 25</p>\n<p># Comments: 15</p>\n",
+      "contentHash": "4dcd7648317b2c4d9ffa66b22bd75ab3d88e3df190706852c7b4a35f563f0663",
+      "ts": "2026-05-26T12:09:33.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs"
+    },
+    {
+      "feedUrl": "demo://verge-mirror",
+      "url": "https://vllm.ai/blog/2026-05-26-eagle-3-1?utm_source=verge",
+      "title": "Eagle 3.1: Collaboration Between the EAGLE Team, vLLM Team, and TorchSpec Team",
+      "body": "\n<p>Article URL: <a href=\"https://vllm.ai/blog/2026-05-26-eagle-3-1\">https://vllm.ai/blog/2026-05-26-eagle-3-1</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278407\">https://news.ycombinator.com/item?id=48278407</a></p>\n<p>Points: 28</p>\n<p># Comments: 11</p>\n",
+      "contentHash": "e785c2d5b5bd28131b579c982b6c7788bbc8fd39154879845a50489c160f1856",
+      "ts": "2026-05-26T11:47:10.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://vllm.ai/blog/2026-05-26-eagle-3-1"
+    },
+    {
+      "feedUrl": "demo://techcrunch-mirror",
+      "url": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier?utm_source=techcrunch",
+      "title": "Netherlands blocks US takeover of vital digital supplier",
+      "body": "\n<p>Article URL: <a href=\"https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/\">https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278406\">https://news.ycombinator.com/item?id=48278406</a></p>\n<p>Points: 181</p>\n<p># Comments: 52</p>\n",
+      "contentHash": "a4cb195b079fa306c1e7d485817dd2997b45bd23893fcab7fe17fb08808fdf70",
+      "ts": "2026-05-26T11:47:08.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier"
+    },
+    {
+      "feedUrl": "demo://verge-mirror",
+      "url": "https://www.githubstatus.com/?today=&utm_source=verge",
+      "title": "GitHub Actions down again today",
+      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/?today\">https://www.githubstatus.com/?today</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278374\">https://news.ycombinator.com/item?id=48278374</a></p>\n<p>Points: 383</p>\n<p># Comments: 189</p>\n",
+      "contentHash": "d469d2826ea250e31d812a280332eca3cbdae1c93efc9d1830a675883584ea12",
+      "ts": "2026-05-26T11:43:58.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.githubstatus.com/?today="
+    },
+    {
+      "feedUrl": "demo://techcrunch-mirror",
+      "url": "https://www.githubstatus.com/incidents/gnftqj9htp0g?utm_source=techcrunch",
+      "title": "Incident with Actions and Pages",
+      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/incidents/gnftqj9htp0g\">https://www.githubstatus.com/incidents/gnftqj9htp0g</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278090\">https://news.ycombinator.com/item?id=48278090</a></p>\n<p>Points: 39</p>\n<p># Comments: 11</p>\n",
+      "contentHash": "ba1c6f13f3515bffc3f3622a70b2a8f4dc899b597a34f7e57982cd21b88284d7",
+      "ts": "2026-05-26T11:11:19.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.githubstatus.com/incidents/gnftqj9htp0g"
     }
   ]
 }
