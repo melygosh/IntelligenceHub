@@ -28,7 +28,8 @@ export class ArticlesService {
   async listMine(
     userId: string,
     opts: {
-      categoryId?: string;
+      categoryIds?: string[];
+      importances?: ('high' | 'normal' | 'junk')[];
       windowFrom?: Date;
       windowTo?: Date;
       q?: string;
@@ -38,6 +39,9 @@ export class ArticlesService {
       eq(articles.userId, userId),
       eq(articles.status, 'ready'),
     ];
+    if (opts.importances && opts.importances.length > 0) {
+      conditions.push(inArray(articles.importance, opts.importances));
+    }
     if (opts.windowFrom) {
       conditions.push(gte(articles.ts, opts.windowFrom));
     }
@@ -47,6 +51,22 @@ export class ArticlesService {
     if (opts.q) {
       conditions.push(
         sql`${articles.searchVector} @@ plainto_tsquery('english', ${opts.q})`,
+      );
+    }
+    // Category filter via subquery (not JOIN). Avoids row duplication when an
+    // article has multiple matching categories — so no SELECT DISTINCT needed,
+    // which would otherwise fail with `ts_rank` in ORDER BY (Postgres requires
+    // ORDER BY expressions to be in the SELECT list when DISTINCT is used).
+    const categoryIds = opts.categoryIds ?? [];
+    if (categoryIds.length > 0) {
+      conditions.push(
+        inArray(
+          articles.id,
+          this.db
+            .select({ id: articleCategory.articleId })
+            .from(articleCategory)
+            .where(inArray(articleCategory.categoryId, categoryIds)),
+        ),
       );
     }
 
@@ -65,21 +85,11 @@ export class ArticlesService {
       contentHash: articles.contentHash,
     };
 
-    let articleRows;
-    if (opts.categoryId) {
-      articleRows = await this.db
-        .select(projection)
-        .from(articles)
-        .innerJoin(articleCategory, eq(articleCategory.articleId, articles.id))
-        .where(and(...conditions, eq(articleCategory.categoryId, opts.categoryId)))
-        .orderBy(orderBy);
-    } else {
-      articleRows = await this.db
-        .select(projection)
-        .from(articles)
-        .where(and(...conditions))
-        .orderBy(orderBy);
-    }
+    const articleRows = await this.db
+      .select(projection)
+      .from(articles)
+      .where(and(...conditions))
+      .orderBy(orderBy);
 
     if (articleRows.length === 0) return [];
     const articleIds = articleRows.map((a) => a.id);

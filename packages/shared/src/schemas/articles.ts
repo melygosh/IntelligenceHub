@@ -55,8 +55,14 @@ export type ArticleDetail = z.infer<typeof ArticleDetail>;
 export const ArticlesPeriod = z.enum(['all', '24h', '7d', '30d', 'custom']);
 export type ArticlesPeriod = z.infer<typeof ArticlesPeriod>;
 
+export const ArticleImportance = z.enum(['high', 'normal', 'junk']);
+export type ArticleImportance = z.infer<typeof ArticleImportance>;
+
 export const GetArticlesQuery = z.object({
-  category: z.string().uuid().optional(),
+  // CSV of category UUIDs. Backend matches any (OR). Single value remains valid.
+  category: z.string().optional(),
+  // CSV of importance values. Backend matches any (OR).
+  importance: z.string().optional(),
   period: ArticlesPeriod.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),

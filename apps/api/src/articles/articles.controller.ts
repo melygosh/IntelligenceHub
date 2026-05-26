@@ -16,6 +16,19 @@ import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-e
 import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Parse a CSV query-string value into a deduped, non-empty array of trimmed
+ * tokens. Returns [] for undefined / empty / whitespace-only input. */
+function csvToList(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  for (const tok of raw.split(',')) {
+    const t = tok.trim();
+    if (t) seen.add(t);
+  }
+  return [...seen];
+}
 
 function resolvePeriodWindow(
   period: 'all' | '24h' | '7d' | '30d' | 'custom' | undefined,
@@ -55,10 +68,26 @@ export class ArticlesController {
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.format());
     }
-    const { category, period, from, to, q } = parsed.data;
+    const { category, importance, period, from, to, q } = parsed.data;
+
+    const categoryIds = csvToList(category);
+    for (const id of categoryIds) {
+      if (!UUID_RE.test(id)) {
+        throw new BadRequestException(`invalid category UUID: ${id}`);
+      }
+    }
+    const importances: ('high' | 'normal' | 'junk')[] = [];
+    for (const v of csvToList(importance)) {
+      if (v !== 'high' && v !== 'normal' && v !== 'junk') {
+        throw new BadRequestException(`invalid importance: ${v}`);
+      }
+      importances.push(v);
+    }
+
     const window = resolvePeriodWindow(period, from, to);
     const items = await this.articles.listMine(user.userId, {
-      categoryId: category,
+      categoryIds,
+      importances,
       windowFrom: window.from,
       windowTo: window.to,
       q,
