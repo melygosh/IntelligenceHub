@@ -18,6 +18,7 @@ type ProcessResult = {
   itemsConsidered: number;
   inserted: number;
   filtered: number;
+  duplicates: number;
   llmErrors: number;
 };
 
@@ -62,6 +63,7 @@ export class FeedPullWorker extends WorkerHost {
         itemsConsidered: 0,
         inserted: 0,
         filtered: 0,
+        duplicates: 0,
         llmErrors: 0,
       };
     }
@@ -70,12 +72,14 @@ export class FeedPullWorker extends WorkerHost {
       const fetched = await this.fetcher.fetch(feed.url);
       let inserted = 0;
       let filtered = 0;
+      let duplicates = 0;
       let llmErrors = 0;
 
       for (const item of fetched.items) {
         const outcome = await this.handleItem(userId, feedId, item);
         if (outcome === 'inserted') inserted += 1;
         else if (outcome === 'filtered') filtered += 1;
+        else if (outcome === 'duplicate') duplicates += 1;
         else llmErrors += 1;
       }
 
@@ -98,6 +102,7 @@ export class FeedPullWorker extends WorkerHost {
           itemsConsidered: fetched.items.length,
           inserted,
           filtered,
+          duplicates,
           llmErrors,
         }),
       );
@@ -107,6 +112,7 @@ export class FeedPullWorker extends WorkerHost {
         itemsConsidered: fetched.items.length,
         inserted,
         filtered,
+        duplicates,
         llmErrors,
       };
     } catch (err) {
@@ -131,13 +137,18 @@ export class FeedPullWorker extends WorkerHost {
     userId: string,
     feedId: string,
     item: FetchedItem,
-  ): Promise<'inserted' | 'filtered' | 'llm_error'> {
-    const [dup] = await this.db
+  ): Promise<'inserted' | 'filtered' | 'duplicate' | 'llm_error'> {
+    // Sibling search restricted to 'ready' rows — only original articles
+    // count as the canonical "first seen". Pre-existing legacy duplicates
+    // (status='filtered', filter_reason='duplicate_url') are ignored here
+    // by design.
+    const [existing] = await this.db
       .select({ id: articles.id })
       .from(articles)
       .where(
         and(
           eq(articles.userId, userId),
+          eq(articles.status, 'ready'),
           or(
             eq(articles.url, item.normalisedUrl),
             eq(articles.contentHash, item.contentHash),
@@ -145,18 +156,28 @@ export class FeedPullWorker extends WorkerHost {
         ),
       )
       .limit(1);
-    if (dup) {
+    if (existing) {
       await this.db.insert(articles).values({
         userId,
         feedId,
         url: item.normalisedUrl,
         title: item.title || 'Untitled',
         contentHash: item.contentHash,
-        status: 'filtered',
-        filterReason: 'duplicate_url',
+        body: item.body,
+        status: 'duplicate',
+        duplicateOf: existing.id,
         ts: item.ts,
       });
-      return 'filtered';
+      this.log.log(
+        JSON.stringify({
+          event: 'feed.pull.duplicate',
+          feedId,
+          userId,
+          originalId: existing.id,
+          url: item.normalisedUrl,
+        }),
+      );
+      return 'duplicate';
     }
 
     const verdict = runPreFilter({ title: item.title, body: item.body });
