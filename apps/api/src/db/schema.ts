@@ -304,5 +304,5 @@ export const digestRun = pgTable(
   }),
 );
 
-export type DigestRunRow = typeof digestRun.$inferSelect;
-export type NewDigestRunRow = typeof digestRun.$inferInsert;
+export type DigestRun = typeof digestRun.$inferSelect;
+export type NewDigestRun = typeof digestRun.$inferInsert;
