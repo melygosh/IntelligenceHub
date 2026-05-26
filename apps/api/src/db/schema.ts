@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -46,10 +46,15 @@ export const articles = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     configHash: text('config_hash'),
     body: text('body'),
+    duplicateOf: uuid('duplicate_of').references((): AnyPgColumn => articles.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => ({
     userTsIdx: index('articles_user_ts_idx').on(t.userId, t.ts.desc()),
     feedIdx: index('articles_feed_idx').on(t.feedId),
+    userContentHashIdx: index('articles_user_contenthash_idx').on(t.userId, t.contentHash),
+    userUrlIdx: index('articles_user_url_idx').on(t.userId, t.url),
   }),
 );
 
