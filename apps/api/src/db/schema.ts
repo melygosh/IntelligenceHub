@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -11,34 +11,47 @@ export const users = pgTable('users', {
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
-export const feeds = pgTable('feeds', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  url: text('url').notNull(),
-  title: text('title'),
-  status: text('status').notNull().default('active'),
-  lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
-  lastPullError: text('last_pull_error'),
-  pullIntervalSeconds: integer('pull_interval_seconds').notNull().default(900),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const feeds = pgTable(
+  'feeds',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    title: text('title'),
+    status: text('status').notNull().default('active'),
+    lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
+    lastPullError: text('last_pull_error'),
+    pullIntervalSeconds: integer('pull_interval_seconds').notNull().default(900),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index('feeds_user_idx').on(t.userId),
+  }),
+);
 
-export const articles = pgTable('articles', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  feedId: uuid('feed_id').notNull().references(() => feeds.id, { onDelete: 'cascade' }),
-  url: text('url').notNull(),
-  title: text('title').notNull(),
-  summary: text('summary'),
-  importance: text('importance'),
-  contentHash: text('content_hash'),
-  status: text('status').notNull().default('ready'),
-  filterReason: text('filter_reason'),
-  ts: timestamp('ts', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  configHash: text('config_hash'),
-  body: text('body'),
-});
+export const articles = pgTable(
+  'articles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    feedId: uuid('feed_id').notNull().references(() => feeds.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary'),
+    importance: text('importance'),
+    contentHash: text('content_hash'),
+    status: text('status').notNull().default('ready'),
+    filterReason: text('filter_reason'),
+    ts: timestamp('ts', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    configHash: text('config_hash'),
+    body: text('body'),
+  },
+  (t) => ({
+    userTsIdx: index('articles_user_ts_idx').on(t.userId, t.ts.desc()),
+    feedIdx: index('articles_feed_idx').on(t.feedId),
+  }),
+);
 
 export const entities = pgTable(
   'entities',
@@ -51,6 +64,7 @@ export const entities = pgTable(
   },
   (t) => ({
     userCanonicalUnique: uniqueIndex('entities_user_canonical_unique').on(t.userId, t.canonicalName),
+    userTypeIdx: index('entities_user_type_idx').on(t.userId, t.type),
   }),
 );
 
@@ -62,6 +76,7 @@ export const articleEntity = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.entityId] }),
+    entityIdx: index('article_entity_entity_idx').on(t.entityId),
   }),
 );
 
@@ -143,6 +158,7 @@ export const axisValue = pgTable(
   },
   (t) => ({
     axisValueUnique: uniqueIndex('axis_value_axis_value_unique').on(t.axisId, t.value),
+    axisIdx: index('axis_value_axis_idx').on(t.axisId),
   }),
 );
 
@@ -154,6 +170,7 @@ export const articleCategory = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.categoryId] }),
+    categoryIdx: index('article_category_category_idx').on(t.categoryId),
   }),
 );
 
@@ -166,6 +183,7 @@ export const articleAxisValue = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.axisId] }),
+    axisIdx: index('article_axis_value_axis_idx').on(t.axisId),
   }),
 );
 
@@ -176,28 +194,34 @@ export type NewAxis = typeof axis.$inferInsert;
 export type AxisValue = typeof axisValue.$inferSelect;
 export type NewAxisValue = typeof axisValue.$inferInsert;
 
-export const llmCalls = pgTable('llm_calls', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, {
-    onDelete: 'set null',
+export const llmCalls = pgTable(
+  'llm_calls',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    articleId: uuid('article_id').references(() => articles.id, {
+      onDelete: 'set null',
+    }),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    operation: text('operation').notNull(),
+    status: text('status').notNull(),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+    cacheCreationTokens: integer('cache_creation_tokens').notNull().default(0),
+    latencyMs: integer('latency_ms').notNull(),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    articleStatusIdx: index('llm_calls_article_status_idx').on(t.articleId, t.status),
   }),
-  articleId: uuid('article_id').references(() => articles.id, {
-    onDelete: 'set null',
-  }),
-  provider: text('provider').notNull(),
-  model: text('model').notNull(),
-  operation: text('operation').notNull(),
-  status: text('status').notNull(),
-  inputTokens: integer('input_tokens').notNull().default(0),
-  outputTokens: integer('output_tokens').notNull().default(0),
-  cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
-  cacheCreationTokens: integer('cache_creation_tokens').notNull().default(0),
-  latencyMs: integer('latency_ms').notNull(),
-  errorMessage: text('error_message'),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+);
 
 export const llmResponseCache = pgTable(
   'llm_response_cache',
