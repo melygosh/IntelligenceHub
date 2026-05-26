@@ -10,6 +10,7 @@ import type {
   AuthResponse,
   Axis,
   AxisList,
+  BuildDigestRequest,
   Category,
   CategoryList,
   ConfirmEmailRequest,
@@ -17,6 +18,8 @@ import type {
   CreateAxisRequest,
   CreateCategoryRequest,
   CreateFeedRequest,
+  DigestDetail,
+  DigestSummary,
   EntityDetail,
   Feed,
   FeedListResponse,
@@ -180,6 +183,18 @@ export const api = createApi({
       query: () => ({ url: '/regeneration/start', method: 'POST' }),
       invalidatesTags: ['Regeneration'],
     }),
+    getDigests: build.query<{ items: DigestSummary[] }, void>({
+      query: () => '/digests',
+      providesTags: ['Digests'],
+    }),
+    getDigest: build.query<DigestDetail, string>({
+      query: (id) => `/digests/${id}`,
+      providesTags: (_r, _e, id) => [{ type: 'Digest', id }],
+    }),
+    startDigest: build.mutation<DigestSummary, BuildDigestRequest>({
+      query: (body) => ({ url: '/digests/start', method: 'POST', body }),
+      invalidatesTags: ['Digests'],
+    }),
   }),
 });
 
@@ -208,4 +223,7 @@ export const {
   useDeleteAxisMutation,
   useGetCurrentRegenerationQuery,
   useStartRegenerationMutation,
+  useGetDigestsQuery,
+  useGetDigestQuery,
+  useStartDigestMutation,
 } = api;
