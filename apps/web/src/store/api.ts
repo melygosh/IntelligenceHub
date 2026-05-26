@@ -120,10 +120,25 @@ export const api = createApi({
       query: ({ id, body }) => ({ url: `/feeds/${id}`, method: 'PATCH', body }),
       invalidatesTags: ['Feeds'],
     }),
-    getArticles: build.query<ArticleListResponse, { categoryId?: string } | void>({
+    getArticles: build.query<
+      ArticleListResponse,
+      {
+        categoryId?: string;
+        period?: 'all' | '24h' | '7d' | '30d' | 'custom';
+        from?: string;
+        to?: string;
+        q?: string;
+      } | void
+    >({
       query: (arg) => {
         const params = new URLSearchParams();
-        if (arg && arg.categoryId) params.set('category', arg.categoryId);
+        if (arg) {
+          if (arg.categoryId) params.set('category', arg.categoryId);
+          if (arg.period && arg.period !== 'all') params.set('period', arg.period);
+          if (arg.from) params.set('from', arg.from);
+          if (arg.to) params.set('to', arg.to);
+          if (arg.q) params.set('q', arg.q);
+        }
         const qs = params.toString();
         return `/articles${qs ? `?${qs}` : ''}`;
       },

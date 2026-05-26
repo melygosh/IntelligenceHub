@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useGetArticlesQuery, useGetCategoriesQuery } from '../../store/api';
 import type { ArticleListItem, ArticleEntitySummary } from '@intelligencehub/shared';
 
@@ -30,6 +30,97 @@ function CategoryFilter({
         ))}
       </select>
     </div>
+  );
+}
+
+type Period = 'all' | '24h' | '7d' | '30d' | 'custom';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  all: 'All',
+  '24h': '24h',
+  '7d': '7d',
+  '30d': '30d',
+  custom: 'Custom',
+};
+
+function TimeWindowFilter({
+  period,
+  from,
+  to,
+  onPeriodChange,
+  onCustomChange,
+}: {
+  period: Period;
+  from: string;
+  to: string;
+  onPeriodChange: (p: Period) => void;
+  onCustomChange: (from: string, to: string) => void;
+}) {
+  const customInvalid =
+    period === 'custom' && from && to && new Date(from) > new Date(to);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onPeriodChange(p)}
+          aria-pressed={period === p}
+          className={
+            'border border-border px-2 py-0.5 font-mono text-[10.5px] ' +
+            (period === p ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper2')
+          }
+        >
+          {PERIOD_LABELS[p]}
+        </button>
+      ))}
+      {period === 'custom' ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => onCustomChange(e.target.value, to)}
+            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[10.5px]"
+          />
+          <span className="font-mono text-[10.5px] text-mute2">→</span>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => onCustomChange(from, e.target.value)}
+            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[10.5px]"
+          />
+          {customInvalid ? (
+            <span className="font-mono text-[10.5px] text-critical">from &gt; to</span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SearchInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => setLocal(value), [value]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (local !== value) onChange(local);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [local, value, onChange]);
+  return (
+    <input
+      type="text"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      placeholder="Search articles…"
+      className="border border-border bg-paper px-2 py-0.5 font-mono text-[10.5px] placeholder:text-mute2"
+    />
   );
 }
 
@@ -123,8 +214,36 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
 }
 
 export default function ArticlesList() {
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
-  const { data, isLoading } = useGetArticlesQuery({ categoryId });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryId = searchParams.get('category') ?? undefined;
+  const period = (searchParams.get('period') as Period | null) ?? 'all';
+  const from = searchParams.get('from') ?? '';
+  const to = searchParams.get('to') ?? '';
+  const q = searchParams.get('q') ?? '';
+
+  const customInvalid =
+    period === 'custom' && from && to && new Date(from) > new Date(to);
+
+  // Convert local-date `from`/`to` strings to UTC ISO datetimes for the API.
+  // `<input type="date">` produces 'YYYY-MM-DD' (local midnight). We treat
+  // those as inclusive UTC bounds for simplicity.
+  const apiFrom = period === 'custom' && from ? `${from}T00:00:00.000Z` : undefined;
+  const apiTo = period === 'custom' && to ? `${to}T23:59:59.999Z` : undefined;
+
+  const { data, isLoading } = useGetArticlesQuery(
+    customInvalid
+      ? { categoryId }
+      : { categoryId, period, from: apiFrom, to: apiTo, q: q || undefined },
+  );
+
+  const updateParams = (changes: Record<string, string | undefined>) => {
+    const next = new URLSearchParams(searchParams);
+    for (const [k, v] of Object.entries(changes)) {
+      if (v === undefined || v === '') next.delete(k);
+      else next.set(k, v);
+    }
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -132,9 +251,11 @@ export default function ArticlesList() {
         <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
           Articles
         </div>
-        <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">Your feed</h1>
+        <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">
+          Your feed
+        </h1>
         <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
-          <span>most recent first</span>
+          <span>most recent first (or by relevance when searching)</span>
           {data ? (
             <>
               <Sep />
@@ -142,8 +263,30 @@ export default function ArticlesList() {
             </>
           ) : null}
         </div>
-        <div className="mt-2">
-          <CategoryFilter selected={categoryId} onChange={setCategoryId} />
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <CategoryFilter
+            selected={categoryId}
+            onChange={(id) => updateParams({ category: id })}
+          />
+          <TimeWindowFilter
+            period={period}
+            from={from}
+            to={to}
+            onPeriodChange={(p) =>
+              updateParams({
+                period: p === 'all' ? undefined : p,
+                from: p === 'custom' ? from || undefined : undefined,
+                to: p === 'custom' ? to || undefined : undefined,
+              })
+            }
+            onCustomChange={(f, t) =>
+              updateParams({ from: f || undefined, to: t || undefined })
+            }
+          />
+          <SearchInput
+            value={q}
+            onChange={(v) => updateParams({ q: v || undefined })}
+          />
         </div>
       </header>
 
@@ -151,10 +294,13 @@ export default function ArticlesList() {
         <p className="font-mono text-[11px] text-mute2">Loading…</p>
       ) : !data || data.articles.length === 0 ? (
         <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[18px] text-ink">No articles yet</p>
+          <p className="font-serif text-[18px] text-ink">No articles match</p>
           <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
-            Add a feed in <Link to="/feeds" className="text-accent hover:text-accent-deep">Feeds</Link>{' '}
-            and click <span className="text-ink">pull now</span> to populate.
+            Try a different filter, or add a feed in{' '}
+            <Link to="/feeds" className="text-accent hover:text-accent-deep">
+              Feeds
+            </Link>
+            .
           </p>
         </div>
       ) : (

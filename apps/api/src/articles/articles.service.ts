@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, ne, or, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import {
@@ -25,45 +25,60 @@ import type {
 export class ArticlesService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async listMine(userId: string, categoryId?: string): Promise<ArticleListItem[]> {
+  async listMine(
+    userId: string,
+    opts: {
+      categoryId?: string;
+      windowFrom?: Date;
+      windowTo?: Date;
+      q?: string;
+    } = {},
+  ): Promise<ArticleListItem[]> {
+    const conditions = [
+      eq(articles.userId, userId),
+      eq(articles.status, 'ready'),
+    ];
+    if (opts.windowFrom) {
+      conditions.push(gte(articles.ts, opts.windowFrom));
+    }
+    if (opts.windowTo) {
+      conditions.push(lte(articles.ts, opts.windowTo));
+    }
+    if (opts.q) {
+      conditions.push(
+        sql`${articles.searchVector} @@ plainto_tsquery('english', ${opts.q})`,
+      );
+    }
+
+    const orderBy = opts.q
+      ? sql`ts_rank(${articles.searchVector}, plainto_tsquery('english', ${opts.q})) DESC`
+      : desc(articles.ts);
+
+    const projection = {
+      id: articles.id,
+      title: articles.title,
+      url: articles.url,
+      summary: articles.summary,
+      importance: articles.importance,
+      ts: articles.ts,
+      feedId: articles.feedId,
+      contentHash: articles.contentHash,
+    };
+
     let articleRows;
-    if (categoryId) {
+    if (opts.categoryId) {
       articleRows = await this.db
-        .select({
-          id: articles.id,
-          title: articles.title,
-          url: articles.url,
-          summary: articles.summary,
-          importance: articles.importance,
-          ts: articles.ts,
-          feedId: articles.feedId,
-          contentHash: articles.contentHash,
-        })
+        .select(projection)
         .from(articles)
         .innerJoin(articleCategory, eq(articleCategory.articleId, articles.id))
-        .where(
-          and(
-            eq(articles.userId, userId),
-            eq(articles.status, 'ready'),
-            eq(articleCategory.categoryId, categoryId),
-          ),
-        )
-        .orderBy(desc(articles.ts));
+        .where(and(...conditions, eq(articleCategory.categoryId, opts.categoryId)))
+        .orderBy(orderBy);
     } else {
       articleRows = await this.db
-        .select({
-          id: articles.id,
-          title: articles.title,
-          url: articles.url,
-          summary: articles.summary,
-          importance: articles.importance,
-          ts: articles.ts,
-          feedId: articles.feedId,
-          contentHash: articles.contentHash,
-        })
+        .select(projection)
         .from(articles)
-        .where(and(eq(articles.userId, userId), eq(articles.status, 'ready')))
-        .orderBy(desc(articles.ts));
+        .where(and(...conditions))
+        .orderBy(orderBy);
     }
 
     if (articleRows.length === 0) return [];
