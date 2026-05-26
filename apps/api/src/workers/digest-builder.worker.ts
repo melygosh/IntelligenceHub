@@ -5,6 +5,7 @@ import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import {
   QUEUE_NAMES,
   type DigestKeyArticle,
+  type DigestPeriod,
   type DigestTopCategory,
   type DigestTopEntity,
   type EntityKind,
@@ -97,7 +98,7 @@ export class DigestBuilderWorker extends WorkerHost {
       const scopeLabel = await this.buildScopeLabel(run, topCategories, topEntities);
       const llmInput = {
         userId: run.userId,
-        period: run.period as 'day' | 'week' | 'month',
+        period: run.period as DigestPeriod,
         scopeLabel,
         articles: inScope.map((a) => ({ title: a.title, summary: a.summary })),
       };
@@ -347,6 +348,9 @@ export class DigestBuilderWorker extends WorkerHost {
         .where(
           and(eq(category.userId, run.userId), inArray(category.id, scopeFilterIds)),
         );
+      if (cats.length === 0) {
+        return 'Categories: (none — all filter targets deleted)';
+      }
       return `Categories: ${cats.map((c) => c.name).join(', ')}`;
     }
     const ents = await this.db
@@ -355,6 +359,9 @@ export class DigestBuilderWorker extends WorkerHost {
       .where(
         and(eq(entities.userId, run.userId), inArray(entities.id, scopeFilterIds)),
       );
+    if (ents.length === 0) {
+      return 'Entities: (none — all filter targets deleted)';
+    }
     return `Entities: ${ents.map((e) => e.name).join(', ')}`;
   }
 }

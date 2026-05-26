@@ -4,7 +4,6 @@ import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { FeedsModule } from '../feeds/feeds.module';
 import { ArticlesModule } from '../articles/articles.module';
 import { SeedModule } from '../seed/seed.module';
-import { DigestModule } from '../digests/digest.module';
 import { LlmModule } from '../llm/llm.module';
 import { EventsModule } from '../events/events.module';
 import { FeedPullWorker } from './feed-pull.worker';
@@ -22,7 +21,6 @@ import { DigestBuilderWorker } from './digest-builder.worker';
     FeedsModule,
     ArticlesModule,
     SeedModule,
-    DigestModule,
     LlmModule,
     EventsModule,
   ],
