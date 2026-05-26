@@ -22,9 +22,13 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<typeof RegisterRequest._type>({
+  } = useForm<
+    typeof RegisterRequest._input,
+    unknown,
+    typeof RegisterRequest._type
+  >({
     resolver: zodResolver(RegisterRequest),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', loadDemoData: false },
   });
 
   useEffect(() => {
@@ -97,6 +101,33 @@ export default function Register() {
             {isMutationErrorMessage(error)}
           </div>
         ) : null}
+
+        <label
+          className="mb-4 flex items-start gap-2 group"
+          htmlFor="loadDemoData"
+        >
+          <input
+            id="loadDemoData"
+            type="checkbox"
+            className="mt-0.5 h-3.5 w-3.5 cursor-pointer border-border accent-accent"
+            {...register('loadDemoData')}
+          />
+          <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink">
+            Load demo data
+            <span
+              role="tooltip"
+              aria-label="What does this do?"
+              tabIndex={0}
+              className="relative inline-flex h-4 w-4 cursor-help items-center justify-center border border-mute2 text-[9px] text-mute2 hover:text-ink focus:text-ink focus:outline-none"
+            >
+              ?
+              <span className="invisible absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 border border-border bg-paper px-2 py-1.5 text-left font-mono text-[10px] leading-relaxed text-muted opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                Loads ~20 sample HN articles with pre-generated tags so you can
+                explore the graph without waiting for live RSS pulls.
+              </span>
+            </span>
+          </span>
+        </label>
 
         <button
           type="submit"
