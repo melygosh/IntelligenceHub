@@ -9,6 +9,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import * as argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
 import { DB } from '../db/db.module';
@@ -16,7 +18,7 @@ import type { Db } from '../db/client';
 import { users } from '../db/schema';
 import { loadEnv } from '../common/config/env';
 import type { JwtPayload } from './types';
-import type { UserResponse } from '@intelligencehub/shared';
+import { QUEUE_NAMES, type UserResponse } from '@intelligencehub/shared';
 import { ConfirmationTokenStore } from './confirmation-token.store';
 import {
   buildConfirmationUrl,
@@ -35,11 +37,13 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly tokens: ConfirmationTokenStore,
     private readonly axesSeeder: AxesSeederService,
+    @InjectQueue(QUEUE_NAMES.DEMO_SEED) private readonly demoSeedQueue: Queue,
   ) {}
 
   async register(
     email: string,
     password: string,
+    loadDemoData: boolean,
   ): Promise<{
     user: UserResponse;
     token: string;
@@ -66,6 +70,32 @@ export class AuthService {
       });
     const token = this.signToken({ sub: created.id, email: created.email });
     await this.axesSeeder.seedDefaultsFor(created.id);
+    if (loadDemoData) {
+      try {
+        await this.demoSeedQueue.add(
+          'seed',
+          { userId: created.id },
+          { removeOnComplete: true, removeOnFail: false },
+        );
+        this.log.log(
+          JSON.stringify({
+            event: 'auth.demo_seed_enqueued',
+            userId: created.id,
+          }),
+        );
+      } catch (err) {
+        // Fire-and-forget: enqueue failure must NOT block registration.
+        // Same defensive pattern as AxesSeederService failures (Day 8a).
+        const msg = err instanceof Error ? err.message : String(err);
+        this.log.warn(
+          JSON.stringify({
+            event: 'auth.demo_seed_enqueue_failed',
+            userId: created.id,
+            error: msg,
+          }),
+        );
+      }
+    }
     const devModeConfirmLink = await this.issueConfirmationLink(created.id);
     return {
       user: {

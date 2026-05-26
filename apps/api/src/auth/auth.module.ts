@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
@@ -12,6 +14,7 @@ import { AxesModule } from '../axes/axes.module';
   imports: [
     AxesModule,
     PassportModule,
+    BullModule.registerQueue({ name: QUEUE_NAMES.DEMO_SEED }),
     JwtModule.registerAsync({
       useFactory: () => {
         const env = loadEnv();

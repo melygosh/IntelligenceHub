@@ -43,6 +43,7 @@ export class AuthController {
     const { user, token, devModeConfirmLink } = await this.auth.register(
       body.email,
       body.password,
+      body.loadDemoData,
     );
     this.setAuthCookie(res, token);
     return { user, devModeConfirmLink };
