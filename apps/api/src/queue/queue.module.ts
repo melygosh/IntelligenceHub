@@ -17,6 +17,9 @@ const url = new URL(REDIS_URL);
     BullModule.registerQueue({
       name: QUEUE_NAMES.FEED_PULL,
     }),
+    BullModule.registerQueue({
+      name: QUEUE_NAMES.REGENERATION,
+    }),
   ],
   exports: [BullModule],
 })
