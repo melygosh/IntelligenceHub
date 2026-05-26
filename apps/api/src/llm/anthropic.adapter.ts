@@ -2,13 +2,18 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   ArticleAnalysisResult,
+  BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type ArticleAnalysisResult as ArticleAnalysisResultType,
+  type BuildDigestLlmInput,
+  type BuildDigestLlmResult as BuildDigestLlmResultType,
 } from '@intelligencehub/shared';
 import { loadEnv } from '../common/config/env';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
+  BUILD_DIGEST_SYSTEM_PROMPT,
+  formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
 
@@ -24,6 +29,26 @@ export type AnthropicCallResult = {
   data: ArticleAnalysisResultType;
   telemetry: AnthropicCallTelemetry;
   model: string;
+};
+
+export type AnthropicDigestResult = {
+  result: BuildDigestLlmResultType;
+  telemetry: { inputTokens: number; outputTokens: number };
+  model: string;
+};
+
+const BUILD_DIGEST_OUTPUT_SCHEMA = {
+  type: 'object' as const,
+  properties: {
+    summary: {
+      type: 'array' as const,
+      items: { type: 'string' as const, minLength: 20 },
+      minItems: 2,
+      maxItems: 3,
+    },
+  },
+  required: ['summary'],
+  additionalProperties: false,
 };
 
 @Injectable()
@@ -98,6 +123,54 @@ export class AnthropicAdapter {
         cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
         cacheCreationTokens: response.usage.cache_creation_input_tokens ?? 0,
         latencyMs,
+      },
+      model: this.model,
+    };
+  }
+
+  async buildDigest(input: BuildDigestLlmInput): Promise<AnthropicDigestResult> {
+    const client = this.getClient();
+
+    const response = await client.messages.create({
+      model: this.model,
+      max_tokens: 1024,
+      system: [
+        {
+          type: 'text',
+          text: BUILD_DIGEST_SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      tools: [
+        {
+          name: 'submit_digest',
+          description: 'Submit the assembled digest summary.',
+          input_schema: BUILD_DIGEST_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'submit_digest' },
+      messages: [{ role: 'user', content: formatBuildDigestUserMessage(input) }],
+    });
+
+    const toolUse = response.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+    );
+    if (!toolUse) {
+      throw new Error('Anthropic buildDigest: no tool_use block in response');
+    }
+
+    const parsed = BuildDigestLlmResult.safeParse(toolUse.input);
+    if (!parsed.success) {
+      throw new Error(
+        `Anthropic buildDigest response failed Zod validation: ${parsed.error.message}`,
+      );
+    }
+
+    return {
+      result: parsed.data,
+      telemetry: {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
       },
       model: this.model,
     };

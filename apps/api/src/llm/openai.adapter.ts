@@ -2,13 +2,18 @@ import OpenAI from 'openai';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   ArticleAnalysisResult,
+  BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type ArticleAnalysisResult as ArticleAnalysisResultType,
+  type BuildDigestLlmInput,
+  type BuildDigestLlmResult as BuildDigestLlmResultType,
 } from '@intelligencehub/shared';
 import { loadEnv } from '../common/config/env';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
+  BUILD_DIGEST_SYSTEM_PROMPT,
+  formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
 
@@ -23,6 +28,12 @@ export type OpenAiCallTelemetry = {
 export type OpenAiCallResult = {
   data: ArticleAnalysisResultType;
   telemetry: OpenAiCallTelemetry;
+  model: string;
+};
+
+export type OpenAiDigestResult = {
+  result: BuildDigestLlmResultType;
+  telemetry: { inputTokens: number; outputTokens: number };
   model: string;
 };
 
@@ -93,6 +104,66 @@ export class OpenAiAdapter {
         cacheReadTokens: completion.usage?.prompt_tokens_details?.cached_tokens ?? 0,
         cacheCreationTokens: 0, // OpenAI doesn't expose write metrics separately
         latencyMs,
+      },
+      model: this.model,
+    };
+  }
+
+  async buildDigest(input: BuildDigestLlmInput): Promise<OpenAiDigestResult> {
+    const client = this.getClient();
+
+    const response = await client.chat.completions.create({
+      model: this.model,
+      messages: [
+        { role: 'system', content: BUILD_DIGEST_SYSTEM_PROMPT },
+        { role: 'user', content: formatBuildDigestUserMessage(input) },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'build_digest_v1',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              summary: {
+                type: 'array',
+                items: { type: 'string' },
+                minItems: 2,
+                maxItems: 3,
+              },
+            },
+            required: ['summary'],
+          },
+        },
+      },
+    });
+
+    const raw = response.choices[0]?.message?.content;
+    if (!raw) {
+      throw new Error('OpenAI buildDigest: empty response');
+    }
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(raw);
+    } catch (err) {
+      throw new Error(`OpenAI buildDigest: not valid JSON: ${(err as Error).message}`);
+    }
+
+    const parsed = BuildDigestLlmResult.safeParse(parsedJson);
+    if (!parsed.success) {
+      throw new Error(
+        `OpenAI buildDigest response failed Zod validation: ${parsed.error.message}`,
+      );
+    }
+
+    return {
+      result: parsed.data,
+      telemetry: {
+        inputTokens: response.usage?.prompt_tokens ?? 0,
+        outputTokens: response.usage?.completion_tokens ?? 0,
       },
       model: this.model,
     };

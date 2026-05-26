@@ -2,6 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   type ArticleAnalysisInput,
   type ArticleAnalysisResult,
+  type BuildDigestLlmInput,
+  type BuildDigestLlmResult,
+  type LlmOperation,
   type LlmProvider,
   type LlmService as ILlmService,
 } from '@intelligencehub/shared';
@@ -61,6 +64,116 @@ export class LlmService implements ILlmService {
     }
 
     return this.withSemaphore(() => this.callWithRetry(input));
+  }
+
+  async buildDigest(input: BuildDigestLlmInput): Promise<{
+    result: BuildDigestLlmResult;
+    inputTokens: number;
+    outputTokens: number;
+    model: string;
+  }> {
+    const contentHash = await this.hashDigestInput(input);
+
+    const cached = await this.cache.readDigest(
+      contentHash,
+      this.provider,
+      this.activeModel,
+      'build_digest_v1',
+    );
+    if (cached) {
+      this.log.log(
+        JSON.stringify({
+          event: 'llm.digest_cache_hit',
+          userId: input.userId,
+          contentHash,
+        }),
+      );
+      return {
+        result: cached,
+        inputTokens: 0,
+        outputTokens: 0,
+        model: this.activeModel,
+      };
+    }
+
+    return this.withSemaphore(async () => {
+      const adapter = this.provider === 'anthropic' ? this.anthropic : this.openai;
+      const t0 = Date.now();
+      let lastErr: Error | null = null;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const { result, telemetry, model } = await adapter.buildDigest(input);
+          await this.recordTelemetry({
+            userId: input.userId,
+            articleId: null,
+            model,
+            status: 'success',
+            telemetry: {
+              inputTokens: telemetry.inputTokens,
+              outputTokens: telemetry.outputTokens,
+              cacheReadTokens: 0,
+              cacheCreationTokens: 0,
+              latencyMs: Date.now() - t0,
+            },
+            operation: 'build_digest_v1',
+          });
+          await this.cache.writeDigest(
+            contentHash,
+            this.provider,
+            model,
+            'build_digest_v1',
+            result,
+          );
+          return {
+            result,
+            inputTokens: telemetry.inputTokens,
+            outputTokens: telemetry.outputTokens,
+            model,
+          };
+        } catch (err) {
+          lastErr = err instanceof Error ? err : new Error(String(err));
+          this.log.warn(
+            JSON.stringify({
+              event: 'llm.digest_attempt_failed',
+              userId: input.userId,
+              attempt,
+              error: lastErr.message,
+            }),
+          );
+        }
+      }
+
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: null,
+        model: this.activeModel,
+        status: 'error',
+        telemetry: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheCreationTokens: 0,
+          latencyMs: Date.now() - t0,
+        },
+        operation: 'build_digest_v1',
+        errorMessage: lastErr?.message ?? 'unknown',
+      });
+      throw lastErr ?? new Error('buildDigest failed without throwing');
+    });
+  }
+
+  private async hashDigestInput(input: BuildDigestLlmInput): Promise<string> {
+    // Deterministic content hash: same period + scope + article subset → same hash.
+    // Articles ordered by title to neutralise upstream ordering changes.
+    const articles = [...input.articles].sort((a, b) => a.title.localeCompare(b.title));
+    const canonical = JSON.stringify({
+      period: input.period,
+      scopeLabel: input.scopeLabel,
+      articles: articles.map((a) => ({ title: a.title, summary: a.summary ?? '' })),
+    });
+    const { createHash } = await import('node:crypto');
+    return createHash('sha256').update(canonical).digest('hex');
   }
 
   private async callWithRetry(input: ArticleAnalysisInput): Promise<ArticleAnalysisResult> {
@@ -140,10 +253,11 @@ export class LlmService implements ILlmService {
 
   private async recordTelemetry(args: {
     userId: string;
-    articleId: string;
+    articleId: string | null;
     model: string;
     status: string;
     telemetry: TelemetryPayload;
+    operation?: LlmOperation;
     errorMessage?: string;
   }): Promise<void> {
     await this.db.insert(llmCalls).values({
@@ -151,7 +265,7 @@ export class LlmService implements ILlmService {
       articleId: args.articleId,
       provider: this.provider,
       model: args.model,
-      operation: 'analyze_article_v3',
+      operation: args.operation ?? 'analyze_article_v3',
       status: args.status,
       inputTokens: args.telemetry.inputTokens,
       outputTokens: args.telemetry.outputTokens,

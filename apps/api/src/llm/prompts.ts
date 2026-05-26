@@ -114,3 +114,34 @@ export function userPromptFor(
   prompt += `Extract the structured analysis now.`;
   return prompt;
 }
+
+/**
+ * Day 12 digest builder. DO NOT EDIT WITHOUT CONSIDERING CACHE IMPACT.
+ * Anthropic prompt caching keys off the exact bytes of the system prompt;
+ * any change invalidates every cached prefix in flight. If the prompt
+ * meaningfully changes, version it as 'build_digest_v2'.
+ */
+export const BUILD_DIGEST_SYSTEM_PROMPT = `You are a news editor producing a short digest. Read the supplied articles and produce a 2-3 paragraph editorial summary that surfaces the dominant themes of the period, the most significant events, and any notable shifts or developments. Each paragraph should be 2-4 sentences. The output must be tightly written, factual, and free of marketing language. Cite specific entities (companies, people, products) when relevant; do not invent facts not present in the input articles. Return ONLY structured output via the provided tool — no prose outside the tool call.
+
+The user provides:
+- period (day, week, or month)
+- scope (description of which articles are in scope)
+- list of articles, each with a title and short summary
+
+You produce:
+- summary: array of 2-3 paragraph strings (the editorial digest)`;
+
+/**
+ * Format the user-side message for buildDigest. Shared by both adapters.
+ */
+export function formatBuildDigestUserMessage(input: {
+  period: 'day' | 'week' | 'month';
+  scopeLabel: string;
+  articles: Array<{ title: string; summary: string | null }>;
+}): string {
+  const lines = input.articles.map((a, i) => {
+    const summary = a.summary ?? '(no summary)';
+    return `${i + 1}. "${a.title}" — ${summary}`;
+  });
+  return `Period: ${input.period}\nScope: ${input.scopeLabel}\n\nArticles (${input.articles.length}):\n${lines.join('\n')}\n\nProduce the digest.`;
+}
