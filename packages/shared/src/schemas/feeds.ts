@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 export const CreateFeedRequest = z.object({
   url: z.string().url().max(2048),
+  // Optional pre-discovered title (from a prior validate call). Persisted as-is;
+  // the puller worker may overwrite on the next pull if the channel title differs.
+  title: z.string().min(1).max(200).optional(),
 });
 export type CreateFeedRequest = z.infer<typeof CreateFeedRequest>;
 

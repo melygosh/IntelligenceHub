@@ -23,7 +23,7 @@ export class FeedsService {
     private readonly fetcher: FeedFetcher,
   ) {}
 
-  async create(userId: string, url: string): Promise<Feed> {
+  async create(userId: string, url: string, title?: string): Promise<Feed> {
     const normalised = normaliseUrl(url);
     const [existing] = await this.db
       .select({ id: feeds.id })
@@ -35,8 +35,15 @@ export class FeedsService {
     }
     const [created] = await this.db
       .insert(feeds)
-      .values({ userId, url: normalised, status: 'active' })
+      .values({ userId, url: normalised, status: 'active', title: title ?? null })
       .returning();
+    // Kick off an immediate pull so articles + future channel-title updates flow
+    // within seconds instead of waiting for the next scheduled cycle.
+    await this.feedPullQueue.add(
+      'pull',
+      { feedId: created.id, userId },
+      { removeOnComplete: 100, removeOnFail: 100 },
+    );
     return this.toFeed(created);
   }
 

@@ -34,6 +34,8 @@ import type {
   UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
+  ValidateFeedRequest,
+  ValidateFeedResponse,
 } from '@intelligencehub/shared';
 
 const rawBaseQuery = fetchBaseQuery({
@@ -96,6 +98,9 @@ export const api = createApi({
     createFeed: build.mutation<Feed, CreateFeedRequest>({
       query: (body) => ({ url: '/feeds', method: 'POST', body }),
       invalidatesTags: ['Feeds'],
+    }),
+    validateFeed: build.mutation<ValidateFeedResponse, ValidateFeedRequest>({
+      query: (body) => ({ url: '/feeds/validate', method: 'POST', body }),
     }),
     deleteFeed: build.mutation<void, string>({
       query: (id) => ({ url: `/feeds/${id}`, method: 'DELETE' }),
@@ -227,6 +232,7 @@ export const {
   useResendConfirmationMutation,
   useGetFeedsQuery,
   useCreateFeedMutation,
+  useValidateFeedMutation,
   useDeleteFeedMutation,
   usePullFeedMutation,
   useUpdateFeedMutation,

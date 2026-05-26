@@ -43,7 +43,7 @@ export class FeedsController {
     @CurrentUser() user: AuthUserContext,
     @Body(new ZodValidationPipe(CreateFeedRequest)) body: typeof CreateFeedRequest._type,
   ): Promise<Feed> {
-    return this.feedsService.create(user.userId, body.url);
+    return this.feedsService.create(user.userId, body.url, body.title);
   }
 
   @Post('validate')
