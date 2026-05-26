@@ -12,6 +12,8 @@ import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 import { runPreFilter } from '../articles/pre-filter';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
 import { ArticleProcessor } from '../articles/article-processor.service';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+import { EventsService } from '../events/events.service';
 
 type ProcessResult = {
   feedId: string;
@@ -30,6 +32,7 @@ export class FeedPullWorker extends WorkerHost {
     @Inject(DB) private readonly db: Db,
     private readonly fetcher: FeedFetcher,
     private readonly processor: ArticleProcessor,
+    private readonly events: EventsService,
   ) {
     super();
   }
@@ -107,6 +110,11 @@ export class FeedPullWorker extends WorkerHost {
         }),
       );
 
+      this.events.publish(userId, {
+        type: 'feed.pull.done',
+        payload: { feedId, inserted, filtered, duplicates, llmErrors },
+      });
+
       return {
         feedId,
         itemsConsidered: fetched.items.length,
@@ -129,6 +137,10 @@ export class FeedPullWorker extends WorkerHost {
           error: msg,
         }),
       );
+      this.events.publish(userId, {
+        type: 'feed.pull.failed',
+        payload: { feedId, error: msg },
+      });
       throw err;
     }
   }

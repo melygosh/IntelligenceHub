@@ -14,6 +14,23 @@ export const ServerEvent = z.discriminatedUnion('type', [
       status: DigestStatus,
     }),
   }),
+  z.object({
+    type: z.literal('feed.pull.done'),
+    payload: z.object({
+      feedId: z.string().uuid(),
+      inserted: z.number().int().nonnegative(),
+      filtered: z.number().int().nonnegative(),
+      duplicates: z.number().int().nonnegative(),
+      llmErrors: z.number().int().nonnegative(),
+    }),
+  }),
+  z.object({
+    type: z.literal('feed.pull.failed'),
+    payload: z.object({
+      feedId: z.string().uuid(),
+      error: z.string(),
+    }),
+  }),
 ]);
 export type ServerEvent = z.infer<typeof ServerEvent>;
 
