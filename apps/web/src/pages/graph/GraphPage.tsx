@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useGetCategoriesQuery, useGetGraphQuery } from '../../store/api';
@@ -93,7 +93,7 @@ function toReactFlowNodes(
 ): Node[] {
   return graphNodes.map((n) => ({
     id: n.id,
-    data: { label: n.kind === 'article' ? truncate(n.label, 60) : n.label },
+    data: { label: n.kind === 'article' ? truncate(n.label, 60) : n.label, kind: n.kind },
     position: positions.get(n.id) ?? { x: 0, y: 0 },
     style: nodeStyle(n),
   }));
@@ -119,6 +119,7 @@ function truncate(s: string, n: number): string {
 
 export default function GraphPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const categoryId = searchParams.get('category') ?? undefined;
   const nodeKindParam = searchParams.get('nodeKind');
   const nodeKind: NodeKindFilter = isNodeKindFilter(nodeKindParam) ? nodeKindParam : 'both';
@@ -156,6 +157,12 @@ export default function GraphPage() {
     setSearchParams(next, { replace: true });
   }
 
+  function onNodeClick(_e: React.MouseEvent, node: Node): void {
+    const kind = (node.data as { kind?: 'article' | 'entity' }).kind;
+    if (kind === 'article') navigate(`/articles/${node.id}`);
+    else if (kind === 'entity') navigate(`/entities/${node.id}`);
+  }
+
   return (
     <div className="flex h-full flex-col gap-4">
       <header>
@@ -191,7 +198,13 @@ export default function GraphPage() {
             </div>
           </div>
         ) : (
-          <ReactFlow nodes={nodes} edges={edges} fitView proOptions={{ hideAttribution: true }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            onNodeClick={onNodeClick}
+            proOptions={{ hideAttribution: true }}
+          >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#d8cfbd" />
             <Controls showInteractive={false} />
             <MiniMap pannable zoomable maskColor="rgba(244,239,230,0.6)" />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useGetArticlesQuery, useGetCategoriesQuery } from '../../store/api';
 import type { ArticleListItem, ArticleEntitySummary } from '@intelligencehub/shared';
 
@@ -54,57 +55,69 @@ function ImportanceDot({ level }: { level: ArticleListItem['importance'] }) {
 
 function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
   return (
-    <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted">
+    <Link
+      to={`/entities/${entity.id}`}
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted hover:text-ink"
+    >
       <span className="text-mute2">{TYPE_GLYPH[entity.type]}</span>
       <span>{entity.canonicalName}</span>
-    </span>
+    </Link>
   );
 }
 
 function ArticleRow({ article }: { article: ArticleListItem }) {
   const date = new Date(article.ts);
   return (
-    <li className="flex gap-3 px-1 py-3">
-      <ImportanceDot level={article.importance} />
-      <div className="min-w-0 flex-1">
-        <h3 className="pretty text-[14.5px] font-medium leading-snug text-ink">{article.title}</h3>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] text-mute2">
-          <span className="tnum">
-            {date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </span>
-          {article.importance ? (
-            <>
-              <Sep />
-              <span className="uppercase tracking-[0.06em] text-muted">{article.importance}</span>
-            </>
-          ) : null}
-          {article.entities.length > 0 ? (
-            <>
-              <Sep />
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                {article.entities.map((e) => (
-                  <EntityChipInline key={e.id} entity={e} />
-                ))}
-              </span>
-            </>
-          ) : null}
-          {article.categoryNames.length > 0 ? (
-            <>
-              <Sep />
-              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                {article.categoryNames.map((n) => (
-                  <span
-                    key={n}
-                    className="border border-border bg-paper px-1 py-px font-mono text-[10px] uppercase tracking-[0.06em] text-muted"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </span>
-            </>
-          ) : null}
+    <li className="hover:bg-paper2">
+      <Link to={`/articles/${article.id}`} className="flex gap-3 px-1 py-3">
+        <ImportanceDot level={article.importance} />
+        <div className="min-w-0 flex-1">
+          <h3 className="pretty text-[14.5px] font-medium leading-snug text-ink">{article.title}</h3>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] text-mute2">
+            <span className="tnum">
+              {date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {article.importance ? (
+              <>
+                <Sep />
+                <span className="uppercase tracking-[0.06em] text-muted">{article.importance}</span>
+              </>
+            ) : null}
+            {article.similarCount > 0 ? (
+              <>
+                <Sep />
+                <span className="text-muted">{article.similarCount} similar</span>
+              </>
+            ) : null}
+            {article.entities.length > 0 ? (
+              <>
+                <Sep />
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  {article.entities.map((e) => (
+                    <EntityChipInline key={e.id} entity={e} />
+                  ))}
+                </span>
+              </>
+            ) : null}
+            {article.categoryNames.length > 0 ? (
+              <>
+                <Sep />
+                <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  {article.categoryNames.map((n) => (
+                    <span
+                      key={n}
+                      className="border border-border bg-paper px-1 py-px font-mono text-[10px] uppercase tracking-[0.06em] text-muted"
+                    >
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </Link>
     </li>
   );
 }
@@ -140,7 +153,7 @@ export default function ArticlesList() {
         <div className="border border-dashed border-border px-6 py-10 text-center">
           <p className="font-serif text-[18px] text-ink">No articles yet</p>
           <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
-            Add a feed in <a href="/feeds" className="text-accent hover:text-accent-deep">Feeds</a>{' '}
+            Add a feed in <Link to="/feeds" className="text-accent hover:text-accent-deep">Feeds</Link>{' '}
             and click <span className="text-ink">pull now</span> to populate.
           </p>
         </div>
