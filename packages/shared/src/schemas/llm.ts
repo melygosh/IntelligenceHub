@@ -47,4 +47,22 @@ export type LlmOperation =
   | 'analyze_article_v2'
   | 'analyze_article_v3'
   | 'match_entities'
-  | 'build_digest';
+  | 'build_digest'
+  | 'build_digest_v1';
+
+export type DigestLlmArticleSummary = {
+  title: string;
+  summary: string | null;
+};
+
+export type BuildDigestLlmInput = {
+  userId: string;
+  period: 'day' | 'week' | 'month';
+  scopeLabel: string;
+  articles: DigestLlmArticleSummary[];
+};
+
+export const BuildDigestLlmResult = z.object({
+  summary: z.array(z.string().min(20)).min(2).max(3),
+});
+export type BuildDigestLlmResult = z.infer<typeof BuildDigestLlmResult>;
