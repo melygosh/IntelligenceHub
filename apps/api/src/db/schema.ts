@@ -26,6 +26,7 @@ export const feeds = pgTable(
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
     url: text('url').notNull(),
     title: text('title'),
+    iconUrl: text('icon_url'),
     status: text('status').notNull().default('active'),
     lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
     lastPullError: text('last_pull_error'),
