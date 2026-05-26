@@ -273,3 +273,36 @@ export const regenerationRun = pgTable(
 
 export type RegenerationRun = typeof regenerationRun.$inferSelect;
 export type NewRegenerationRun = typeof regenerationRun.$inferInsert;
+
+export const digestRun = pgTable(
+  'digest_run',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    period: text('period').notNull(), // 'day' | 'week' | 'month'
+    scopeKind: text('scope_kind').notNull(), // 'category' | 'entity'
+    scopeFilterIds: jsonb('scope_filter_ids').notNull().default([] as string[]),
+    windowFrom: timestamp('window_from', { withTimezone: true }).notNull(),
+    windowTo: timestamp('window_to', { withTimezone: true }).notNull(),
+    status: text('status').notNull(), // 'building' | 'ready' | 'failed'
+    summary: text('summary'), // JSON.stringify(paragraph[]); null until ready
+    topEntitiesJson: jsonb('top_entities_json'),
+    topCategoriesJson: jsonb('top_categories_json'),
+    keyArticlesJson: jsonb('key_articles_json'),
+    articleCount: integer('article_count').notNull().default(0),
+    entityCount: integer('entity_count').notNull().default(0),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    latencyMs: integer('latency_ms').notNull().default(0),
+    model: text('model'),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => ({
+    userCreatedIdx: index('digest_run_user_created_idx').on(t.userId, t.createdAt.desc()),
+  }),
+);
+
+export type DigestRunRow = typeof digestRun.$inferSelect;
+export type NewDigestRunRow = typeof digestRun.$inferInsert;
