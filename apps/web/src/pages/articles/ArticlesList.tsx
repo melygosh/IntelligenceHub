@@ -1,35 +1,242 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useGetArticlesQuery, useGetCategoriesQuery } from '../../store/api';
-import type { ArticleListItem, ArticleEntitySummary } from '@intelligencehub/shared';
+import {
+  useGetArticleQuery,
+  useGetArticlesQuery,
+  useGetCategoriesQuery,
+  useGetFeedsQuery,
+} from '../../store/api';
+import type { ArticleListItem, ArticleEntitySummary, Feed } from '@intelligencehub/shared';
 
 const Sep = () => <span className="text-border2">·</span>;
 
-function CategoryFilter({
+function ChevronDown() {
+  return (
+    <svg viewBox="0 0 10 10" className="h-2 w-2">
+      <path d="M2 4 L5 7 L8 4" stroke="currentColor" strokeWidth="1.4" fill="none" />
+    </svg>
+  );
+}
+
+/** Generic facet dropdown — button trigger ("Label" or "Label · value") with a
+ * chevron, opens a popover panel beneath. Click-outside or Escape closes.
+ * The button styling switches to ink-on-paper2 when a value is active so the
+ * user can see at a glance which facets are filtering the list. */
+function FacetDropdown({
+  label,
+  valueLabel,
+  isActive,
+  children,
+  panelClassName,
+}: {
+  label: string;
+  valueLabel?: string | null;
+  isActive: boolean;
+  children: (close: () => void) => React.ReactNode;
+  panelClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const close = () => setOpen(false);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className={
+          'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
+          (isActive
+            ? 'bg-paper2 text-ink'
+            : 'bg-paper text-muted hover:text-ink')
+        }
+      >
+        <span>{label}</span>
+        {valueLabel ? (
+          <span className="text-ink">· {valueLabel}</span>
+        ) : null}
+        <span className="text-mute2">
+          <ChevronDown />
+        </span>
+      </button>
+      {open ? (
+        <div
+          className={
+            'absolute left-0 top-full z-30 mt-1 min-w-[200px] border border-border bg-paper py-1 shadow-[0_8px_24px_-8px_rgba(28,26,22,0.2)] ' +
+            (panelClassName ?? '')
+          }
+        >
+          {children(close)}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CheckboxIcon({ on }: { on: boolean }) {
+  return (
+    <span
+      className={
+        'inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center border ' +
+        (on ? 'border-ink bg-ink text-paper' : 'border-border bg-paper')
+      }
+    >
+      {on ? (
+        <svg viewBox="0 0 10 10" className="h-2 w-2">
+          <path
+            d="M2 5.5 L4 7.5 L8 3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : null}
+    </span>
+  );
+}
+
+function CategoryDropdown({
   selected,
   onChange,
 }: {
-  selected: string | undefined;
-  onChange: (id: string | undefined) => void;
+  selected: string[];
+  onChange: (ids: string[]) => void;
 }) {
   const { data } = useGetCategoriesQuery();
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const valueLabel =
+    selected.length === 0
+      ? null
+      : selected.length === 1
+        ? (data?.categories.find((c) => c.id === selected[0])?.name ?? '1 selected')
+        : `${selected.length} selected`;
+  const toggle = (id: string) => {
+    if (selectedSet.has(id)) onChange(selected.filter((s) => s !== id));
+    else onChange([...selected, id]);
+  };
   return (
-    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
-      <label htmlFor="cat-filter">filter by category:</label>
-      <select
-        id="cat-filter"
-        value={selected ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-        className="border border-border bg-paper px-1.5 py-0.5 text-[12.5px] text-ink focus:border-ink focus:outline-none"
-      >
-        <option value="">All categories</option>
-        {data?.categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <FacetDropdown label="Category" valueLabel={valueLabel} isActive={selected.length > 0}>
+      {() => (
+        <>
+          {data?.categories.map((c) => {
+            const on = selectedSet.has(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggle(c.id)}
+                className={
+                  'flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[12.5px] transition-colors hover:bg-paper2 ' +
+                  (on ? 'text-ink' : 'text-muted')
+                }
+              >
+                <CheckboxIcon on={on} />
+                <span>{c.name}</span>
+              </button>
+            );
+          })}
+          {selected.length > 0 ? (
+            <>
+              <div className="my-1 border-t border-border" />
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="block w-full px-3 py-1.5 text-left font-mono text-[12.5px] text-mute2 hover:bg-paper2 hover:text-ink"
+              >
+                Clear selection
+              </button>
+            </>
+          ) : null}
+        </>
+      )}
+    </FacetDropdown>
+  );
+}
+
+const IMPORTANCE_OPTIONS: { value: 'high' | 'normal' | 'junk'; label: string }[] = [
+  { value: 'high', label: 'High' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'junk', label: 'Junk' },
+];
+
+function ImportanceDropdown({
+  selected,
+  onChange,
+}: {
+  selected: ('high' | 'normal' | 'junk')[];
+  onChange: (imps: ('high' | 'normal' | 'junk')[]) => void;
+}) {
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const valueLabel =
+    selected.length === 0
+      ? null
+      : selected.length === 1
+        ? IMPORTANCE_OPTIONS.find((o) => o.value === selected[0])?.label ?? '1 selected'
+        : `${selected.length} selected`;
+  const toggle = (v: 'high' | 'normal' | 'junk') => {
+    if (selectedSet.has(v)) onChange(selected.filter((s) => s !== v));
+    else onChange([...selected, v]);
+  };
+  return (
+    <FacetDropdown
+      label="Importance"
+      valueLabel={valueLabel}
+      isActive={selected.length > 0}
+    >
+      {() => (
+        <>
+          {IMPORTANCE_OPTIONS.map((o) => {
+            const on = selectedSet.has(o.value);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => toggle(o.value)}
+                className={
+                  'flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[12.5px] transition-colors hover:bg-paper2 ' +
+                  (on ? 'text-ink' : 'text-muted')
+                }
+              >
+                <CheckboxIcon on={on} />
+                <span>{o.label}</span>
+              </button>
+            );
+          })}
+          {selected.length > 0 ? (
+            <>
+              <div className="my-1 border-t border-border" />
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="block w-full px-3 py-1.5 text-left font-mono text-[12.5px] text-mute2 hover:bg-paper2 hover:text-ink"
+              >
+                Clear selection
+              </button>
+            </>
+          ) : null}
+        </>
+      )}
+    </FacetDropdown>
   );
 }
 
@@ -47,7 +254,65 @@ function isPeriod(s: string | null): s is Period {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
 }
 
-function TimeWindowFilter({
+function parseCsvParam(raw: string | null): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  for (const tok of raw.split(',')) {
+    const t = tok.trim();
+    if (t) seen.add(t);
+  }
+  return [...seen];
+}
+
+const PERIOD_SUBTITLE: Record<Period, string> = {
+  all: 'all time',
+  '24h': 'last 24h',
+  '7d': 'last 7 days',
+  '30d': 'last 30 days',
+  custom: 'custom range',
+};
+
+/** Summarise the active filters in one mono line. Empty filters render as
+ * "no active filters · all sources, all importances, all time" per the design. */
+function buildFilterSubtitle(opts: {
+  categoryIds: string[];
+  importances: ('high' | 'normal' | 'junk')[];
+  period: Period;
+  from: string;
+  to: string;
+  q: string;
+  feedsData: { feeds: Feed[] } | undefined;
+  categoriesData: { categories: { id: string; name: string }[] } | undefined;
+}): string {
+  const parts: string[] = [];
+  if (opts.categoryIds.length > 0) {
+    if (opts.categoryIds.length === 1) {
+      const name = opts.categoriesData?.categories.find(
+        (c) => c.id === opts.categoryIds[0],
+      )?.name;
+      parts.push(`category: ${name ?? opts.categoryIds[0].slice(0, 8)}`);
+    } else {
+      parts.push(`${opts.categoryIds.length} categories`);
+    }
+  }
+  if (opts.importances.length > 0) {
+    parts.push(`importance: ${opts.importances.join(', ')}`);
+  }
+  if (opts.period !== 'all') {
+    if (opts.period === 'custom' && opts.from && opts.to) {
+      parts.push(`date: ${opts.from} → ${opts.to}`);
+    } else {
+      parts.push(`date: ${PERIOD_SUBTITLE[opts.period]}`);
+    }
+  }
+  if (opts.q) parts.push(`matching "${opts.q}"`);
+  if (parts.length === 0) {
+    return 'no active filters · all sources, all importances, all time';
+  }
+  return parts.join(' · ');
+}
+
+function DateDropdown({
   period,
   from,
   to,
@@ -62,43 +327,62 @@ function TimeWindowFilter({
 }) {
   const customInvalid =
     period === 'custom' && from && to && new Date(from) > new Date(to);
+  const valueLabel = period === 'all' ? null : PERIOD_LABELS[period];
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-        <button
-          key={p}
-          type="button"
-          onClick={() => onPeriodChange(p)}
-          aria-pressed={period === p}
-          className={
-            'border border-border px-2 py-0.5 font-mono text-[12.5px] ' +
-            (period === p ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper2')
-          }
-        >
-          {PERIOD_LABELS[p]}
-        </button>
-      ))}
-      {period === 'custom' ? (
-        <div className="flex items-center gap-1.5">
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => onCustomChange(e.target.value, to)}
-            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
-          />
-          <span className="font-mono text-[12.5px] text-mute2">→</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => onCustomChange(from, e.target.value)}
-            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
-          />
-          {customInvalid ? (
-            <span className="font-mono text-[12.5px] text-critical">from &gt; to</span>
+    <FacetDropdown
+      label="Date"
+      valueLabel={valueLabel}
+      isActive={period !== 'all'}
+      panelClassName="min-w-[340px] px-3 py-2.5"
+    >
+      {(close) => (
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  onPeriodChange(p);
+                  if (p !== 'custom') close();
+                }}
+                aria-pressed={period === p}
+                className={
+                  'border px-2 py-0.5 font-mono text-[12.5px] transition-colors ' +
+                  (period === p
+                    ? 'border-ink bg-ink text-paper'
+                    : 'border-border bg-paper text-ink hover:bg-paper2')
+                }
+              >
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+          </div>
+          {period === 'custom' ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="date"
+                value={from}
+                max={to || undefined}
+                onChange={(e) => onCustomChange(e.target.value, to)}
+                className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
+              />
+              <span className="font-mono text-[12.5px] text-mute2">→</span>
+              <input
+                type="date"
+                value={to}
+                min={from || undefined}
+                onChange={(e) => onCustomChange(from, e.target.value)}
+                className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
+              />
+              {customInvalid ? (
+                <span className="font-mono text-[12.5px] text-critical">from &gt; to</span>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      ) : null}
-    </div>
+      )}
+    </FacetDropdown>
   );
 }
 
@@ -110,21 +394,57 @@ function SearchInput({
   onChange: (v: string) => void;
 }) {
   const [local, setLocal] = useState(value);
-  useEffect(() => setLocal(value), [value]);
+  // Sync prop → local when the URL-driven value changes from outside (e.g.
+  // user clears the URL param). React's documented "adjust state while
+  // rendering" pattern — uses two pieces of state, not an effect.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setLocal(value);
+  }
+  const inputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     const t = setTimeout(() => {
       if (local !== value) onChange(local);
     }, 250);
     return () => clearTimeout(t);
   }, [local, value, onChange]);
+
+  // Press "/" anywhere on the page to focus this input — common pattern in
+  // search-heavy apps (matches the design's kbd hint).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      const tgt = e.target as HTMLElement | null;
+      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) {
+        return;
+      }
+      e.preventDefault();
+      inputRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
-    <input
-      type="text"
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
-      placeholder="Search articles…"
-      className="border border-border bg-paper px-2 py-0.5 font-mono text-[12.5px] placeholder:text-mute2"
-    />
+    <div className="flex w-full items-center gap-2 border border-border bg-paper2 px-2.5 py-1.5 md:w-[300px]">
+      <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 shrink-0 text-muted">
+        <circle cx="5" cy="5" r="3.2" stroke="currentColor" strokeWidth="1.1" fill="none" />
+        <path d="M7.5 7.5 L10 10" stroke="currentColor" strokeWidth="1.1" />
+      </svg>
+      <input
+        ref={inputRef}
+        type="text"
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        placeholder="search title, entity, summary…"
+        className="flex-1 bg-transparent font-mono text-[13.5px] text-ink outline-none placeholder:text-mute2"
+      />
+      <kbd className="border border-border bg-paper px-1 font-mono text-[11.5px] text-mute2">
+        /
+      </kbd>
+    </div>
   );
 }
 
@@ -136,16 +456,95 @@ const TYPE_GLYPH: Record<ArticleEntitySummary['type'], React.ReactNode> = {
   location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
 };
 
+// Importance pill — soft-bg with colored dot; matches the StatusBadge pattern
+// from /feeds. `critical` is reserved for future use (we currently emit only
+// high/normal/junk from the LLM analyzer).
+const IMP_STYLE: Record<NonNullable<ArticleListItem['importance']>, { bg: string; fg: string; dot: string }> = {
+  high: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e' },
+  normal: { bg: '#ece6d8', fg: '#3d3a32', dot: '#6b6557' },
+  junk: { bg: '#ece6d8', fg: '#857f74', dot: '#9b9486' },
+};
+
 function ImportanceDot({ level }: { level: ArticleListItem['importance'] }) {
-  const color =
-    level === 'high'
-      ? 'bg-accent'
-      : level === 'junk'
-        ? 'bg-mute2'
-        : level === 'normal'
-          ? 'bg-muted'
-          : 'bg-border';
-  return <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 ${color}`} />;
+  if (!level) {
+    return <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 bg-border" />;
+  }
+  const s = IMP_STYLE[level];
+  return (
+    <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0" style={{ background: s.dot }} />
+  );
+}
+
+function ImportanceBadge({ level }: { level: ArticleListItem['importance'] }) {
+  if (!level) return null;
+  const s = IMP_STYLE[level];
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-px font-mono text-[11.5px] uppercase tracking-[0.1em]"
+      style={{ background: s.bg, color: s.fg, border: `1px solid ${s.dot}55` }}
+    >
+      <span className="inline-block h-1.5 w-1.5" style={{ background: s.dot }} />
+      {level}
+    </span>
+  );
+}
+
+function SimilarBadge({
+  count,
+  onClick,
+}: {
+  count: number;
+  onClick: () => void;
+}) {
+  if (count < 1) return null;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+      className="group inline-flex items-baseline gap-1 border border-accent/40 bg-accent/10 px-1.5 py-px font-mono text-[12.5px] text-accent transition-colors hover:border-accent hover:bg-accent hover:text-paper"
+    >
+      <svg viewBox="0 0 10 10" className="h-2 w-2 self-center">
+        <path d="M1 5 L5 1 L9 5 L5 9 Z" stroke="currentColor" strokeWidth="1" fill="none" />
+      </svg>
+      <span className="tnum">{count}</span>
+      <span>similar</span>
+    </button>
+  );
+}
+
+function SourceFavicon({ feed }: { feed: Feed | undefined }) {
+  // Real favicon if the feed exposed one in its RSS/Atom metadata
+  // (Day 14 — feeds.icon_url). Otherwise the inverted-ink initials block.
+  const [loadFailed, setLoadFailed] = useState(false);
+  if (feed?.iconUrl && !loadFailed) {
+    return (
+      <img
+        src={feed.iconUrl}
+        alt=""
+        className="h-3.5 w-3.5 shrink-0 object-contain"
+        onError={() => setLoadFailed(true)}
+      />
+    );
+  }
+  const seed = (feed?.title ?? feed?.url ?? '?').replace(/^https?:\/\//, '').replace(/^www\./, '');
+  const initials = seed.slice(0, 2).toUpperCase();
+  return (
+    <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center bg-ink font-mono text-[8.5px] tracking-tighter text-paper">
+      {initials}
+    </span>
+  );
+}
+
+function ExternalIcon() {
+  return (
+    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
+      <path d="M4 2 H10 V8 M10 2 L3 9" stroke="currentColor" strokeWidth="1.1" fill="none" />
+    </svg>
+  );
 }
 
 function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
@@ -155,71 +554,305 @@ function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
       onClick={(e) => e.stopPropagation()}
       className="inline-flex items-center gap-1 font-mono text-[12.5px] text-muted hover:text-ink"
     >
-      <span className="text-mute2">{TYPE_GLYPH[entity.type]}</span>
+      <span className="inline-flex h-3 w-3 items-center justify-center text-mute2">
+        {TYPE_GLYPH[entity.type]}
+      </span>
       <span>{entity.canonicalName}</span>
     </Link>
   );
 }
 
-function ArticleRow({ article }: { article: ArticleListItem }) {
-  const date = new Date(article.ts);
+function SimilarSidebar({
+  articleId,
+  onClose,
+}: {
+  articleId: string;
+  onClose: () => void;
+}) {
+  const { data, isLoading, isError } = useGetArticleQuery(articleId);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const anchorTs = data ? new Date(data.ts) : null;
+
   return (
-    <li className="hover:bg-paper2">
-      <Link to={`/articles/${article.id}`} className="flex gap-3 px-1 py-3">
-        <ImportanceDot level={article.importance} />
-        <div className="min-w-0 flex-1">
-          <h3 className="pretty text-[16.5px] font-medium leading-snug text-ink">{article.title}</h3>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
-            <span className="tnum">
-              {date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            </span>
-            {article.importance ? (
-              <>
-                <Sep />
-                <span className="uppercase tracking-[0.06em] text-muted">{article.importance}</span>
-              </>
-            ) : null}
-            {article.similarCount > 0 ? (
-              <>
-                <Sep />
-                <span className="text-muted">{article.similarCount} similar</span>
-              </>
-            ) : null}
-            {article.entities.length > 0 ? (
-              <>
-                <Sep />
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  {article.entities.map((e) => (
-                    <EntityChipInline key={e.id} entity={e} />
-                  ))}
-                </span>
-              </>
-            ) : null}
-            {article.categoryNames.length > 0 ? (
-              <>
-                <Sep />
-                <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  {article.categoryNames.map((n) => (
-                    <span
-                      key={n}
-                      className="border border-border bg-paper px-1 py-px font-mono text-[12px] uppercase tracking-[0.06em] text-muted"
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-ink/20"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        role="dialog"
+        aria-label="Similar in other sources"
+        className="fixed right-0 top-0 z-50 flex h-screen w-[min(480px,100vw)] flex-col border-l border-border bg-paper shadow-[-12px_0_40px_-12px_rgba(28,26,22,0.25)]"
+      >
+        <header className="flex items-baseline justify-between border-b border-border px-5 py-3">
+          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+            Similar in other sources{' '}
+            <span className="tnum text-ink">{data?.similarArticles.length ?? '—'}</span>
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-baseline gap-1.5 font-mono text-[12.5px] text-muted hover:text-ink"
+          >
+            close{' '}
+            <kbd className="border border-border bg-paper2 px-1 py-px font-mono text-[10.5px] text-mute2">
+              esc
+            </kbd>
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="px-5 py-6 font-mono text-[12.5px] text-mute2">Loading…</div>
+          ) : isError || !data ? (
+            <div className="px-5 py-6 font-mono text-[12.5px] text-critical">
+              Couldn't load similar articles.
+            </div>
+          ) : (
+            <>
+              {/* Anchor block */}
+              <section className="border-b border-border bg-paper2/40 px-5 py-4">
+                <div className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+                  Anchor
+                </div>
+                <div className="flex items-start gap-2">
+                  <ImportanceDot level={data.importance} />
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/articles/${data.id}`}
+                      onClick={onClose}
+                      className="pretty text-[14.5px] font-medium leading-snug text-ink hover:text-accent"
                     >
-                      {n}
-                    </span>
+                      {data.title}
+                    </Link>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
+                      <span className="text-muted">{data.feedTitle}</span>
+                      {anchorTs ? (
+                        <>
+                          <Sep />
+                          <span className="tnum text-muted">
+                            {anchorTs.toISOString().slice(0, 16).replace('T', ' ')} UTC
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Similar list */}
+              {data.similarArticles.length === 0 ? (
+                <div className="px-5 py-10 text-center font-mono text-[12.5px] text-mute2">
+                  No other sources covered this story.
+                </div>
+              ) : (
+                <ol>
+                  {data.similarArticles.map((s, i) => (
+                    <li
+                      key={s.id}
+                      className="grid grid-cols-[28px_1fr] gap-x-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/40"
+                    >
+                      <span className="pt-0.5 font-mono text-[12px] tnum text-mute2">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-mono text-[12px] text-muted">
+                          <span>{s.feedTitle}</span>
+                          <Sep />
+                          <span className="tnum text-mute2" title={s.ts}>
+                            {fmtRelative(s.ts)}
+                          </span>
+                        </div>
+                        <Link
+                          to={`/articles/${s.id}`}
+                          onClick={onClose}
+                          className="pretty mt-1 block text-[14px] leading-snug text-ink hover:text-accent"
+                        >
+                          {s.title}
+                        </Link>
+                      </div>
+                    </li>
                   ))}
-                </span>
-              </>
-            ) : null}
-          </div>
+                </ol>
+              )}
+            </>
+          )}
         </div>
-      </Link>
-    </li>
+
+        <footer className="flex items-center justify-between border-t border-border px-5 py-3 font-mono text-[11.5px] text-mute2">
+          <span>Same content_hash or normalized URL</span>
+          {data ? (
+            <Link
+              to={`/articles/${data.id}`}
+              onClick={onClose}
+              className="text-accent hover:text-accent-deep"
+            >
+              open anchor article →
+            </Link>
+          ) : null}
+        </footer>
+      </aside>
+    </>
+  );
+}
+
+function fmtRelative(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 0) return 'now';
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
+}
+
+function ArticleRow({
+  article,
+  feed,
+  onOpenSimilar,
+}: {
+  article: ArticleListItem;
+  feed: Feed | undefined;
+  onOpenSimilar: (articleId: string) => void;
+}) {
+  const date = new Date(article.ts);
+  const isJunk = article.importance === 'junk';
+  return (
+    <article className="group grid grid-cols-[14px_1fr] gap-x-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/60">
+      <ImportanceDot level={article.importance} />
+      <div className="min-w-0">
+        {/* Title row with hover-only external link */}
+        <div className="flex items-baseline gap-2">
+          <Link
+            to={`/articles/${article.id}`}
+            className={
+              'pretty leading-snug hover:text-accent ' +
+              (isJunk
+                ? 'text-[14.5px] italic text-muted'
+                : 'text-[15.5px] font-medium text-ink')
+            }
+          >
+            {article.title}
+          </Link>
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="Open original"
+            className="opacity-0 transition-opacity hover:text-accent group-hover:opacity-100 focus:opacity-100"
+          >
+            <ExternalIcon />
+          </a>
+        </div>
+
+        {/* Optional 2-line summary clamp */}
+        {article.summary && !isJunk ? (
+          <div
+            className="pretty mt-1 text-[13px] leading-snug text-muted"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {article.summary}
+          </div>
+        ) : null}
+
+        {/* Meta strip */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
+          <span className="inline-flex items-center gap-1.5">
+            <SourceFavicon feed={feed} />
+            <span className="text-muted">{feed?.title ?? 'Unknown source'}</span>
+          </span>
+          <Sep />
+          <span className="tnum text-muted" title={date.toISOString()}>
+            {date.toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+          {article.importance ? (
+            <>
+              <Sep />
+              <ImportanceBadge level={article.importance} />
+            </>
+          ) : null}
+          {article.similarCount > 0 ? (
+            <>
+              <Sep />
+              <SimilarBadge
+                count={article.similarCount}
+                onClick={() => onOpenSimilar(article.id)}
+              />
+            </>
+          ) : null}
+          {article.categoryNames.length > 0 ? (
+            <>
+              <Sep />
+              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                {article.categoryNames.map((n) => (
+                  <span
+                    key={n}
+                    className="border border-border bg-paper2 px-1.5 py-px font-mono text-[11.5px] text-muted"
+                  >
+                    {n}
+                  </span>
+                ))}
+              </span>
+            </>
+          ) : null}
+          {article.entities.length > 0 ? (
+            <>
+              <Sep />
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                {article.entities.slice(0, 4).map((e) => (
+                  <EntityChipInline key={e.id} entity={e} />
+                ))}
+                {article.entities.length > 4 ? (
+                  <span className="font-mono text-[12.5px] tnum text-mute2">
+                    +{article.entities.length - 4}
+                  </span>
+                ) : null}
+              </span>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
 export default function ArticlesList() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const categoryId = searchParams.get('category') ?? undefined;
+  const categoryIds = useMemo(
+    () => parseCsvParam(searchParams.get('category')),
+    [searchParams],
+  );
+  const importances = useMemo(
+    () =>
+      parseCsvParam(searchParams.get('importance')).filter(
+        (v): v is 'high' | 'normal' | 'junk' =>
+          v === 'high' || v === 'normal' || v === 'junk',
+      ),
+    [searchParams],
+  );
   const rawPeriod = searchParams.get('period');
   const period: Period = isPeriod(rawPeriod) ? rawPeriod : 'all';
   const from = searchParams.get('from') ?? '';
@@ -238,9 +871,27 @@ export default function ArticlesList() {
 
   const { data, isLoading, error } = useGetArticlesQuery(
     customInvalid || customIncomplete
-      ? { categoryId }
-      : { categoryId, period, from: apiFrom, to: apiTo, q: q || undefined },
+      ? { categoryIds, importances }
+      : {
+          categoryIds,
+          importances,
+          period,
+          from: apiFrom,
+          to: apiTo,
+          q: q || undefined,
+        },
   );
+  const { data: feedsData } = useGetFeedsQuery();
+  const { data: categoriesData } = useGetCategoriesQuery();
+  const [openSimilarId, setOpenSimilarId] = useState<string | null>(null);
+
+  // feedId → Feed lookup for the per-row source pill (title + iconUrl).
+  // Reactive: refetched when SSE feed.pull.done fires (Day-13 hook).
+  const feedById = useMemo(() => {
+    const m = new Map<string, Feed>();
+    for (const f of feedsData?.feeds ?? []) m.set(f.id, f);
+    return m;
+  }, [feedsData]);
 
   const updateParams = (changes: Record<string, string | undefined>) => {
     const next = new URLSearchParams(searchParams);
@@ -251,30 +902,48 @@ export default function ArticlesList() {
     setSearchParams(next, { replace: true });
   };
 
+  const filterSubtitle = useMemo(
+    () =>
+      buildFilterSubtitle({
+        categoryIds,
+        importances,
+        period,
+        from,
+        to,
+        q,
+        feedsData,
+        categoriesData,
+      }),
+    [categoryIds, importances, period, from, to, q, feedsData, categoriesData],
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           /articles
         </div>
-        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
+        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
           Your feed
         </h1>
-        <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
-          <span>most recent first (or by relevance when searching)</span>
-          {data ? (
-            <>
-              <Sep />
-              <span className="tnum text-ink">{data.articles.length} total</span>
-            </>
-          ) : null}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <CategoryFilter
-            selected={categoryId}
-            onChange={(id) => updateParams({ category: id })}
+      </header>
+
+      <div className="border border-border bg-paper">
+        {/* Toolbar row: filters + search, all left-grouped */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2.5">
+          <ImportanceDropdown
+            selected={importances}
+            onChange={(imps) =>
+              updateParams({ importance: imps.length > 0 ? imps.join(',') : undefined })
+            }
           />
-          <TimeWindowFilter
+          <CategoryDropdown
+            selected={categoryIds}
+            onChange={(ids) =>
+              updateParams({ category: ids.length > 0 ? ids.join(',') : undefined })
+            }
+          />
+          <DateDropdown
             period={period}
             from={from}
             to={to}
@@ -289,40 +958,68 @@ export default function ArticlesList() {
               updateParams({ from: f || undefined, to: t || undefined })
             }
           />
+          <div className="flex-1" />
           <SearchInput
             value={q}
             onChange={(v) => updateParams({ q: v || undefined })}
           />
         </div>
-      </header>
 
-      {isLoading ? (
-        <p className="font-mono text-[13px] text-mute2">Loading…</p>
-      ) : error ? (
-        <div className="border border-dashed border-critical/40 px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-critical">Couldn't load articles</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            {(error as { data?: { message?: string } }).data?.message ?? 'Try a different filter or refresh the page.'}
-          </p>
+        {/* Subtitle row: active filters on the left, sort + count on the right */}
+        <div className="flex items-baseline justify-between gap-3 border-b border-border bg-paper2/40 px-5 py-1.5 font-mono text-[12.5px] text-mute2">
+          <span>{filterSubtitle}</span>
+          <span className="tnum">
+            {q ? 'sort relevance' : 'sort newest first'}
+            {data ? (
+              <>
+                {' '}· <span className="text-ink">{data.articles.length}</span> articles
+              </>
+            ) : null}
+          </span>
         </div>
-      ) : !data || data.articles.length === 0 ? (
-        <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-ink">No articles match</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            Try a different filter, or add a feed in{' '}
-            <Link to="/feeds" className="text-accent hover:text-accent-deep">
-              Feeds
-            </Link>
-            .
-          </p>
-        </div>
-      ) : (
-        <ul className="divide-y divide-border">
-          {data.articles.map((a) => (
-            <ArticleRow key={a.id} article={a} />
-          ))}
-        </ul>
-      )}
+
+        {/* Body */}
+        {isLoading ? (
+          <div className="px-5 py-10 text-center font-mono text-[13px] text-mute2">
+            Loading…
+          </div>
+        ) : error ? (
+          <div className="px-5 py-10 text-center">
+            <p className="font-serif text-[22px] text-critical">Couldn't load articles</p>
+            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
+              {(error as { data?: { message?: string } }).data?.message ??
+                'Try a different filter or refresh the page.'}
+            </p>
+          </div>
+        ) : !data || data.articles.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="font-serif text-[22px] text-ink">No articles match</p>
+            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
+              Try a different filter, or add a feed in{' '}
+              <Link to="/feeds" className="text-accent hover:text-accent-deep">
+                Feeds
+              </Link>
+              .
+            </p>
+          </div>
+        ) : (
+          data.articles.map((a) => (
+            <ArticleRow
+              key={a.id}
+              article={a}
+              feed={feedById.get(a.feedId)}
+              onOpenSimilar={setOpenSimilarId}
+            />
+          ))
+        )}
+      </div>
+
+      {openSimilarId ? (
+        <SimilarSidebar
+          articleId={openSimilarId}
+          onClose={() => setOpenSimilarId(null)}
+        />
+      ) : null}
     </div>
   );
 }

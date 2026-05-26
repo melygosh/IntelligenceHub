@@ -134,7 +134,8 @@ export const api = createApi({
     getArticles: build.query<
       ArticleListResponse,
       {
-        categoryId?: string;
+        categoryIds?: string[];
+        importances?: ('high' | 'normal' | 'junk')[];
         period?: 'all' | '24h' | '7d' | '30d' | 'custom';
         from?: string;
         to?: string;
@@ -144,7 +145,12 @@ export const api = createApi({
       query: (arg) => {
         const params = new URLSearchParams();
         if (arg) {
-          if (arg.categoryId) params.set('category', arg.categoryId);
+          if (arg.categoryIds && arg.categoryIds.length > 0) {
+            params.set('category', arg.categoryIds.join(','));
+          }
+          if (arg.importances && arg.importances.length > 0) {
+            params.set('importance', arg.importances.join(','));
+          }
           if (arg.period && arg.period !== 'all') params.set('period', arg.period);
           if (arg.from) params.set('from', arg.from);
           if (arg.to) params.set('to', arg.to);
