@@ -37,6 +37,7 @@ export const articles = pgTable('articles', {
   ts: timestamp('ts', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   configHash: text('config_hash'),
+  body: text('body'),
 });
 
 export const entities = pgTable(
@@ -222,3 +223,24 @@ export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
 export type Entity = typeof entities.$inferSelect;
 export type NewEntity = typeof entities.$inferInsert;
+
+export const regenerationRun = pgTable(
+  'regeneration_run',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(), // 'running' | 'completed' | 'failed'
+    configHash: text('config_hash').notNull(),
+    articlesTotal: integer('articles_total').notNull().default(0),
+    articlesProcessed: integer('articles_processed').notNull().default(0),
+    articlesCacheHit: integer('articles_cache_hit').notNull().default(0),
+    articlesLlmCalled: integer('articles_llm_called').notNull().default(0),
+    articlesErrored: integer('articles_errored').notNull().default(0),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    errorMessage: text('error_message'),
+  },
+);
+
+export type RegenerationRun = typeof regenerationRun.$inferSelect;
+export type NewRegenerationRun = typeof regenerationRun.$inferInsert;
