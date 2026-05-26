@@ -21,8 +21,10 @@ import type {
   GraphResponse,
   LoginRequest,
   PullFeedResponse,
+  RegenerationRun,
   RegisterRequest,
   ResendConfirmationResponse,
+  StartRegenerationResponse,
   UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
@@ -56,7 +58,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories', 'Axes'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Categories', 'Axes', 'Regeneration'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -159,6 +161,15 @@ export const api = createApi({
       query: (id) => ({ url: `/axes/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Axes', 'Articles'],
     }),
+    getCurrentRegeneration: build.query<RegenerationRun | null, void>({
+      query: () => '/regeneration/current',
+      transformErrorResponse: (err) => (err.status === 404 ? null : err) as any,
+      providesTags: ['Regeneration'],
+    }),
+    startRegeneration: build.mutation<StartRegenerationResponse, void>({
+      query: () => ({ url: '/regeneration/start', method: 'POST' }),
+      invalidatesTags: ['Regeneration'],
+    }),
   }),
 });
 
@@ -183,4 +194,6 @@ export const {
   useCreateAxisMutation,
   useUpdateAxisMutation,
   useDeleteAxisMutation,
+  useGetCurrentRegenerationQuery,
+  useStartRegenerationMutation,
 } = api;
