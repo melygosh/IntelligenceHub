@@ -1,30 +1,84 @@
 import { NavLink } from 'react-router-dom';
 
-type Item = { to: string; label: string };
+// Icon set from docs/IntelligenceHub_design/App Shell.html — keep currentColor + thin strokes
+// for the editorial-mono look.
+const ICONS = {
+  articles: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <rect x="2.5" y="2" width="9" height="10" stroke="currentColor" strokeWidth="1" fill="none" />
+      <path d="M4 5h6M4 7h6M4 9h4" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+    </svg>
+  ),
+  graph: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <circle cx="3" cy="4" r="1.5" fill="currentColor" />
+      <circle cx="11" cy="3" r="1.3" fill="currentColor" />
+      <circle cx="7" cy="11" r="1.4" fill="currentColor" />
+      <path d="M3 4 L7 11 M11 3 L7 11 M3 4 L11 3" stroke="currentColor" strokeWidth="0.7" opacity="0.55" />
+    </svg>
+  ),
+  digests: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <rect x="2" y="3" width="10" height="8" stroke="currentColor" strokeWidth="1" fill="none" />
+      <path d="M2.3 3.3 L7 7.5 L11.7 3.3" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
+    </svg>
+  ),
+  feed: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <path d="M2 4h10M2 7h10M2 10h7" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+    </svg>
+  ),
+  entities: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <rect x="2" y="2.5" width="6" height="2.6" fill="currentColor" opacity="0.85" />
+      <rect x="2" y="5.7" width="9" height="2.6" fill="currentColor" opacity="0.55" />
+      <rect x="2" y="8.9" width="7.5" height="2.6" fill="currentColor" opacity="0.75" />
+    </svg>
+  ),
+  settings: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1" fill="none" />
+      <path
+        d="M7 1.2v2M7 10.8V13M1.2 7h2M10.8 7H13M2.7 2.7l1.4 1.4M9.9 9.9l1.4 1.4M2.7 11.3l1.4-1.4M9.9 4.1l1.4-1.4"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  bolt: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <path d="M8 1 L3 8 H6 L5 13 L11 6 H8 Z" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
+    </svg>
+  ),
+} as const;
+
+type IconKey = keyof typeof ICONS;
+type Item = { to: string; label: string; icon: IconKey };
 
 const NAV: Item[] = [
-  { to: '/articles', label: 'Articles' },
-  { to: '/graph', label: 'Graph' },
-  { to: '/digests', label: 'Digests' },
-  { to: '/feeds', label: 'Feeds' },
+  { to: '/articles', label: 'Articles', icon: 'articles' },
+  { to: '/graph', label: 'Graph', icon: 'graph' },
+  { to: '/digests', label: 'Digests', icon: 'digests' },
+  { to: '/feeds', label: 'Feeds', icon: 'feed' },
 ];
 
 const SETTINGS: Item[] = [
-  { to: '/categories', label: 'Categories' },
-  { to: '/settings/axes', label: 'Axes' },
-  { to: '/telemetry', label: 'Telemetry' },
+  { to: '/categories', label: 'Categories', icon: 'entities' },
+  { to: '/settings/axes', label: 'Axes', icon: 'settings' },
+  { to: '/telemetry', label: 'Telemetry', icon: 'bolt' },
 ];
 
 const itemClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'group flex items-center gap-2.5 px-3 py-1.5 text-[12.5px] transition-colors border-l-2',
+    'group flex items-center gap-2.5 px-3 py-2 text-[14.5px] transition-colors border-l-2',
     isActive
       ? 'bg-paper text-ink border-accent font-medium'
       : 'text-muted border-transparent hover:bg-paper hover:text-ink',
   ].join(' ');
 
 const eyebrowClass =
-  'px-3 pt-3 pb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-mute2';
+  'px-3 pt-3 pb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-mute2';
 
 const Brand = () => (
   <div className="flex items-center gap-2 text-ink">
@@ -40,13 +94,13 @@ const Brand = () => (
         opacity="0.6"
       />
     </svg>
-    <span className="font-mono text-[12px] tracking-[0.02em]">news intelligence</span>
+    <span className="font-mono text-[14px] tracking-[0.02em]">news intelligence</span>
   </div>
 );
 
 export default function Sidebar() {
   return (
-    <aside className="flex w-[220px] shrink-0 flex-col border-r border-border bg-paper2/40">
+    <aside className="flex w-[280px] shrink-0 flex-col border-r border-border bg-paper2/40">
       <div className="flex h-11 items-center border-b border-border px-3">
         <Brand />
       </div>
@@ -56,6 +110,7 @@ export default function Sidebar() {
         <div className="flex flex-col gap-px">
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} className={itemClass}>
+              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
               <span className="flex-1 text-left">{item.label}</span>
             </NavLink>
           ))}
@@ -67,6 +122,7 @@ export default function Sidebar() {
         <div className="flex flex-col gap-px">
           {SETTINGS.map((item) => (
             <NavLink key={item.to} to={item.to} className={itemClass}>
+              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
               <span className="flex-1 text-left">{item.label}</span>
             </NavLink>
           ))}
@@ -78,7 +134,7 @@ export default function Sidebar() {
           href="/admin/queues"
           target="_blank"
           rel="noreferrer"
-          className="group flex items-center gap-2 px-3 py-1.5 text-[12px] text-mute2 hover:bg-paper hover:text-ink"
+          className="group flex items-center gap-2 px-3 py-1.5 text-[14px] text-mute2 hover:bg-paper hover:text-ink"
         >
           <span className="flex-1">Bull Board</span>
           <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
