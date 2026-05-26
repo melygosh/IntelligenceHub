@@ -4,10 +4,11 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 8a — categories + axes CRUD with 4 seeded axes per user;
-> LLM `analyzeArticle` (operation v3) emits per-article category + axis-value assignments
-> using each user's config; article list + graph filterable by category. Regeneration
-> (Day 8b) and digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 8b — user-triggered regeneration of articles
+> tagged under an outdated config. Background Bull worker re-runs analyzeArticle
+> per stale article, reuses cached responses (cache key includes config_hash),
+> surfaces progress via a global banner. Categories + axes feature is now
+> end-to-end. Digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -47,7 +48,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 8a)
+## What works (end of Phase 2 Day 8b)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -102,8 +103,18 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   returns `categoryNames[]` and `axisAssignments[]`, and the cache key includes a
   `config_hash` so two users with identical configs still share the cache while
   changes invalidate per-user correctly. Article list and graph are filterable by
-  category. Regeneration of already-tagged articles after axis/category changes
-  lands in Day 8b.
+  category.
+- **Regeneration (US-6, FR-9):** when categories or axes change, the user clicks
+  "Regenerate articles" on the Categories or Axes settings page. A Bull job
+  re-tags every article whose stored `config_hash` doesn't match the user's
+  current config. Each article runs through `ArticleProcessor.retag`, which
+  reuses the LLM response cache (keyed on content_hash + config_hash) — so a
+  revert to a previously-used config completes with zero LLM calls. Progress
+  is visible via a banner mounted in the global Shell layout (polls
+  `/api/regeneration/current` every 2s while running). Partial unique index
+  on `regeneration_run (user_id) WHERE status='running'` prevents concurrent
+  runs per user; boot-time cleanup marks any stale `running` rows from a
+  previous process crash as `failed` so users never deadlock.
 - **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
