@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articleCategory, articleEntity, articles, entities } from '../db/schema';
@@ -33,10 +33,10 @@ export class GraphService {
     }
     const articleIds = articleRows.map((a) => a.id);
 
-    // Step 2 — edges = article_entity rows whose article is in scope.
-    let edgeRows: Array<{ from: string; to: string }> = [];
+    // Step 2 — mention edges = article_entity rows whose article is in scope.
+    let mentionEdgeRows: Array<{ from: string; to: string }> = [];
     if (articleIds.length > 0) {
-      edgeRows = await this.db
+      mentionEdgeRows = await this.db
         .select({ from: articleEntity.articleId, to: articleEntity.entityId })
         .from(articleEntity)
         .where(inArray(articleEntity.articleId, articleIds));
@@ -44,8 +44,8 @@ export class GraphService {
 
     // Step 3 — entities referenced by the filtered article set.
     let entityRows: Array<{ id: string; canonicalName: string; type: string }> = [];
-    if (edgeRows.length > 0) {
-      const entityIds = Array.from(new Set(edgeRows.map((e) => e.to)));
+    if (mentionEdgeRows.length > 0) {
+      const entityIds = Array.from(new Set(mentionEdgeRows.map((e) => e.to)));
       entityRows = await this.db
         .select({
           id: entities.id,
@@ -55,6 +55,9 @@ export class GraphService {
         .from(entities)
         .where(and(eq(entities.userId, userId), inArray(entities.id, entityIds)));
     }
+
+    // Step 4 — co-mention edges (entity <-> entity, weighted by shared articles).
+    const coMentionEdges = await this.buildCoMentionEdges(userId, categoryId);
 
     const nodes: GraphNode[] = [
       ...articleRows.map(
@@ -77,13 +80,75 @@ export class GraphService {
       ),
     ];
 
-    const edges: GraphEdge[] = edgeRows.map((e) => ({
-      from: e.from,
-      to: e.to,
-      kind: 'mentions',
-      weight: null,
-    }));
+    const edges: GraphEdge[] = [
+      ...mentionEdgeRows.map(
+        (e): GraphEdge => ({
+          from: e.from,
+          to: e.to,
+          kind: 'mentions',
+          weight: null,
+        }),
+      ),
+      ...coMentionEdges,
+    ];
 
     return { nodes, edges };
+  }
+
+  /**
+   * Self-join article_entity on shared article_id. Each unordered entity pair
+   * {A,B} appears twice in the join (A,B and B,A); the `ae1.entity_id <
+   * ae2.entity_id` filter keeps one direction, and LEAST/GREATEST give stable
+   * from/to ordering for React keys. Scoped to the user via the articles join;
+   * when categoryId is passed, additionally restricted to articles in that
+   * category. Returns empty array when no co-mentions exist.
+   */
+  private async buildCoMentionEdges(
+    userId: string,
+    categoryId?: string,
+  ): Promise<GraphEdge[]> {
+    const result = categoryId
+      ? await this.db.execute<{
+          from_id: string;
+          to_id: string;
+          weight: number;
+        }>(sql`
+          SELECT
+            LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
+            GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
+            COUNT(*)::int AS weight
+          FROM article_entity ae1
+          JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
+          JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
+          JOIN article_category ac ON ac.article_id = a.id AND ac.category_id = ${categoryId}
+          WHERE ae1.entity_id < ae2.entity_id
+          GROUP BY from_id, to_id
+        `)
+      : await this.db.execute<{
+          from_id: string;
+          to_id: string;
+          weight: number;
+        }>(sql`
+          SELECT
+            LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
+            GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
+            COUNT(*)::int AS weight
+          FROM article_entity ae1
+          JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
+          JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
+          WHERE ae1.entity_id < ae2.entity_id
+          GROUP BY from_id, to_id
+        `);
+
+    // Drizzle's `execute` returns a result object with `.rows` for pg.
+    const rows = (result as unknown as { rows: Array<{ from_id: string; to_id: string; weight: number }> }).rows;
+    return rows.map(
+      (r): GraphEdge => ({
+        from: r.from_id,
+        to: r.to_id,
+        kind: 'co_mention',
+        weight: r.weight,
+      }),
+    );
   }
 }
