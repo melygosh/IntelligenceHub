@@ -231,6 +231,7 @@ export const llmCalls = pgTable(
     cacheCreationTokens: integer('cache_creation_tokens').notNull().default(0),
     latencyMs: integer('latency_ms').notNull(),
     errorMessage: text('error_message'),
+    failoverReason: text('failover_reason'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
