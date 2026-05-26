@@ -4,16 +4,14 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 12 — digests + generic SSE events.
-> New `/digests` page lets users request a digest for a period
-> (day/week/month) filtered by categories or entities. Backend
-> asynchronously queries in-scope articles, aggregates top entities +
-> categories, and runs a single LLM call to produce a 2-3 paragraph
-> editorial summary. Results render on a `/digests/:id` magazine-layout
-> page with summary + top lists + key articles + per-digest telemetry.
-> A generic SSE events channel pushes status updates from worker to
-> browser without polling — designed to grow for future event types
-> (alerts, regen progress, feed-pull notifications).
+> **Current phase:** Phase 2 Day 13 — Should-tier bonuses. Articles
+> list gains a time-window filter (preset chips + custom range) and
+> Postgres full-text search across title + body. LLM provider failover
+> (Anthropic ⇄ OpenAI, opt-in via `LLM_FALLBACK_PROVIDER`) retries the
+> request once on the secondary adapter after the primary's existing
+> retry exhausts; both attempts persist to `llm_calls` telemetry. A new
+> `/telemetry` page aggregates calls per (operation, provider, model)
+> with computed USD cost from a hardcoded `MODEL_PRICING` table.
 
 ## Prerequisites
 
@@ -53,7 +51,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 12)
+## What works (end of Phase 2 Day 13)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -174,6 +172,29 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   hook opens one EventSource and dispatches to typed consumer hooks
   (e.g. `useDigestStatusEvents`); future event types add new union
   variants + consumers without changing the channel.
+- **Time-window filter + text search (`/articles`):** toolbar chip
+  group (All / 24h / 7d / 30d / Custom) + debounced search input,
+  both URL-backed via `useSearchParams`. Search uses a Postgres
+  generated `search_vector` tsvector column (migration 0012) with a
+  GIN index; `plainto_tsquery` sanitizes input. When searching,
+  results order by `ts_rank` DESC instead of recency. Composes with
+  the existing category filter.
+- **LLM provider failover** (`LLM_FALLBACK_PROVIDER` env, opt-in):
+  After the primary adapter's 2-attempt retry exhausts (any error
+  class), retry once on the configured secondary. Both attempts
+  persist their own `llm_calls` row; the fallback's row carries
+  `failover_reason` (auth | rate_limit | network | timeout |
+  invalid_response | unknown). Boot-time Zod validation ensures the
+  fallback differs from the primary AND its API key is present.
+  Cache writes use the responding provider+model — content-addressed
+  cache hits work across providers.
+- **Telemetry dashboard (`/telemetry`):** lifetime aggregation of
+  `llm_calls` per (operation, provider, model). Columns: call count,
+  input/output/cache tokens, computed USD cost, avg latency, success
+  rate, failover count. Cost via hardcoded `MODEL_PRICING` lookup
+  (claude-opus/sonnet/haiku 4.x, gpt-5/5-mini/4o/4o-mini); unknown
+  models render `—` and are tallied separately. Multi-tenant via
+  `WHERE user_id=$1`.
 - **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
   connected by **mention edges** (article → entity) and **co-mention edges**
   (entity ↔ entity, weighted by shared-article count, rendered with a thicker
