@@ -45,21 +45,21 @@ function DigestRow({ d }: { d: DigestSummary }) {
         className="flex items-baseline gap-3 px-1 py-3"
       >
         <span
-          className={`inline-block px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.06em] ${STATUS_COLOR[d.status]}`}
+          className={`inline-block px-1.5 py-px font-mono text-[12px] uppercase tracking-[0.06em] ${STATUS_COLOR[d.status]}`}
         >
           {d.status}
         </span>
-        <span className="font-mono text-[11px] text-ink">{periodLabel(d.period)}</span>
+        <span className="font-mono text-[13px] text-ink">{periodLabel(d.period)}</span>
         <Sep />
-        <span className="font-mono text-[10.5px] text-muted">
+        <span className="font-mono text-[12.5px] text-muted">
           {fmt(from)} → {fmt(to)}
         </span>
         <Sep />
-        <span className="font-mono text-[10.5px] tnum text-muted">
+        <span className="font-mono text-[12.5px] tnum text-muted">
           {d.articleCount} articles · {d.entityCount} entities
         </span>
         <span className="flex-1" />
-        <span className="font-mono text-[10.5px] text-mute2">{age}</span>
+        <span className="font-mono text-[12.5px] text-mute2">{age}</span>
       </Link>
     </li>
   );
@@ -81,7 +81,7 @@ function DigestForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-3 border border-border bg-surface p-4">
-      <div className="flex flex-wrap items-center gap-2 font-mono text-[10.5px]">
+      <div className="flex flex-wrap items-center gap-2 font-mono text-[12.5px]">
         <span className="text-muted">Period:</span>
         {(['day', 'week', 'month'] as DigestPeriod[]).map((p) => (
           <label key={p} className="inline-flex items-center gap-1 cursor-pointer">
@@ -97,7 +97,7 @@ function DigestForm() {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 font-mono text-[10.5px]">
+      <div className="flex flex-wrap items-center gap-2 font-mono text-[12.5px]">
         <span className="text-muted">Scope:</span>
         {(['category', 'entity'] as DigestScopeKind[]).map((k) => (
           <button
@@ -106,7 +106,7 @@ function DigestForm() {
             onClick={() => { setScopeKind(k); setScopeFilterIds([]); }}
             aria-pressed={scopeKind === k}
             className={
-              'border border-border px-2 py-0.5 text-[10.5px] ' +
+              'border border-border px-2 py-0.5 text-[12.5px] ' +
               (scopeKind === k ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper2')
             }
           >
@@ -129,7 +129,7 @@ function DigestForm() {
                     ? scopeFilterIds.filter((id) => id !== c.id)
                     : [...scopeFilterIds, c.id])}
                 className={
-                  'border border-border px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.06em] ' +
+                  'border border-border px-1.5 py-px font-mono text-[12px] uppercase tracking-[0.06em] ' +
                   (on ? 'bg-accent text-paper' : 'bg-paper text-muted hover:text-ink')
                 }
               >
@@ -141,7 +141,7 @@ function DigestForm() {
       ) : null}
 
       {scopeKind === 'entity' ? (
-        <div className="font-mono text-[10.5px] text-mute2">
+        <div className="font-mono text-[12.5px] text-mute2">
           Entity scope filter — use empty = all for now. Granular entity picker is Phase 3.
         </div>
       ) : null}
@@ -149,13 +149,13 @@ function DigestForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="inline-flex items-center gap-2 bg-accent px-3 py-1.5 font-mono text-[12px] text-paper hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
+        className="inline-flex items-center gap-2 bg-accent px-3 py-1.5 font-mono text-[14px] text-paper hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
       >
         {isLoading ? 'Submitting…' : 'Generate digest →'}
       </button>
 
       {error ? (
-        <div className="font-mono text-[10.5px] text-critical">
+        <div className="font-mono text-[12.5px] text-critical">
           {String((error as { data?: { message?: string } }).data?.message ?? 'Request failed')}
         </div>
       ) : null}
@@ -167,13 +167,13 @@ function DigestHistory() {
   const { data, isLoading } = useGetDigestsQuery();
 
   if (isLoading) {
-    return <p className="font-mono text-[11px] text-mute2">Loading…</p>;
+    return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
   }
   if (!data || data.items.length === 0) {
     return (
       <div className="border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[18px] text-ink">No digests yet</p>
-        <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+        <p className="font-serif text-[22px] text-ink">No digests yet</p>
+        <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
           Fill the form above and click <span className="text-ink">Generate digest</span> to create one.
         </p>
       </div>
@@ -190,15 +190,15 @@ export default function DigestsPage() {
   useDigestStatusEvents();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <header>
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           /digests
         </div>
-        <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">
+        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
           Digests
         </h1>
-        <p className="font-mono text-[10.5px] text-mute2">
+        <p className="font-mono text-[12.5px] text-mute2">
           On-demand. Fill the form, submit, watch the new row build at the top of history, click to read.
         </p>
       </header>

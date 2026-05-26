@@ -50,7 +50,7 @@ export default function TopBar() {
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-paper px-3">
-      <div className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted">
+      <div className="flex min-w-0 items-center gap-1.5 font-mono text-[13px] text-muted">
         {crumbs.map((c, i) => (
           <span key={i} className="flex items-center gap-1.5">
             {i > 0 ? <span className="text-border2">/</span> : null}
@@ -70,10 +70,10 @@ export default function TopBar() {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
         >
-          <span className="flex h-6 w-6 items-center justify-center bg-accent font-mono text-[10px] text-paper">
+          <span className="flex h-6 w-6 items-center justify-center bg-accent font-mono text-[12px] text-paper">
             {userInitial}
           </span>
-          <span className="hidden text-[12px] md:inline">{me?.email ?? '…'}</span>
+          <span className="hidden text-[14px] md:inline">{me?.email ?? '…'}</span>
           <span className="text-mute2">
             <Chevron />
           </span>
@@ -84,7 +84,7 @@ export default function TopBar() {
               type="button"
               onClick={handleLogout}
               disabled={isLoading}
-              className="block w-full px-3 py-1.5 text-left text-[12.5px] text-ink hover:bg-paper disabled:opacity-50"
+              className="block w-full px-3 py-1.5 text-left text-[14.5px] text-ink hover:bg-paper disabled:opacity-50"
             >
               Sign out
             </button>

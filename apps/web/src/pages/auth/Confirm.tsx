@@ -38,35 +38,35 @@ export default function Confirm() {
     <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <div className="w-full max-w-[380px] border border-border bg-surface p-6 text-center">
         {state === 'pending' && (
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          <p className="font-mono text-[13px] uppercase tracking-[0.12em] text-muted">
             Confirming…
           </p>
         )}
         {state === 'success' && (
           <>
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+            <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
               Confirmed
             </div>
-            <h1 className="pretty mb-3 font-serif text-[20px] leading-tight text-ink">
+            <h1 className="pretty mb-3 font-serif text-[22px] leading-tight text-ink">
               Email confirmed.
             </h1>
-            <p className="font-mono text-[10.5px] text-mute2">Redirecting…</p>
+            <p className="font-mono text-[12.5px] text-mute2">Redirecting…</p>
           </>
         )}
         {state === 'error' && (
           <>
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+            <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
               Error
             </div>
-            <h1 className="pretty mb-3 font-serif text-[20px] leading-tight text-ink">
+            <h1 className="pretty mb-3 font-serif text-[22px] leading-tight text-ink">
               Invalid or expired link.
             </h1>
             {me ? (
-              <Link to="/auth/check-email" className="underline font-mono text-[11px] text-muted">
+              <Link to="/auth/check-email" className="underline font-mono text-[13px] text-muted">
                 Send a new one →
               </Link>
             ) : (
-              <Link to="/auth/login" className="underline font-mono text-[11px] text-muted">
+              <Link to="/auth/login" className="underline font-mono text-[13px] text-muted">
                 Sign in →
               </Link>
             )}

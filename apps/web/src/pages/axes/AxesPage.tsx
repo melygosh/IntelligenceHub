@@ -37,19 +37,19 @@ export default function AxesPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Settings
         </div>
-        <h1 className="pretty mb-1 font-serif text-[28px] leading-tight text-ink">
+        <h1 className="pretty mb-1 font-serif text-[30px] leading-tight text-ink">
           Categorization axes
         </h1>
-        <p className="font-mono text-[10.5px] text-mute2">
+        <p className="font-mono text-[12.5px] text-mute2">
           The LLM picks one value per axis per article, or omits the axis if none fit.
         </p>
       </header>
 
       <form onSubmit={onAddAxis} className="space-y-2 border border-border bg-surface p-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Add axis
         </div>
         <div className="flex gap-2">
@@ -57,27 +57,27 @@ export default function AxesPage() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Axis name"
-            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
           />
           <input
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="First value"
-            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
           />
           <button
             type="submit"
             disabled={isCreating || newName.trim() === '' || newValue.trim() === ''}
-            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
           >
             Add
           </button>
         </div>
-        {newError ? <p className="font-mono text-[10.5px] text-critical">{newError}</p> : null}
+        {newError ? <p className="font-mono text-[12.5px] text-critical">{newError}</p> : null}
       </form>
 
       {isLoading ? (
-        <p className="font-mono text-[10.5px] text-muted">Loading…</p>
+        <p className="font-mono text-[12.5px] text-muted">Loading…</p>
       ) : (
         <ul className="space-y-3">
           {data?.axes.map((a) => (
@@ -129,14 +129,14 @@ function AxisRow({ axis }: { axis: Axis }) {
   return (
     <li className="border border-border bg-surface p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-serif text-[16px] text-ink">{axis.name}</span>
+        <span className="font-serif text-[18px] text-ink">{axis.name}</span>
         <button
           type="button"
           onClick={() => {
             if (confirm(`Delete axis "${axis.name}" and all its assignments?`))
               deleteAxis(axis.id);
           }}
-          className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted hover:text-critical"
+          className="font-mono text-[12.5px] uppercase tracking-[0.1em] text-muted hover:text-critical"
         >
           Delete axis
         </button>
@@ -145,7 +145,7 @@ function AxisRow({ axis }: { axis: Axis }) {
         {axis.values.map((v) => (
           <li
             key={v.id}
-            className="inline-flex items-center gap-1.5 border border-border bg-paper px-1.5 py-0.5 font-mono text-[10.5px] text-ink"
+            className="inline-flex items-center gap-1.5 border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px] text-ink"
           >
             <span>{v.value}</span>
             <button
@@ -164,18 +164,18 @@ function AxisRow({ axis }: { axis: Axis }) {
           value={addValue}
           onChange={(e) => setAddValue(e.target.value)}
           placeholder="Add value"
-          className="flex-1 border border-border bg-paper px-2.5 py-1.5 text-[12px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+          className="flex-1 border border-border bg-paper px-2.5 py-1.5 text-[14px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
         />
         <button
           type="button"
           onClick={onAddValue}
           disabled={addValue.trim() === ''}
-          className="border border-border bg-paper px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted hover:text-ink disabled:opacity-50"
+          className="border border-border bg-paper px-3 py-1.5 font-mono text-[12.5px] uppercase tracking-[0.1em] text-muted hover:text-ink disabled:opacity-50"
         >
           Add value
         </button>
       </div>
-      {error ? <p className="mt-1.5 font-mono text-[10.5px] text-critical">{error}</p> : null}
+      {error ? <p className="mt-1.5 font-mono text-[12.5px] text-critical">{error}</p> : null}
     </li>
   );
 }
@@ -212,7 +212,7 @@ function RegenerateButton() {
         type="button"
         onClick={onClick}
         disabled={isLoading || isRunning}
-        className="border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+        className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
       >
         {isRunning
           ? `Regeneration in progress… ${run.articlesProcessed} / ${run.articlesTotal}`
@@ -220,11 +220,11 @@ function RegenerateButton() {
             ? 'Starting…'
             : 'Regenerate articles'}
       </button>
-      <p className="font-mono text-[10.5px] text-mute2">
+      <p className="font-mono text-[12.5px] text-mute2">
         Re-tags every article processed under your previous config. Uses cached LLM responses where the article markup didn't change.
       </p>
       {message ? (
-        <p className="font-mono text-[10.5px] text-muted">{message}</p>
+        <p className="font-mono text-[12.5px] text-muted">{message}</p>
       ) : null}
     </div>
   );

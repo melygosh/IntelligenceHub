@@ -33,11 +33,11 @@ export default function CategoriesPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Settings
         </div>
-        <h1 className="pretty mb-1 font-serif text-[28px] leading-tight text-ink">Categories</h1>
-        <p className="font-mono text-[10.5px] text-mute2">
+        <h1 className="pretty mb-1 font-serif text-[30px] leading-tight text-ink">Categories</h1>
+        <p className="font-mono text-[12.5px] text-mute2">
           User-curated tags. The LLM picks from your list during article analysis.
         </p>
       </header>
@@ -47,36 +47,36 @@ export default function CategoriesPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New category name"
-          className="flex-1 border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+          className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
         />
         <button
           type="submit"
           disabled={isCreating || name.trim() === ''}
-          className="border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+          className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
         >
           Add
         </button>
       </form>
 
-      {error ? <p className="font-mono text-[10.5px] text-critical">{error}</p> : null}
+      {error ? <p className="font-mono text-[12.5px] text-critical">{error}</p> : null}
 
       {isLoading ? (
-        <p className="font-mono text-[10.5px] text-muted">Loading…</p>
+        <p className="font-mono text-[12.5px] text-muted">Loading…</p>
       ) : data?.categories.length === 0 ? (
-        <p className="font-mono text-[10.5px] text-mute2">
+        <p className="font-mono text-[12.5px] text-mute2">
           No categories yet. Add one above to start tagging articles.
         </p>
       ) : (
         <ul className="divide-y divide-border">
           {data?.categories.map((c) => (
             <li key={c.id} className="flex items-center justify-between py-2.5">
-              <span className="text-[13px] text-ink">{c.name}</span>
+              <span className="text-[15px] text-ink">{c.name}</span>
               <button
                 type="button"
                 onClick={() => {
                   if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.id);
                 }}
-                className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted hover:text-critical"
+                className="font-mono text-[12.5px] uppercase tracking-[0.1em] text-muted hover:text-critical"
               >
                 Delete
               </button>
@@ -123,7 +123,7 @@ function RegenerateButton() {
         type="button"
         onClick={onClick}
         disabled={isLoading || isRunning}
-        className="border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+        className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
       >
         {isRunning
           ? `Regeneration in progress… ${run.articlesProcessed} / ${run.articlesTotal}`
@@ -131,11 +131,11 @@ function RegenerateButton() {
             ? 'Starting…'
             : 'Regenerate articles'}
       </button>
-      <p className="font-mono text-[10.5px] text-mute2">
+      <p className="font-mono text-[12.5px] text-mute2">
         Re-tags every article processed under your previous config. Uses cached LLM responses where the article markup didn't change.
       </p>
       {message ? (
-        <p className="font-mono text-[10.5px] text-muted">{message}</p>
+        <p className="font-mono text-[12.5px] text-muted">{message}</p>
       ) : null}
     </div>
   );

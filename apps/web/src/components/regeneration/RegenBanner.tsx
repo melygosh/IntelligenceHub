@@ -34,8 +34,8 @@ export default function RegenBanner() {
         ? Math.round((run.articlesProcessed / run.articlesTotal) * 100)
         : 0;
     return (
-      <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[11px] text-ink">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+      <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[13px] text-ink">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <span>
             Regenerating tags… <span className="text-muted">{run.articlesProcessed}</span> /{' '}
             <span className="text-muted">{run.articlesTotal}</span> articles{' '}
@@ -53,8 +53,8 @@ export default function RegenBanner() {
 
   if (run.status === 'completed') {
     return (
-      <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[11px] text-ink">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+      <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[13px] text-ink">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <span>
             Regeneration done — <strong>{run.articlesProcessed}</strong> articles updated{' '}
             <span className="text-mute2">
@@ -78,8 +78,8 @@ export default function RegenBanner() {
 
   // failed
   return (
-    <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[11px] text-critical">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+    <div className="border-b border-border bg-surface px-6 py-2 font-mono text-[13px] text-critical">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <span>Regeneration failed: {run.errorMessage ?? 'unknown error'}.</span>
         <button
           type="button"

@@ -32,7 +32,7 @@ function fmt(d: string): string {
 
 function TopEntityRow({ e, rank }: { e: DigestTopEntity; rank: number }) {
   return (
-    <li className="flex items-baseline gap-2 py-1.5 font-mono text-[11px]">
+    <li className="flex items-baseline gap-2 py-1.5 font-mono text-[13px]">
       <span className="w-5 text-right text-mute2 tnum">{rank}.</span>
       <span className="text-mute2">{TYPE_GLYPH[e.type]}</span>
       <Link
@@ -48,7 +48,7 @@ function TopEntityRow({ e, rank }: { e: DigestTopEntity; rank: number }) {
 
 function TopCategoryRow({ c, rank }: { c: DigestTopCategory; rank: number }) {
   return (
-    <li className="flex items-baseline gap-2 py-1.5 font-mono text-[11px]">
+    <li className="flex items-baseline gap-2 py-1.5 font-mono text-[13px]">
       <span className="w-5 text-right text-mute2 tnum">{rank}.</span>
       <span className="flex-1 truncate text-ink">{c.name}</span>
       <span className="text-mute2 tnum">{c.articleCount}</span>
@@ -59,17 +59,17 @@ function TopCategoryRow({ c, rank }: { c: DigestTopCategory; rank: number }) {
 function KeyArticleRow({ a, rank }: { a: DigestKeyArticle; rank: number }) {
   return (
     <li className="flex items-baseline gap-3 py-2">
-      <span className="w-5 text-right font-mono text-[10.5px] text-mute2 tnum">{rank}.</span>
+      <span className="w-5 text-right font-mono text-[12.5px] text-mute2 tnum">{rank}.</span>
       <span
         className={`mt-1 inline-block h-2 w-2 shrink-0 ${IMPORTANCE_COLOR[a.importance ?? ''] ?? 'bg-border'}`}
       />
       <Link
         to={`/articles/${a.id}`}
-        className="pretty flex-1 text-[14px] text-ink hover:text-accent-deep"
+        className="pretty flex-1 text-[16px] text-ink hover:text-accent-deep"
       >
         {a.title}
       </Link>
-      <span className="font-mono text-[10.5px] tnum text-mute2">{fmt(a.ts)}</span>
+      <span className="font-mono text-[12.5px] tnum text-mute2">{fmt(a.ts)}</span>
     </li>
   );
 }
@@ -79,12 +79,12 @@ export default function DigestDetailPage() {
   const { data, isLoading, isError } = useGetDigestQuery(id ?? '', { skip: !id });
   useDigestStatusEvents();
 
-  if (isLoading) return <p className="font-mono text-[11px] text-mute2">Loading…</p>;
+  if (isLoading) return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
   if (isError || !data) {
     return (
       <div className="mx-auto max-w-2xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[18px] text-ink">Digest not found</p>
-        <p className="mt-2 font-mono text-[12px] text-muted">
+        <p className="font-serif text-[22px] text-ink">Digest not found</p>
+        <p className="mt-2 font-mono text-[14px] text-muted">
           Back to <Link to="/digests" className="text-accent hover:text-accent-deep">all digests</Link>.
         </p>
       </div>
@@ -97,10 +97,10 @@ export default function DigestDetailPage() {
   return (
     <article className="mx-auto max-w-2xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Digests › Digest
         </div>
-        <h1 className="pretty font-serif text-[28px] leading-tight text-ink">
+        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
           {data.period === 'day' ? 'Last 24 hours'
            : data.period === 'week' ? 'Last week'
            : 'Last month'}
@@ -111,7 +111,7 @@ export default function DigestDetailPage() {
             ? `${data.scopeFilterIds.length} entities`
             : 'All articles'}
         </h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] text-muted">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
           <span className="tnum">
             {fmt(wFrom.toISOString())} → {fmt(wTo.toISOString())}
           </span>
@@ -121,7 +121,7 @@ export default function DigestDetailPage() {
           <span className="tnum text-ink">{data.entityCount} entities</span>
         </div>
         {data.status === 'ready' && data.model ? (
-          <div className="font-mono text-[10px] text-mute2 tnum">
+          <div className="font-mono text-[12px] text-mute2 tnum">
             {data.model} · {(data.inputTokens + data.outputTokens).toLocaleString()} tokens · {data.latencyMs.toLocaleString()} ms
           </div>
         ) : null}
@@ -129,8 +129,8 @@ export default function DigestDetailPage() {
 
       {data.status === 'building' ? (
         <section className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[18px] text-ink">Building digest…</p>
-          <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+          <p className="font-serif text-[22px] text-ink">Building digest…</p>
+          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
             LLM is summarising {data.articleCount} articles. This usually takes 5-15 seconds.
             Page will refresh automatically when ready.
           </p>
@@ -139,8 +139,8 @@ export default function DigestDetailPage() {
 
       {data.status === 'failed' ? (
         <section className="border border-dashed border-critical/40 bg-critical-bg px-6 py-10 text-center">
-          <p className="font-serif text-[18px] text-critical">Build failed</p>
-          <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+          <p className="font-serif text-[22px] text-critical">Build failed</p>
+          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
             {data.errorMessage ?? 'Unknown error.'}
           </p>
         </section>
@@ -149,11 +149,11 @@ export default function DigestDetailPage() {
       {data.status === 'ready' && data.summary ? (
         <>
           <section className="space-y-3">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+            <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
               Summary
             </div>
             {data.summary.map((p, i) => (
-              <p key={i} className="pretty font-serif text-[16px] leading-relaxed text-ink">
+              <p key={i} className="pretty font-serif text-[18px] leading-relaxed text-ink">
                 {p}
               </p>
             ))}
@@ -163,7 +163,7 @@ export default function DigestDetailPage() {
             <section className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
               {data.topEntities.length > 0 ? (
                 <div>
-                  <div className="mb-2 border-b border-border pb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mb-2 border-b border-border pb-1 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
                     Top entities
                   </div>
                   <ol>
@@ -175,7 +175,7 @@ export default function DigestDetailPage() {
               ) : null}
               {data.topCategories.length > 0 ? (
                 <div>
-                  <div className="mb-2 border-b border-border pb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mb-2 border-b border-border pb-1 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
                     Top categories
                   </div>
                   <ol>
@@ -190,7 +190,7 @@ export default function DigestDetailPage() {
 
           {data.keyArticles.length > 0 ? (
             <section>
-              <div className="mb-2 border-b border-border pb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+              <div className="mb-2 border-b border-border pb-1 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
                 Key articles
               </div>
               <ol className="divide-y divide-border">

@@ -59,13 +59,13 @@ export default function CheckEmail() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper p-4">
       <div className="w-full max-w-[420px] border border-border bg-surface p-6">
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Verify email
         </div>
-        <h1 className="pretty mb-4 font-serif text-[22px] leading-tight text-ink">
+        <h1 className="pretty mb-4 font-serif text-[24px] leading-tight text-ink">
           Check your email.
         </h1>
-        <p className="mb-4 text-[13px] text-ink">
+        <p className="mb-4 text-[15px] text-ink">
           We sent a confirmation link
           {me?.email ? (
             <>
@@ -78,17 +78,17 @@ export default function CheckEmail() {
 
         {shownLink ? (
           <div className="mb-4 border border-border bg-paper p-3">
-            <div className="mb-1.5 inline-block bg-ink px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-paper">
+            <div className="mb-1.5 inline-block bg-ink px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-paper">
               Dev Mode
             </div>
-            <div className="mt-1 break-all font-mono text-[11.5px] text-ink">
+            <div className="mt-1 break-all font-mono text-[13.5px] text-ink">
               <a className="underline" href={shownLink}>
                 {shownLink}
               </a>
             </div>
             <button
               type="button"
-              className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted hover:text-ink"
+              className="mt-2 font-mono text-[12.5px] uppercase tracking-[0.1em] text-muted hover:text-ink"
               onClick={copyLink}
             >
               Copy link
@@ -101,7 +101,7 @@ export default function CheckEmail() {
             type="button"
             disabled={isResending || cooldown > 0}
             onClick={onResend}
-            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
           >
             {cooldown > 0
               ? `Resent — wait ${cooldown}s`
@@ -111,9 +111,9 @@ export default function CheckEmail() {
           </button>
         </div>
 
-        {error ? <p className="mb-3 font-mono text-[10.5px] text-critical">{error}</p> : null}
+        {error ? <p className="mb-3 font-mono text-[12.5px] text-critical">{error}</p> : null}
 
-        <div className="mt-4 font-mono text-[10.5px] text-mute2">
+        <div className="mt-4 font-mono text-[12.5px] text-mute2">
           Already confirmed?{' '}
           <Link to="/articles" className="underline text-muted">
             Continue →

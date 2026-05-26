@@ -25,7 +25,7 @@ export function fillGaps(buckets: TimelineBucket[]): Array<{ dayUtc: string; cou
 
 export function MentionTimeline({ buckets }: { buckets: TimelineBucket[] }) {
   if (buckets.length === 0) {
-    return <div className="font-mono text-[10.5px] text-mute2">no activity yet</div>;
+    return <div className="font-mono text-[12.5px] text-mute2">no activity yet</div>;
   }
   const series = fillGaps(buckets);
   const maxCount = Math.max(...series.map((s) => s.count), 1);

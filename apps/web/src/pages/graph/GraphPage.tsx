@@ -16,13 +16,13 @@ function CategoryFilter({
 }) {
   const { data } = useGetCategoriesQuery();
   return (
-    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
       <label htmlFor="graph-cat-filter">filter by category:</label>
       <select
         id="graph-cat-filter"
         value={selected ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-        className="border border-border bg-paper px-1.5 py-0.5 text-[10.5px] text-ink focus:border-ink focus:outline-none"
+        className="border border-border bg-paper px-1.5 py-0.5 text-[12.5px] text-ink focus:border-ink focus:outline-none"
       >
         <option value="">All categories</option>
         {data?.categories.map((c) => (
@@ -43,7 +43,7 @@ function NodeKindToggle({
   onChange: (kind: NodeKindFilter) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
       <span>show:</span>
       <div className="flex border border-border">
         {NODE_KIND_FILTERS.map((kind) => {
@@ -54,7 +54,7 @@ function NodeKindToggle({
               type="button"
               onClick={() => onChange(kind)}
               className={
-                'px-2 py-0.5 text-[10.5px] ' +
+                'px-2 py-0.5 text-[12.5px] ' +
                 (active
                   ? 'bg-ink text-paper'
                   : 'bg-paper text-ink hover:bg-paper2')
@@ -166,11 +166,11 @@ export default function GraphPage() {
   return (
     <div className="flex h-full flex-col gap-4">
       <header>
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Graph
         </div>
-        <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">Relationships</h1>
-        <div className="flex flex-wrap items-center gap-x-3 font-mono text-[10.5px] text-muted">
+        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">Relationships</h1>
+        <div className="flex flex-wrap items-center gap-x-3 font-mono text-[12.5px] text-muted">
           <span>articles + entities · mention + co-mention edges</span>
           {filtered ? (
             <span className="tnum text-ink">
@@ -186,12 +186,12 @@ export default function GraphPage() {
 
       <div className="min-h-[520px] flex-1 border border-border bg-surface">
         {isLoading ? (
-          <p className="p-6 font-mono text-[11px] text-mute2">Loading…</p>
+          <p className="p-6 font-mono text-[13px] text-mute2">Loading…</p>
         ) : !filtered || filtered.nodes.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center">
             <div>
-              <p className="font-serif text-[18px] text-ink">No graph yet</p>
-              <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+              <p className="font-serif text-[22px] text-ink">No graph yet</p>
+              <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
                 Pull a few articles in <a href="/feeds" className="text-accent hover:text-accent-deep">Feeds</a>{' '}
                 and they'll show up here connected to their mentioned entities.
               </p>

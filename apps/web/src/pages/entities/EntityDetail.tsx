@@ -27,7 +27,7 @@ function RelatedChip({ r }: { r: RelatedEntitySummary }) {
   return (
     <Link
       to={`/entities/${r.id}`}
-      className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[11px] text-ink hover:bg-paper2"
+      className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
     >
       <span className="text-mute2">{TYPE_GLYPH[r.type]}</span>
       <span>{r.canonicalName}</span>
@@ -41,13 +41,13 @@ export default function EntityDetail() {
   const { data, isLoading, isError } = useGetEntityQuery(id ?? '', { skip: !id });
 
   if (isLoading) {
-    return <p className="font-mono text-[11px] text-mute2">Loading…</p>;
+    return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
   }
   if (isError || !data) {
     return (
       <div className="mx-auto max-w-2xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[18px] text-ink">Entity not found</p>
-        <p className="mt-2 font-mono text-[12px] text-muted">
+        <p className="font-serif text-[22px] text-ink">Entity not found</p>
+        <p className="mt-2 font-mono text-[14px] text-muted">
           Back to <Link to="/graph" className="text-accent hover:text-accent-deep">graph</Link>.
         </p>
       </div>
@@ -57,11 +57,11 @@ export default function EntityDetail() {
   return (
     <article className="mx-auto max-w-2xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Entities › Entity
         </div>
-        <h1 className="pretty font-serif text-[28px] leading-tight text-ink">{data.canonicalName}</h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] text-muted">
+        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
           <span className="flex items-center gap-1.5">
             <span className="text-mute2">{TYPE_GLYPH[data.type]}</span>
             <span className="uppercase tracking-[0.06em] text-ink">{data.type}</span>
@@ -85,12 +85,12 @@ export default function EntityDetail() {
 
       {data.aliases.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Also known as</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Also known as</div>
           <ul className="flex flex-wrap gap-1.5">
             {data.aliases.map((a) => (
               <li
                 key={a}
-                className="border border-border bg-paper px-1.5 py-px font-mono text-[10.5px] text-muted"
+                className="border border-border bg-paper px-1.5 py-px font-mono text-[12.5px] text-muted"
               >
                 {a}
               </li>
@@ -100,13 +100,13 @@ export default function EntityDetail() {
       ) : null}
 
       <section className="space-y-2">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Mention timeline</div>
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Mention timeline</div>
         <MentionTimeline buckets={data.timelineBuckets} />
       </section>
 
       {data.relatedEntities.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Often appears with</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Often appears with</div>
           <ul className="flex flex-wrap gap-2">
             {data.relatedEntities.map((r) => (
               <li key={r.id}>
@@ -119,7 +119,7 @@ export default function EntityDetail() {
 
       {data.mentioningArticles.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
             Mentioned in {data.mentionCount} article{data.mentionCount === 1 ? '' : 's'}
           </div>
           <ul className="divide-y divide-border">
@@ -130,10 +130,10 @@ export default function EntityDetail() {
                 ) : (
                   <span className="mt-1 inline-block h-2 w-2 shrink-0 bg-border" />
                 )}
-                <Link to={`/articles/${m.id}`} className="pretty flex-1 text-[14px] text-ink hover:text-accent-deep">
+                <Link to={`/articles/${m.id}`} className="pretty flex-1 text-[16px] text-ink hover:text-accent-deep">
                   {m.title}
                 </Link>
-                <span className="font-mono text-[10.5px] tnum text-mute2">{formatDate(m.ts)}</span>
+                <span className="font-mono text-[12.5px] tnum text-mute2">{formatDate(m.ts)}</span>
               </li>
             ))}
           </ul>

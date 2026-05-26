@@ -7,10 +7,10 @@ import { useGetMeQuery, useLoginMutation } from '../../store/api';
 import { errorMessage, isMutationErrorMessage } from '../../lib/auth';
 
 const fieldClass =
-  'w-full border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
+  'w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
 const labelClass =
-  'mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-muted';
-const errorClass = 'mt-1 font-mono text-[10.5px] text-critical';
+  'mb-1 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.1em] text-muted';
+const errorClass = 'mt-1 font-mono text-[12.5px] text-critical';
 
 export default function Login() {
   const { data: me } = useGetMeQuery();
@@ -48,10 +48,10 @@ export default function Login() {
         className="w-full max-w-[360px] border border-border bg-surface p-6"
         noValidate
       >
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Sign in
         </div>
-        <h1 className="pretty mb-5 font-serif text-[22px] leading-tight text-ink">Welcome back</h1>
+        <h1 className="pretty mb-5 font-serif text-[24px] leading-tight text-ink">Welcome back</h1>
 
         <label className="mb-3 block" htmlFor="email">
           <span className={labelClass}>Email</span>
@@ -83,7 +83,7 @@ export default function Login() {
         </label>
 
         {error ? (
-          <div className="mb-3 border border-critical/30 bg-critical-bg px-2.5 py-1.5 font-mono text-[11px] text-critical">
+          <div className="mb-3 border border-critical/30 bg-critical-bg px-2.5 py-1.5 font-mono text-[13px] text-critical">
             {isMutationErrorMessage(error)}
           </div>
         ) : null}
@@ -91,7 +91,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex w-full items-center justify-center gap-2 bg-accent px-3 py-2 font-mono text-[13px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
+          className="inline-flex w-full items-center justify-center gap-2 bg-accent px-3 py-2 font-mono text-[15px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
         >
           {isLoading ? (
             <>
@@ -106,7 +106,7 @@ export default function Login() {
           )}
         </button>
 
-        <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[11px] text-muted">
+        <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[13px] text-muted">
           No account?{' '}
           <Link to="/auth/register" className="ml-1.5 text-accent hover:text-accent-deep">
             Create one →

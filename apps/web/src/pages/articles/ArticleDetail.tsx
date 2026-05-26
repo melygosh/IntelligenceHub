@@ -23,13 +23,13 @@ export default function ArticleDetail() {
   const { data, isLoading, isError } = useGetArticleQuery(id ?? '', { skip: !id });
 
   if (isLoading) {
-    return <p className="font-mono text-[11px] text-mute2">Loading…</p>;
+    return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
   }
   if (isError || !data) {
     return (
       <div className="mx-auto max-w-2xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[18px] text-ink">Article not found</p>
-        <p className="mt-2 font-mono text-[12px] text-muted">
+        <p className="font-serif text-[22px] text-ink">Article not found</p>
+        <p className="mt-2 font-mono text-[14px] text-muted">
           Back to <Link to="/articles" className="text-accent hover:text-accent-deep">all articles</Link>.
         </p>
       </div>
@@ -41,11 +41,11 @@ export default function ArticleDetail() {
   return (
     <article className="mx-auto max-w-2xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Articles › Article
         </div>
-        <h1 className="pretty font-serif text-[28px] leading-tight text-ink">{data.title}</h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] text-muted">
+        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.title}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
           {data.importance ? (
             <span className="flex items-center gap-1.5">
               <span className={`inline-block h-2 w-2 ${IMPORTANCE_COLOR[data.importance] ?? 'bg-border'}`} />
@@ -76,15 +76,15 @@ export default function ArticleDetail() {
 
       {data.summary ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Summary</div>
-          <p className="pretty font-serif text-[16px] leading-relaxed text-ink">{data.summary}</p>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Summary</div>
+          <p className="pretty font-serif text-[18px] leading-relaxed text-ink">{data.summary}</p>
         </section>
       ) : null}
 
       {data.body ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Full text</div>
-          <p className="pretty whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-ink">
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Full text</div>
+          <p className="pretty whitespace-pre-wrap font-serif text-[17px] leading-relaxed text-ink">
             {data.body}
           </p>
         </section>
@@ -92,13 +92,13 @@ export default function ArticleDetail() {
 
       {data.entities.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Entities</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Entities</div>
           <ul className="flex flex-wrap gap-2">
             {data.entities.map((e) => (
               <li key={e.id}>
                 <Link
                   to={`/entities/${e.id}`}
-                  className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[11px] text-ink hover:bg-paper2"
+                  className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
                 >
                   <span className="text-mute2">{TYPE_GLYPH[e.type]}</span>
                   <span>{e.canonicalName}</span>
@@ -113,12 +113,12 @@ export default function ArticleDetail() {
         <section className="grid gap-4 sm:grid-cols-2">
           {data.categoryNames.length > 0 ? (
             <div className="space-y-2">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Categories</div>
+              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Categories</div>
               <ul className="flex flex-wrap gap-1.5">
                 {data.categoryNames.map((n) => (
                   <li
                     key={n}
-                    className="border border-border bg-paper px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.06em] text-muted"
+                    className="border border-border bg-paper px-1.5 py-px font-mono text-[12px] uppercase tracking-[0.06em] text-muted"
                   >
                     {n}
                   </li>
@@ -128,8 +128,8 @@ export default function ArticleDetail() {
           ) : null}
           {data.axisAssignments.length > 0 ? (
             <div className="space-y-2">
-              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">Axes</div>
-              <ul className="space-y-0.5 font-mono text-[11px]">
+              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Axes</div>
+              <ul className="space-y-0.5 font-mono text-[13px]">
                 {data.axisAssignments.map((a) => (
                   <li key={`${a.axisName}:${a.value}`} className="flex items-baseline gap-2">
                     <span className="text-muted">{a.axisName}</span>
@@ -144,7 +144,7 @@ export default function ArticleDetail() {
 
       {data.similarCount > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
             Found {data.similarCount} similar in other feeds
           </div>
           <ul className="divide-y divide-border">
@@ -154,11 +154,11 @@ export default function ArticleDetail() {
                 <li key={s.id} className="flex flex-wrap items-baseline gap-2 py-2">
                   <Link
                     to={`/articles/${s.id}`}
-                    className="pretty flex-1 text-[14px] text-ink hover:text-accent-deep"
+                    className="pretty flex-1 text-[16px] text-ink hover:text-accent-deep"
                   >
                     {s.title}
                   </Link>
-                  <span className="font-mono text-[10.5px] text-mute2">
+                  <span className="font-mono text-[12.5px] text-mute2">
                     from <span className="text-muted">{s.feedTitle}</span>{' '}
                     · <span className="tnum">{sDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>{' '}
                     ·{' '}

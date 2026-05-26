@@ -14,13 +14,13 @@ function CategoryFilter({
 }) {
   const { data } = useGetCategoriesQuery();
   return (
-    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
       <label htmlFor="cat-filter">filter by category:</label>
       <select
         id="cat-filter"
         value={selected ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-        className="border border-border bg-paper px-1.5 py-0.5 text-[10.5px] text-ink focus:border-ink focus:outline-none"
+        className="border border-border bg-paper px-1.5 py-0.5 text-[12.5px] text-ink focus:border-ink focus:outline-none"
       >
         <option value="">All categories</option>
         {data?.categories.map((c) => (
@@ -71,7 +71,7 @@ function TimeWindowFilter({
           onClick={() => onPeriodChange(p)}
           aria-pressed={period === p}
           className={
-            'border border-border px-2 py-0.5 font-mono text-[10.5px] ' +
+            'border border-border px-2 py-0.5 font-mono text-[12.5px] ' +
             (period === p ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-paper2')
           }
         >
@@ -84,17 +84,17 @@ function TimeWindowFilter({
             type="date"
             value={from}
             onChange={(e) => onCustomChange(e.target.value, to)}
-            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[10.5px]"
+            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
           />
-          <span className="font-mono text-[10.5px] text-mute2">→</span>
+          <span className="font-mono text-[12.5px] text-mute2">→</span>
           <input
             type="date"
             value={to}
             onChange={(e) => onCustomChange(from, e.target.value)}
-            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[10.5px]"
+            className="border border-border bg-paper px-1.5 py-0.5 font-mono text-[12.5px]"
           />
           {customInvalid ? (
-            <span className="font-mono text-[10.5px] text-critical">from &gt; to</span>
+            <span className="font-mono text-[12.5px] text-critical">from &gt; to</span>
           ) : null}
         </div>
       ) : null}
@@ -123,7 +123,7 @@ function SearchInput({
       value={local}
       onChange={(e) => setLocal(e.target.value)}
       placeholder="Search articles…"
-      className="border border-border bg-paper px-2 py-0.5 font-mono text-[10.5px] placeholder:text-mute2"
+      className="border border-border bg-paper px-2 py-0.5 font-mono text-[12.5px] placeholder:text-mute2"
     />
   );
 }
@@ -153,7 +153,7 @@ function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
     <Link
       to={`/entities/${entity.id}`}
       onClick={(e) => e.stopPropagation()}
-      className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted hover:text-ink"
+      className="inline-flex items-center gap-1 font-mono text-[12.5px] text-muted hover:text-ink"
     >
       <span className="text-mute2">{TYPE_GLYPH[entity.type]}</span>
       <span>{entity.canonicalName}</span>
@@ -168,8 +168,8 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
       <Link to={`/articles/${article.id}`} className="flex gap-3 px-1 py-3">
         <ImportanceDot level={article.importance} />
         <div className="min-w-0 flex-1">
-          <h3 className="pretty text-[14.5px] font-medium leading-snug text-ink">{article.title}</h3>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] text-mute2">
+          <h3 className="pretty text-[16.5px] font-medium leading-snug text-ink">{article.title}</h3>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
             <span className="tnum">
               {date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -202,7 +202,7 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
                   {article.categoryNames.map((n) => (
                     <span
                       key={n}
-                      className="border border-border bg-paper px-1 py-px font-mono text-[10px] uppercase tracking-[0.06em] text-muted"
+                      className="border border-border bg-paper px-1 py-px font-mono text-[12px] uppercase tracking-[0.06em] text-muted"
                     >
                       {n}
                     </span>
@@ -252,15 +252,15 @@ export default function ArticlesList() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <header>
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Articles
         </div>
-        <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">
+        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
           Your feed
         </h1>
-        <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+        <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
           <span>most recent first (or by relevance when searching)</span>
           {data ? (
             <>
@@ -297,18 +297,18 @@ export default function ArticlesList() {
       </header>
 
       {isLoading ? (
-        <p className="font-mono text-[11px] text-mute2">Loading…</p>
+        <p className="font-mono text-[13px] text-mute2">Loading…</p>
       ) : error ? (
         <div className="border border-dashed border-critical/40 px-6 py-10 text-center">
-          <p className="font-serif text-[18px] text-critical">Couldn't load articles</p>
-          <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+          <p className="font-serif text-[22px] text-critical">Couldn't load articles</p>
+          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
             {(error as { data?: { message?: string } }).data?.message ?? 'Try a different filter or refresh the page.'}
           </p>
         </div>
       ) : !data || data.articles.length === 0 ? (
         <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[18px] text-ink">No articles match</p>
-          <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+          <p className="font-serif text-[22px] text-ink">No articles match</p>
+          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
             Try a different filter, or add a feed in{' '}
             <Link to="/feeds" className="text-accent hover:text-accent-deep">
               Feeds

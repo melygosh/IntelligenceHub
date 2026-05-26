@@ -7,11 +7,11 @@ import { useGetMeQuery, useRegisterMutation } from '../../store/api';
 import { errorMessage, isMutationErrorMessage } from '../../lib/auth';
 
 const fieldClass =
-  'w-full border border-border bg-paper px-2.5 py-2 text-[13px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
+  'w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
 const labelClass =
-  'mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-muted';
-const errorClass = 'mt-1 font-mono text-[10.5px] text-critical';
-const hintClass = 'mt-1 font-mono text-[10.5px] text-mute2';
+  'mb-1 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.1em] text-muted';
+const errorClass = 'mt-1 font-mono text-[12.5px] text-critical';
+const hintClass = 'mt-1 font-mono text-[12.5px] text-mute2';
 
 export default function Register() {
   const { data: me } = useGetMeQuery();
@@ -58,10 +58,10 @@ export default function Register() {
         className="w-full max-w-[360px] border border-border bg-surface p-6"
         noValidate
       >
-        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Create account
         </div>
-        <h1 className="pretty mb-5 font-serif text-[22px] leading-tight text-ink">
+        <h1 className="pretty mb-5 font-serif text-[24px] leading-tight text-ink">
           Make your hub.
         </h1>
 
@@ -97,7 +97,7 @@ export default function Register() {
         </label>
 
         {error ? (
-          <div className="mb-3 border border-critical/30 bg-critical-bg px-2.5 py-1.5 font-mono text-[11px] text-critical">
+          <div className="mb-3 border border-critical/30 bg-critical-bg px-2.5 py-1.5 font-mono text-[13px] text-critical">
             {isMutationErrorMessage(error)}
           </div>
         ) : null}
@@ -112,17 +112,17 @@ export default function Register() {
             className="mt-0.5 h-3.5 w-3.5 cursor-pointer border-border accent-accent"
             {...register('loadDemoData')}
           />
-          <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink">
+          <span className="flex items-center gap-1.5 font-mono text-[13px] text-ink">
             Load demo data
             <span
               role="tooltip"
               aria-label="What does this do?"
               tabIndex={0}
               onClick={(e) => e.preventDefault()}
-              className="relative inline-flex h-4 w-4 cursor-help items-center justify-center border border-mute2 text-[9px] text-mute2 hover:text-ink focus:text-ink focus:outline-none"
+              className="relative inline-flex h-4 w-4 cursor-help items-center justify-center border border-mute2 text-[11px] text-mute2 hover:text-ink focus:text-ink focus:outline-none"
             >
               ?
-              <span className="invisible absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 border border-border bg-paper px-2 py-1.5 text-left font-mono text-[10px] leading-relaxed text-muted opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <span className="invisible absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 border border-border bg-paper px-2 py-1.5 text-left font-mono text-[12px] leading-relaxed text-muted opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 Loads ~20 sample HN articles with pre-generated tags so you can
                 explore the graph without waiting for live RSS pulls.
               </span>
@@ -133,7 +133,7 @@ export default function Register() {
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex w-full items-center justify-center gap-2 bg-accent px-3 py-2 font-mono text-[13px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
+          className="inline-flex w-full items-center justify-center gap-2 bg-accent px-3 py-2 font-mono text-[15px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
         >
           {isLoading ? (
             <>
@@ -148,7 +148,7 @@ export default function Register() {
           )}
         </button>
 
-        <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[11px] text-muted">
+        <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[13px] text-muted">
           Have an account?{' '}
           <Link to="/auth/login" className="ml-1.5 text-accent hover:text-accent-deep">
             Sign in →
