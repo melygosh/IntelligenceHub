@@ -51,6 +51,7 @@ export class DemoSeederService {
           userId,
           url: f.url,
           title: f.title,
+          iconUrl: f.iconUrl ?? null,
           status: 'paused',
         })
         .returning({ id: feeds.id });

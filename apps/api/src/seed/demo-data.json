@@ -2,15 +2,18 @@
   "feeds": [
     {
       "url": "demo://hn-snapshot",
-      "title": "Hacker News (demo snapshot)"
+      "title": "Hacker News (demo snapshot)",
+      "iconUrl": "https://news.ycombinator.com/favicon.ico"
     },
     {
       "url": "demo://techcrunch-mirror",
-      "title": "TechCrunch (demo snapshot)"
+      "title": "TechCrunch (demo snapshot)",
+      "iconUrl": "https://techcrunch.com/favicon.ico"
     },
     {
       "url": "demo://verge-mirror",
-      "title": "The Verge (demo snapshot)"
+      "title": "The Verge (demo snapshot)",
+      "iconUrl": "https://www.theverge.com/icons/favicon.ico"
     }
   ],
   "categories": [

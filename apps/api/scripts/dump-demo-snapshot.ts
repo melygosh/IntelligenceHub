@@ -171,9 +171,21 @@ async function main(): Promise<void> {
 
   const seed = {
     feeds: [
-      { url: HN_FEED, title: 'Hacker News (demo snapshot)' },
-      { url: TECHCRUNCH_FEED, title: 'TechCrunch (demo snapshot)' },
-      { url: VERGE_FEED, title: 'The Verge (demo snapshot)' },
+      {
+        url: HN_FEED,
+        title: 'Hacker News (demo snapshot)',
+        iconUrl: 'https://news.ycombinator.com/favicon.ico',
+      },
+      {
+        url: TECHCRUNCH_FEED,
+        title: 'TechCrunch (demo snapshot)',
+        iconUrl: 'https://techcrunch.com/favicon.ico',
+      },
+      {
+        url: VERGE_FEED,
+        title: 'The Verge (demo snapshot)',
+        iconUrl: 'https://www.theverge.com/icons/favicon.ico',
+      },
     ],
     // Hand-curated category set (Step 3 below also re-tags articles).
     categories: ['AI infra', 'Web dev', 'Hardware', 'Crypto regulation', 'DevTools'],

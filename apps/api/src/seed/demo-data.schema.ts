@@ -4,6 +4,7 @@ import { EntityKind } from '@intelligencehub/shared';
 export const DemoFeed = z.object({
   url: z.string(),
   title: z.string(),
+  iconUrl: z.string().url().nullable().optional(),
 });
 export type DemoFeed = z.infer<typeof DemoFeed>;
 
