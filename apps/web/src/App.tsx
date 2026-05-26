@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Shell from './components/layout/Shell';
 import AuthGuard from './components/layout/AuthGuard';
+import { ToastProvider } from './components/toast/ToastHost';
 import Register from './pages/auth/Register';
 import Login from './pages/auth/Login';
 import CheckEmail from './pages/auth/CheckEmail';
@@ -17,6 +18,14 @@ import DigestDetailPage from './pages/digests/DigestDetailPage';
 import TelemetryPage from './pages/telemetry/TelemetryPage';
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppRoutes />
+    </ToastProvider>
+  );
+}
+
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth/register" element={<Register />} />
