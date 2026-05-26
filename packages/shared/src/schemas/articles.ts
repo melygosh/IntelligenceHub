@@ -20,6 +20,7 @@ export const ArticleListItem = z.object({
   feedId: z.string().uuid(),
   entities: z.array(ArticleEntitySummary),
   categoryNames: z.array(z.string()).default([]),
+  similarCount: z.number().int().nonnegative().default(0),
 });
 export type ArticleListItem = z.infer<typeof ArticleListItem>;
 
@@ -27,3 +28,26 @@ export const ArticleListResponse = z.object({
   articles: z.array(ArticleListItem),
 });
 export type ArticleListResponse = z.infer<typeof ArticleListResponse>;
+
+export const AxisAssignmentSummary = z.object({
+  axisName: z.string(),
+  value: z.string(),
+});
+export type AxisAssignmentSummary = z.infer<typeof AxisAssignmentSummary>;
+
+export const SimilarArticleSummary = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  url: z.string().url(),
+  feedTitle: z.string(),
+  ts: z.string().datetime(),
+});
+export type SimilarArticleSummary = z.infer<typeof SimilarArticleSummary>;
+
+export const ArticleDetail = ArticleListItem.extend({
+  body: z.string().nullable(),
+  feedTitle: z.string(),
+  axisAssignments: z.array(AxisAssignmentSummary),
+  similarArticles: z.array(SimilarArticleSummary),
+});
+export type ArticleDetail = z.infer<typeof ArticleDetail>;
