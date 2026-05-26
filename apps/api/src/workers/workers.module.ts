@@ -5,6 +5,7 @@ import { FeedsModule } from '../feeds/feeds.module';
 import { ArticlesModule } from '../articles/articles.module';
 import { FeedPullWorker } from './feed-pull.worker';
 import { RegenerationWorker } from './regeneration.worker';
+import { RegenerationStartupCleanup } from './regeneration-startup.cleanup';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { RegenerationWorker } from './regeneration.worker';
     FeedsModule,
     ArticlesModule,
   ],
-  providers: [FeedPullWorker, RegenerationWorker],
+  providers: [FeedPullWorker, RegenerationWorker, RegenerationStartupCleanup],
 })
 export class WorkersModule {}
