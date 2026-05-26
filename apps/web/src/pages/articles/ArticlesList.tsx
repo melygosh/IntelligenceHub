@@ -43,6 +43,10 @@ const PERIOD_LABELS: Record<Period, string> = {
   custom: 'Custom',
 };
 
+function isPeriod(s: string | null): s is Period {
+  return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
+}
+
 function TimeWindowFilter({
   period,
   from,
@@ -216,13 +220,15 @@ function ArticleRow({ article }: { article: ArticleListItem }) {
 export default function ArticlesList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryId = searchParams.get('category') ?? undefined;
-  const period = (searchParams.get('period') as Period | null) ?? 'all';
+  const rawPeriod = searchParams.get('period');
+  const period: Period = isPeriod(rawPeriod) ? rawPeriod : 'all';
   const from = searchParams.get('from') ?? '';
   const to = searchParams.get('to') ?? '';
   const q = searchParams.get('q') ?? '';
 
   const customInvalid =
     period === 'custom' && from && to && new Date(from) > new Date(to);
+  const customIncomplete = period === 'custom' && (!from || !to);
 
   // Convert local-date `from`/`to` strings to UTC ISO datetimes for the API.
   // `<input type="date">` produces 'YYYY-MM-DD' (local midnight). We treat
@@ -230,8 +236,8 @@ export default function ArticlesList() {
   const apiFrom = period === 'custom' && from ? `${from}T00:00:00.000Z` : undefined;
   const apiTo = period === 'custom' && to ? `${to}T23:59:59.999Z` : undefined;
 
-  const { data, isLoading } = useGetArticlesQuery(
-    customInvalid
+  const { data, isLoading, error } = useGetArticlesQuery(
+    customInvalid || customIncomplete
       ? { categoryId }
       : { categoryId, period, from: apiFrom, to: apiTo, q: q || undefined },
   );
@@ -292,6 +298,13 @@ export default function ArticlesList() {
 
       {isLoading ? (
         <p className="font-mono text-[11px] text-mute2">Loading…</p>
+      ) : error ? (
+        <div className="border border-dashed border-critical/40 px-6 py-10 text-center">
+          <p className="font-serif text-[18px] text-critical">Couldn't load articles</p>
+          <p className="mx-auto mt-2 max-w-sm font-mono text-[12px] leading-relaxed text-muted">
+            {(error as { data?: { message?: string } }).data?.message ?? 'Try a different filter or refresh the page.'}
+          </p>
+        </div>
       ) : !data || data.articles.length === 0 ? (
         <div className="border border-dashed border-border px-6 py-10 text-center">
           <p className="font-serif text-[18px] text-ink">No articles match</p>
