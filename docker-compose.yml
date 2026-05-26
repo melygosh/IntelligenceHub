@@ -54,8 +54,9 @@ services:
       LLM_TOKEN_LIMIT_PER_ARTICLE: ${LLM_TOKEN_LIMIT_PER_ARTICLE}
       FEED_PULL_INTERVAL_SECONDS: ${FEED_PULL_INTERVAL_SECONDS}
     ports:
-      # Host port 3010 to avoid clashes with other local servers on 3000/3005.
-      - "3010:3000"
+      # Host port 3010 -> container port 3011. Both 3000 and 3005 are taken on the
+      # dev host, so the container listens on 3011 for defense in depth.
+      - "3010:3011"
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,7 +71,7 @@ services:
     environment:
       # Vite proxy target inside the docker network — must use the api service hostname,
       # not localhost (localhost inside the web container = the web container itself).
-      VITE_API_BASE_URL: http://api:3000
+      VITE_API_BASE_URL: http://api:3011
     ports:
       # Host port 5174 to avoid clashing with any local Vite dev server on 5173.
       - "5174:5173"

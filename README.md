@@ -40,7 +40,7 @@ local dev servers:
 | Service  | Container port | Host port | Reason                                                |
 |----------|---------------:|----------:|-------------------------------------------------------|
 | web      |           5173 |  **5174** | avoid clashing with a local Vite dev server on 5173   |
-| api      |           3000 |  **3010** | avoid clashing with other local servers on 3000/3005  |
+| api      |           3011 |  **3010** | avoid clashing with other local servers on 3000/3005  |
 | postgres |           5432 |  **5433** | avoid clashing with a local Postgres on 5432          |
 | redis    |           6379 |  **6380** | avoid clashing with a local Redis on 6379             |
 
@@ -145,6 +145,6 @@ Day 1 is designed to run in Docker. If you want a local dev loop:
 pnpm install
 pnpm -F @intelligencehub/shared build   # required: api imports the built dist/
 # Run Postgres + Redis (e.g. via `docker compose up postgres redis -d`)
-pnpm -F @intelligencehub/api dev        # http://localhost:3000
+pnpm -F @intelligencehub/api dev        # http://localhost:3011
 pnpm -F @intelligencehub/web dev        # http://localhost:5173
 ```

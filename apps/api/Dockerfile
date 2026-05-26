@@ -34,6 +34,6 @@ COPY --from=build /app/apps/api/src/db/migrate.ts ./apps/api/src/db/migrate.ts
 COPY --from=build /app/apps/api/tsconfig.json ./apps/api/tsconfig.json
 
 WORKDIR /app/apps/api
-EXPOSE 3000
+EXPOSE 3011
 # Run migrations then start the app
 CMD ["sh", "-c", "pnpm db:migrate && node dist/main.js"]
