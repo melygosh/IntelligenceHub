@@ -12,6 +12,7 @@ const NAV: Item[] = [
 const SETTINGS: Item[] = [
   { to: '/categories', label: 'Categories' },
   { to: '/settings/axes', label: 'Axes' },
+  { to: '/telemetry', label: 'Telemetry' },
 ];
 
 const itemClass = ({ isActive }: { isActive: boolean }) =>

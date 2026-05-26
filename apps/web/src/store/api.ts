@@ -30,6 +30,7 @@ import type {
   RegisterRequest,
   ResendConfirmationResponse,
   StartRegenerationResponse,
+  TelemetrySummary,
   UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
@@ -63,7 +64,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -210,6 +211,10 @@ export const api = createApi({
       query: (body) => ({ url: '/digests/start', method: 'POST', body }),
       invalidatesTags: ['Digests'],
     }),
+    getTelemetrySummary: build.query<TelemetrySummary, void>({
+      query: () => '/telemetry/summary',
+      providesTags: ['Telemetry'],
+    }),
   }),
 });
 
@@ -241,4 +246,5 @@ export const {
   useGetDigestsQuery,
   useGetDigestQuery,
   useStartDigestMutation,
+  useGetTelemetrySummaryQuery,
 } = api;
