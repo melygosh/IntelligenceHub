@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EntityKind } from './articles.js';
+import { DigestPeriod } from './digests.js';
 
 export const Importance = z.enum(['high', 'normal', 'junk']);
 export type Importance = z.infer<typeof Importance>;
@@ -47,7 +48,6 @@ export type LlmOperation =
   | 'analyze_article_v2'
   | 'analyze_article_v3'
   | 'match_entities'
-  | 'build_digest'
   | 'build_digest_v1';
 
 export type DigestLlmArticleSummary = {
@@ -57,7 +57,7 @@ export type DigestLlmArticleSummary = {
 
 export type BuildDigestLlmInput = {
   userId: string;
-  period: 'day' | 'week' | 'month';
+  period: DigestPeriod;
   scopeLabel: string;
   articles: DigestLlmArticleSummary[];
 };
