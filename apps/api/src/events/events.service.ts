@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
 import type { ServerEvent } from '@intelligencehub/shared';
 
@@ -16,7 +16,6 @@ import type { ServerEvent } from '@intelligencehub/shared';
  */
 @Injectable()
 export class EventsService implements OnModuleDestroy {
-  private readonly log = new Logger(EventsService.name);
   private readonly subjects = new Map<string, Subject<ServerEvent>>();
   private readonly subscriberCounts = new Map<string, number>();
 
@@ -31,7 +30,6 @@ export class EventsService implements OnModuleDestroy {
     if (!subject) {
       subject = new Subject<ServerEvent>();
       this.subjects.set(userId, subject);
-      this.subscriberCounts.set(userId, 0);
     }
     const target = subject;
     return new Observable<ServerEvent>((observer) => {
