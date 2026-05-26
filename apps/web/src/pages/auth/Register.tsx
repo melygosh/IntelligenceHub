@@ -118,6 +118,7 @@ export default function Register() {
               role="tooltip"
               aria-label="What does this do?"
               tabIndex={0}
+              onClick={(e) => e.preventDefault()}
               className="relative inline-flex h-4 w-4 cursor-help items-center justify-center border border-mute2 text-[9px] text-mute2 hover:text-ink focus:text-ink focus:outline-none"
             >
               ?
