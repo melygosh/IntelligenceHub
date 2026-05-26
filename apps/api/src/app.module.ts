@@ -10,8 +10,9 @@ import { GraphModule } from './graph/graph.module';
 import { LlmModule } from './llm/llm.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AxesModule } from './axes/axes.module';
+import { RegenerationModule } from './regeneration/regeneration.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, GraphModule, LlmModule, CategoriesModule, AxesModule],
+  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, GraphModule, LlmModule, CategoriesModule, AxesModule, RegenerationModule],
 })
 export class AppModule {}

@@ -10,6 +10,6 @@ import { UserConfigService } from './user-config.service';
   imports: [LlmModule, EntitiesModule],
   controllers: [ArticlesController],
   providers: [ArticlesService, ArticleProcessor, UserConfigService],
-  exports: [ArticleProcessor],
+  exports: [ArticleProcessor, UserConfigService],
 })
 export class ArticlesModule {}
