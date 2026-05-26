@@ -4,14 +4,13 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 10 — article + entity detail pages.
-> Click an article row, an entity chip, or a graph node and you land on a
-> real detail page with all the spec'd fields. Article detail surfaces
-> "found N similar in other feeds" by keeping duplicate-pull rows as
-> `status='duplicate'` (with `duplicate_of` self-FK) instead of silently
-> filtering. Entity detail shows mention timeline (pure SVG sparkline),
-> related entities with co-mention weights, and the mentioning-articles
-> list. Digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 11 — demo data seed. New users who tick
+> "Load demo data" on the registration page get a pre-populated account
+> (3 paused demo feeds + ~20 HN articles + ~7 cross-feed duplicates +
+> entities + categories + axis assignments) loaded asynchronously via a
+> new Bull queue. Reviewers running `docker compose up --build` for the
+> first time can see a working app in seconds without setting an LLM API
+> key or waiting for live RSS. Digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -51,7 +50,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 10)
+## What works (end of Phase 2 Day 11)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -140,6 +139,16 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   duplicates don't burn tokens. They surface as the `N similar` counter on the
   list + the expandable list on the article card. Semantic similarity (FR-5
   Should) deferred to Day 13.
+- **Demo data seed (spec §6):** the registration page has a "Load demo data"
+  checkbox (default unchecked). When ticked, `AuthService` enqueues a
+  `demo.seed` Bull job that asynchronously loads a frozen HN-snapshot dataset
+  (~20 articles + ~7 duplicates spread across 3 paused demo feeds + entities
+  + categories + axis assignments) into the user's account in ~200ms. Zero
+  runtime LLM calls — the data ships as a static JSON with LLM-pre-generated
+  summaries/entities. Reviewer following the spec §9.4 walkthrough step 8 can
+  pick this in lieu of waiting for a live HN pull. Demo feeds stay paused so
+  the puller worker never tries to GET `demo://...`. To refresh the snapshot
+  from new HN content: `cd apps/api && tsx scripts/dump-demo-snapshot.ts <email>`.
 - **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
   connected by **mention edges** (article → entity) and **co-mention edges**
   (entity ↔ entity, weighted by shared-article count, rendered with a thicker
