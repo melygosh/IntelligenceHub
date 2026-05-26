@@ -24,6 +24,7 @@ type TelemetryPayload = AdapterResult['telemetry'];
 export class LlmService implements ILlmService {
   private readonly log = new Logger(LlmService.name);
   private readonly provider: LlmProvider;
+  private readonly fallbackProvider: LlmProvider | null;
   private readonly maxConcurrent: number;
 
   private active = 0;
@@ -37,6 +38,7 @@ export class LlmService implements ILlmService {
   ) {
     const env = loadEnv();
     this.provider = env.LLM_PROVIDER;
+    this.fallbackProvider = env.LLM_FALLBACK_PROVIDER ?? null;
     this.maxConcurrent = env.LLM_CONCURRENCY;
   }
 
@@ -64,7 +66,24 @@ export class LlmService implements ILlmService {
       return cached;
     }
 
-    return this.withSemaphore(() => this.callWithRetry(input));
+    return this.withSemaphore(async () => {
+      try {
+        return await this.callWithRetry(input);
+      } catch (primaryErr) {
+        if (!this.fallbackProvider) throw primaryErr;
+        const reason = this.classifyErrorToReason(primaryErr);
+        this.log.warn(
+          JSON.stringify({
+            event: 'llm.failover.fire',
+            articleId: input.articleId,
+            primary: this.provider,
+            fallback: this.fallbackProvider,
+            reason,
+          }),
+        );
+        return await this.callOnceWithFallback(input, reason);
+      }
+    });
   }
 
   async buildDigest(input: BuildDigestLlmInput): Promise<{
@@ -98,75 +117,91 @@ export class LlmService implements ILlmService {
     }
 
     return this.withSemaphore(async () => {
-      const adapter = this.provider === 'anthropic' ? this.anthropic : this.openai;
-      const t0 = Date.now();
-      let lastErr: Error | null = null;
+      try {
+        const adapter = this.provider === 'anthropic' ? this.anthropic : this.openai;
+        const t0 = Date.now();
+        let lastErr: Error | null = null;
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const { result, telemetry, model } = await adapter.buildDigest(input);
-          await this.recordTelemetry({
-            userId: input.userId,
-            articleId: null,
-            model,
-            status: 'success',
-            telemetry: {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const { result, telemetry, model } = await adapter.buildDigest(input);
+            await this.recordTelemetry({
+              userId: input.userId,
+              articleId: null,
+              model,
+              status: 'success',
+              telemetry: {
+                inputTokens: telemetry.inputTokens,
+                outputTokens: telemetry.outputTokens,
+                cacheReadTokens: 0,
+                cacheCreationTokens: 0,
+                latencyMs: Date.now() - t0,
+              },
+              operation: 'build_digest_v1',
+            });
+            await this.cache.writeDigest(
+              contentHash,
+              this.provider,
+              model,
+              'build_digest_v1',
+              result,
+            );
+            return {
+              result,
               inputTokens: telemetry.inputTokens,
               outputTokens: telemetry.outputTokens,
-              cacheReadTokens: 0,
-              cacheCreationTokens: 0,
-              latencyMs: Date.now() - t0,
-            },
-            operation: 'build_digest_v1',
-          });
-          await this.cache.writeDigest(
-            contentHash,
-            this.provider,
-            model,
-            'build_digest_v1',
-            result,
-          );
-          return {
-            result,
-            inputTokens: telemetry.inputTokens,
-            outputTokens: telemetry.outputTokens,
-            model,
-          };
-        } catch (err) {
-          lastErr = err instanceof Error ? err : new Error(String(err));
-          const status = this.classifyError(err);
-          await this.recordTelemetry({
-            userId: input.userId,
-            articleId: null,
-            model: this.activeModel,
-            status,
-            telemetry: {
-              inputTokens: 0,
-              outputTokens: 0,
-              cacheReadTokens: 0,
-              cacheCreationTokens: 0,
-              latencyMs: Date.now() - t0,
-            },
-            operation: 'build_digest_v1',
-            errorMessage: lastErr.message,
-          });
-          this.log.warn(
-            JSON.stringify({
-              event: 'llm.digest_attempt_failed',
+              model,
+            };
+          } catch (err) {
+            lastErr = err instanceof Error ? err : new Error(String(err));
+            const status = this.classifyError(err);
+            await this.recordTelemetry({
               userId: input.userId,
-              attempt,
-              reason: status,
-              error: lastErr.message,
-            }),
-          );
-          // Retry only on validation failure (likely transient model wobble).
-          // Rate limit / timeout / network errors are not retried here — the SDK already
-          // auto-retries those once or twice with backoff.
-          if (status !== 'invalid_response') break;
+              articleId: null,
+              model: this.activeModel,
+              status,
+              telemetry: {
+                inputTokens: 0,
+                outputTokens: 0,
+                cacheReadTokens: 0,
+                cacheCreationTokens: 0,
+                latencyMs: Date.now() - t0,
+              },
+              operation: 'build_digest_v1',
+              errorMessage: lastErr.message,
+            });
+            this.log.warn(
+              JSON.stringify({
+                event: 'llm.digest_attempt_failed',
+                userId: input.userId,
+                attempt,
+                reason: status,
+                error: lastErr.message,
+              }),
+            );
+            // Retry only on validation failure (likely transient model wobble).
+            // Rate limit / timeout / network errors are not retried here — the SDK already
+            // auto-retries those once or twice with backoff.
+            if (status !== 'invalid_response') break;
+          }
         }
-      }
 
-      throw lastErr ?? new Error('buildDigest failed without throwing');
+        throw lastErr ?? new Error('buildDigest failed without throwing');
+      } catch (primaryErr) {
+        if (!this.fallbackProvider) throw primaryErr;
+        const reason = this.classifyErrorToReason(primaryErr);
+        this.log.warn(
+          JSON.stringify({
+            event: 'llm.failover.fire',
+            operation: 'build_digest_v1',
+            userId: input.userId,
+            primary: this.provider,
+            fallback: this.fallbackProvider,
+            reason,
+          }),
+        );
+        return await this.callOnceWithFallbackDigest(input, contentHash, reason);
+      }
     });
   }
 
@@ -257,6 +292,143 @@ export class LlmService implements ILlmService {
     return 'error';
   }
 
+  private classifyErrorToReason(err: unknown): string {
+    const status = (err as { status?: number })?.status;
+    if (status === 401 || status === 403) return 'auth';
+    if (status === 429) return 'rate_limit';
+    const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+    if (msg.includes('timeout')) return 'timeout';
+    if (msg.includes('econnrefused') || msg.includes('enotfound') || msg.includes('network')) {
+      return 'network';
+    }
+    if (msg.includes('zod validation') || msg.includes('not valid json') || msg.includes('missing tool_use')) {
+      return 'invalid_response';
+    }
+    return 'unknown';
+  }
+
+  private adapterFor(provider: LlmProvider) {
+    return provider === 'anthropic' ? this.anthropic : this.openai;
+  }
+
+  private modelFor(provider: LlmProvider): string {
+    return provider === 'anthropic' ? this.anthropic.model : this.openai.model;
+  }
+
+  private async callOnceWithFallback(
+    input: ArticleAnalysisInput,
+    failoverReason: string,
+  ): Promise<ArticleAnalysisResult> {
+    const provider = this.fallbackProvider!;
+    const adapter = this.adapterFor(provider);
+    const model = this.modelFor(provider);
+    const t0 = Date.now();
+    try {
+      const result = (await adapter.analyzeArticle(input)) as AdapterResult;
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: input.articleId,
+        model: result.model,
+        status: 'success',
+        telemetry: result.telemetry,
+        operation: 'analyze_article_v3',
+        provider,
+        failoverReason,
+      });
+      await this.cache.write(
+        input.contentHash,
+        provider,
+        result.model,
+        'analyze_article_v3',
+        input.configHash,
+        result.data,
+      );
+      return result.data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: input.articleId,
+        model,
+        status: 'error',
+        telemetry: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheCreationTokens: 0,
+          latencyMs: Date.now() - t0,
+        },
+        operation: 'analyze_article_v3',
+        provider,
+        failoverReason,
+        errorMessage: msg,
+      });
+      throw err;
+    }
+  }
+
+  private async callOnceWithFallbackDigest(
+    input: BuildDigestLlmInput,
+    contentHash: string,
+    failoverReason: string,
+  ): Promise<{
+    result: BuildDigestLlmResult;
+    inputTokens: number;
+    outputTokens: number;
+    model: string;
+  }> {
+    const provider = this.fallbackProvider!;
+    const adapter = this.adapterFor(provider);
+    const model = this.modelFor(provider);
+    const t0 = Date.now();
+    try {
+      const { result, telemetry, model: respModel } = await adapter.buildDigest(input);
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: null,
+        model: respModel,
+        status: 'success',
+        telemetry: {
+          inputTokens: telemetry.inputTokens,
+          outputTokens: telemetry.outputTokens,
+          cacheReadTokens: 0,
+          cacheCreationTokens: 0,
+          latencyMs: Date.now() - t0,
+        },
+        operation: 'build_digest_v1',
+        provider,
+        failoverReason,
+      });
+      await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v1', result);
+      return {
+        result,
+        inputTokens: telemetry.inputTokens,
+        outputTokens: telemetry.outputTokens,
+        model: respModel,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: null,
+        model,
+        status: 'error',
+        telemetry: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheCreationTokens: 0,
+          latencyMs: Date.now() - t0,
+        },
+        operation: 'build_digest_v1',
+        provider,
+        failoverReason,
+        errorMessage: msg,
+      });
+      throw err;
+    }
+  }
+
   private async recordTelemetry(args: {
     userId: string;
     articleId: string | null;
@@ -265,21 +437,28 @@ export class LlmService implements ILlmService {
     telemetry: TelemetryPayload;
     operation?: LlmOperation;
     errorMessage?: string;
-  }): Promise<void> {
-    await this.db.insert(llmCalls).values({
-      userId: args.userId,
-      articleId: args.articleId,
-      provider: this.provider,
-      model: args.model,
-      operation: args.operation ?? 'analyze_article_v3',
-      status: args.status,
-      inputTokens: args.telemetry.inputTokens,
-      outputTokens: args.telemetry.outputTokens,
-      cacheReadTokens: args.telemetry.cacheReadTokens,
-      cacheCreationTokens: args.telemetry.cacheCreationTokens,
-      latencyMs: args.telemetry.latencyMs,
-      errorMessage: args.errorMessage,
-    });
+    provider?: LlmProvider;
+    failoverReason?: string;
+  }): Promise<{ id: string }> {
+    const [row] = await this.db
+      .insert(llmCalls)
+      .values({
+        userId: args.userId,
+        articleId: args.articleId,
+        provider: args.provider ?? this.provider,
+        model: args.model,
+        operation: args.operation ?? 'analyze_article_v3',
+        status: args.status,
+        inputTokens: args.telemetry.inputTokens,
+        outputTokens: args.telemetry.outputTokens,
+        cacheReadTokens: args.telemetry.cacheReadTokens,
+        cacheCreationTokens: args.telemetry.cacheCreationTokens,
+        latencyMs: args.telemetry.latencyMs,
+        errorMessage: args.errorMessage,
+        failoverReason: args.failoverReason,
+      })
+      .returning({ id: llmCalls.id });
+    return row;
   }
 
   private async withSemaphore<T>(fn: () => Promise<T>): Promise<T> {
