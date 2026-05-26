@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useGetCategoriesQuery, useGetGraphQuery } from '../../store/api';
-import type { GraphEdge, GraphNode } from '@intelligencehub/shared';
+import type { GraphEdge, GraphNode, GraphResponse } from '@intelligencehub/shared';
+import { filterGraph, isNodeKindFilter, NODE_KIND_FILTERS, type NodeKindFilter } from './filter';
+import { layout } from './layout';
 
 function CategoryFilter({
   selected,
@@ -32,6 +35,41 @@ function CategoryFilter({
   );
 }
 
+function NodeKindToggle({
+  selected,
+  onChange,
+}: {
+  selected: NodeKindFilter;
+  onChange: (kind: NodeKindFilter) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 font-mono text-[10.5px] text-muted">
+      <span>show:</span>
+      <div className="flex border border-border">
+        {NODE_KIND_FILTERS.map((kind) => {
+          const active = selected === kind;
+          return (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => onChange(kind)}
+              className={
+                'px-2 py-0.5 text-[10.5px] ' +
+                (active
+                  ? 'bg-ink text-paper'
+                  : 'bg-paper text-ink hover:bg-paper2')
+              }
+              aria-pressed={active}
+            >
+              {kind}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function nodeStyle(node: GraphNode): React.CSSProperties {
   const base: React.CSSProperties = {
     fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
@@ -49,23 +87,21 @@ function nodeStyle(node: GraphNode): React.CSSProperties {
   return { ...base, background: 'var(--color-accent-light)', color: 'var(--color-accent-deep)' };
 }
 
-function layoutNodes(graphNodes: GraphNode[]): Node[] {
-  return graphNodes.map((n, i) => {
-    const ring = Math.floor(i / 8);
-    const angle = (i % 8) * (Math.PI / 4) + ring * 0.3;
-    const radius = 120 + ring * 110;
-    return {
-      id: n.id,
-      data: { label: n.kind === 'article' ? truncate(n.label, 60) : n.label },
-      position: { x: radius * Math.cos(angle), y: radius * Math.sin(angle) },
-      style: nodeStyle(n),
-    };
-  });
+function toReactFlowNodes(
+  graphNodes: GraphNode[],
+  positions: Map<string, { x: number; y: number }>,
+): Node[] {
+  return graphNodes.map((n) => ({
+    id: n.id,
+    data: { label: n.kind === 'article' ? truncate(n.label, 60) : n.label },
+    position: positions.get(n.id) ?? { x: 0, y: 0 },
+    style: nodeStyle(n),
+  }));
 }
 
-function layoutEdges(graphEdges: GraphEdge[]): Edge[] {
+function toReactFlowEdges(graphEdges: GraphEdge[]): Edge[] {
   return graphEdges.map((e, i) => ({
-    id: `${e.from}->${e.to}-${i}`,
+    id: `${e.from}->${e.to}-${e.kind}-${i}`,
     source: e.from,
     target: e.to,
     type: 'default',
@@ -82,10 +118,43 @@ function truncate(s: string, n: number): string {
 }
 
 export default function GraphPage() {
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryId = searchParams.get('category') ?? undefined;
+  const nodeKindParam = searchParams.get('nodeKind');
+  const nodeKind: NodeKindFilter = isNodeKindFilter(nodeKindParam) ? nodeKindParam : 'both';
+
   const { data, isLoading } = useGetGraphQuery({ categoryId });
-  const nodes = useMemo(() => (data ? layoutNodes(data.nodes) : []), [data]);
-  const edges = useMemo(() => (data ? layoutEdges(data.edges) : []), [data]);
+
+  const filtered: GraphResponse | null = useMemo(
+    () => (data ? filterGraph(data, nodeKind) : null),
+    [data, nodeKind],
+  );
+  const positions = useMemo(
+    () => (filtered ? layout(filtered.nodes, filtered.edges) : new Map<string, { x: number; y: number }>()),
+    [filtered],
+  );
+  const nodes = useMemo(
+    () => (filtered ? toReactFlowNodes(filtered.nodes, positions) : []),
+    [filtered, positions],
+  );
+  const edges = useMemo(
+    () => (filtered ? toReactFlowEdges(filtered.edges) : []),
+    [filtered],
+  );
+
+  function updateCategory(id: string | undefined): void {
+    const next = new URLSearchParams(searchParams);
+    if (id) next.set('category', id);
+    else next.delete('category');
+    setSearchParams(next, { replace: true });
+  }
+
+  function updateNodeKind(kind: NodeKindFilter): void {
+    const next = new URLSearchParams(searchParams);
+    if (kind === 'both') next.delete('nodeKind');
+    else next.set('nodeKind', kind);
+    setSearchParams(next, { replace: true });
+  }
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -95,22 +164,23 @@ export default function GraphPage() {
         </div>
         <h1 className="pretty mb-3 font-serif text-[28px] leading-tight text-ink">Relationships</h1>
         <div className="flex flex-wrap items-center gap-x-3 font-mono text-[10.5px] text-muted">
-          <span>articles + entities · mention edges</span>
-          {data ? (
+          <span>articles + entities · mention + co-mention edges</span>
+          {filtered ? (
             <span className="tnum text-ink">
-              · {data.nodes.length} nodes · {data.edges.length} edges
+              · {filtered.nodes.length} nodes · {filtered.edges.length} edges
             </span>
           ) : null}
         </div>
-        <div className="mt-2">
-          <CategoryFilter selected={categoryId} onChange={setCategoryId} />
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <CategoryFilter selected={categoryId} onChange={updateCategory} />
+          <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
         </div>
       </header>
 
       <div className="min-h-[520px] flex-1 border border-border bg-surface">
         {isLoading ? (
           <p className="p-6 font-mono text-[11px] text-mute2">Loading…</p>
-        ) : !data || data.nodes.length === 0 ? (
+        ) : !filtered || filtered.nodes.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center">
             <div>
               <p className="font-serif text-[18px] text-ink">No graph yet</p>
