@@ -255,7 +255,7 @@ export default function ArticlesList() {
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Articles
+          /articles
         </div>
         <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
           Your feed

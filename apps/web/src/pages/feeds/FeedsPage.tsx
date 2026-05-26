@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useCreateFeedMutation,
   useDeleteFeedMutation,
   useGetFeedsQuery,
+  usePullAllFeedsMutation,
   usePullFeedMutation,
   useUpdateFeedMutation,
   useValidateFeedMutation,
 } from '../../store/api';
 import type { Feed, ValidateFeedResponse } from '@intelligencehub/shared';
+import { useFeedPullEvents } from '../../events/useFeedPullEvents';
+import { useToasts } from '../../components/toast/ToastHost';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -225,11 +228,12 @@ function WarnIcon() {
   );
 }
 
-function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
+function AddFeedForm() {
   const [url, setUrl] = useState('');
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const [validateFeed] = useValidateFeedMutation();
   const [createFeed, { isLoading: isAdding }] = useCreateFeedMutation();
+  const { push: pushToast } = useToasts();
 
   const reset = () => setStage({ kind: 'idle' });
 
@@ -262,16 +266,21 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
 
   async function onAdd() {
     if (stage.kind !== 'valid') return;
+    const label = stage.title;
     try {
       await createFeed({ url: stage.normalisedUrl, title: stage.title }).unwrap();
       setUrl('');
       reset();
-      onAdded('Feed added');
+      pushToast({ severity: 'success', title: 'Feed added', subtitle: label });
     } catch (err) {
-      onAdded(
-        (err as { data?: { message?: string } }).data?.message ??
-          'Failed to add (may already exist)',
-      );
+      pushToast({
+        severity: 'error',
+        title: 'Failed to add',
+        subtitle: label,
+        body:
+          (err as { data?: { message?: string } }).data?.message ??
+          'Feed may already exist.',
+      });
     }
   }
 
@@ -280,7 +289,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
 
   return (
     <div className="border border-border bg-paper">
-      <form onSubmit={onValidate} className="flex flex-wrap items-end gap-2 px-4 py-3">
+      <form onSubmit={onValidate} className="flex flex-wrap items-end gap-2 px-5 py-2.5">
         <label className="min-w-0 flex-1">
           <span className="mb-1 block font-mono text-[12px] uppercase tracking-[0.1em] text-muted">
             Add feed
@@ -295,7 +304,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
             placeholder="https://example.com/feed.xml — or paste any site URL, we'll discover the feed"
             disabled={stage.kind === 'validating'}
             className={
-              'w-full border bg-paper px-3 py-2 font-mono text-[15px] text-ink placeholder-mute2 focus:outline-none ' +
+              'w-full border bg-paper px-3 py-1.5 font-mono text-[13.5px] text-ink placeholder-mute2 focus:outline-none ' +
               (stage.kind === 'invalid'
                 ? 'border-critical/50 focus:border-critical'
                 : 'border-border focus:border-ink')
@@ -310,7 +319,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
                 reset();
                 setUrl('');
               }}
-              className="border border-transparent px-3 py-2 font-mono text-[14px] text-muted hover:border-border hover:text-ink"
+              className="border border-transparent px-3 py-1.5 font-mono text-[13.5px] text-muted hover:border-border hover:text-ink"
             >
               clear
             </button>
@@ -319,7 +328,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
             type="submit"
             disabled={validateDisabled}
             className={
-              'inline-flex items-center gap-1.5 border px-3.5 py-2 font-mono text-[14.5px] transition-colors ' +
+              'inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[13.5px] transition-colors ' +
               (validateDisabled
                 ? 'cursor-not-allowed border-border bg-paper2 text-mute2'
                 : 'border-ink bg-ink text-paper hover:border-accent-deep hover:bg-accent-deep')
@@ -341,7 +350,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
       </form>
 
       {stage.kind === 'validating' ? (
-        <div className="flex items-center gap-2 border-t border-border bg-paper2/40 px-4 py-2.5 font-mono text-[13px] text-muted">
+        <div className="flex items-center gap-2 border-t border-border bg-paper2/40 px-5 py-2.5 font-mono text-[13px] text-muted">
           <span className="pulse-soft inline-block h-2 w-2 rounded-full bg-accent" />
           <span>Fetching feed metadata, parsing entries…</span>
         </div>
@@ -349,7 +358,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
 
       {stage.kind === 'valid' ? (
         <div className="border-t border-border bg-accent/5">
-          <div className="flex items-start gap-3 px-4 py-3">
+          <div className="flex items-start gap-3 px-5 py-2.5">
             <span className="mt-0.5 shrink-0 text-accent">
               <CheckIcon />
             </span>
@@ -380,7 +389,7 @@ function AddFeedForm({ onAdded }: { onAdded: (msg: string) => void }) {
 
       {stage.kind === 'invalid' ? (
         <div className="border-t border-border bg-critical-bg">
-          <div className="flex items-start gap-3 px-4 py-3">
+          <div className="flex items-start gap-3 px-5 py-2.5">
             <span className="mt-0.5 shrink-0 text-critical">
               <WarnIcon />
             </span>
@@ -408,39 +417,114 @@ export default function FeedsPage() {
   const { data, isLoading } = useGetFeedsQuery();
   const [deleteFeed] = useDeleteFeedMutation();
   const [pullFeed] = usePullFeedMutation();
+  const [pullAllFeeds, { isLoading: isPullingAll }] = usePullAllFeedsMutation();
   const [updateFeed] = useUpdateFeedMutation();
-  const [toast, setToast] = useState<string | null>(null);
+  const { push: pushToast } = useToasts();
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+  // feedId → label lookup so SSE callbacks can show "OpenAI Blog: 4 new
+  // articles" instead of an opaque UUID. Closure captures the latest map
+  // on every render (useServerEvents stores the callback in a ref).
+  const labelById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const f of data?.feeds ?? []) m.set(f.id, f.title ?? f.url);
+    return m;
+  }, [data]);
+
+  useFeedPullEvents({
+    onDone: ({ feedId, inserted, filtered, duplicates }) => {
+      const label = labelById.get(feedId) ?? 'Feed';
+      const total = inserted + duplicates + filtered;
+      if (total === 0) {
+        pushToast({ severity: 'info', title: 'Pull complete', subtitle: label, body: 'No new items.' });
+        return;
+      }
+      const parts = [`${inserted} new`];
+      if (duplicates > 0) parts.push(`${duplicates} duplicate`);
+      if (filtered > 0) parts.push(`${filtered} filtered`);
+      pushToast({
+        severity: 'success',
+        title: 'Pull complete',
+        subtitle: label,
+        body: parts.join(' · '),
+      });
+    },
+    onFailed: ({ feedId, error }) => {
+      const label = labelById.get(feedId) ?? 'Feed';
+      pushToast({
+        severity: 'error',
+        title: 'Pull failed',
+        subtitle: label,
+        body: error,
+      });
+    },
+  });
+
+  async function onPullAll() {
+    try {
+      const res = await pullAllFeeds().unwrap();
+      if (res.enqueued === 0) {
+        pushToast({
+          severity: 'info',
+          title: 'Nothing to pull',
+          body:
+            res.skippedPaused > 0
+              ? `${res.skippedPaused} paused feed${res.skippedPaused === 1 ? '' : 's'} skipped.`
+              : 'No feeds yet — add one above.',
+        });
+        return;
+      }
+      const parts = [`${res.enqueued} feed${res.enqueued === 1 ? '' : 's'} queued`];
+      if (res.skippedPaused > 0) {
+        parts.push(`${res.skippedPaused} paused skipped`);
+      }
+      pushToast({
+        severity: 'info',
+        title: 'Pull all queued',
+        body: parts.join(' · '),
+      });
+    } catch (err) {
+      pushToast({
+        severity: 'error',
+        title: 'Failed to enqueue pulls',
+        body:
+          (err as { data?: { message?: string } }).data?.message ??
+          'Request failed.',
+      });
+    }
   }
 
-  async function onPull(id: string) {
+  async function onPull(feed: Feed) {
+    const label = feed.title ?? feed.url;
     try {
-      await pullFeed(id).unwrap();
-      showToast('Queued — watch /admin/queues');
+      await pullFeed(feed.id).unwrap();
+      pushToast({ severity: 'info', title: 'Queued for pull', subtitle: label });
     } catch {
-      showToast('Failed to enqueue');
+      pushToast({ severity: 'error', title: 'Failed to enqueue', subtitle: label });
     }
   }
 
   async function onDelete(id: string) {
+    const label = labelById.get(id) ?? 'Feed';
     try {
       await deleteFeed(id).unwrap();
-      showToast('Feed deleted');
+      pushToast({ severity: 'success', title: 'Feed deleted', subtitle: label });
     } catch {
-      showToast('Failed to delete');
+      pushToast({ severity: 'error', title: 'Failed to delete', subtitle: label });
     }
   }
 
   async function onTogglePause(feed: Feed) {
+    const label = feed.title ?? feed.url;
     try {
       const next = feed.status === 'paused' ? 'active' : 'paused';
       await updateFeed({ id: feed.id, body: { status: next } }).unwrap();
-      showToast(next === 'paused' ? 'Paused' : 'Resumed');
+      pushToast({
+        severity: 'info',
+        title: next === 'paused' ? 'Paused' : 'Resumed',
+        subtitle: label,
+      });
     } catch {
-      showToast('Failed to update');
+      pushToast({ severity: 'error', title: 'Failed to update', subtitle: label });
     }
   }
 
@@ -448,16 +532,15 @@ export default function FeedsPage() {
     <div className="mx-auto max-w-5xl space-y-8">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Feeds
+          /feeds
         </div>
         <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
           Sources & pulls
         </h1>
         {data ? <StatsLine feeds={data.feeds} /> : null}
-        {toast ? <div className="mt-2 font-mono text-[12.5px] text-accent">{toast}</div> : null}
       </header>
 
-      <AddFeedForm onAdded={showToast} />
+      <AddFeedForm />
 
       {isLoading ? (
         <p className="font-mono text-[13px] text-mute2">Loading…</p>
@@ -472,13 +555,26 @@ export default function FeedsPage() {
         </div>
       ) : (
         <div className="border border-border bg-paper">
-          <div className="flex items-baseline justify-between border-b border-border px-5 py-2.5">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-2.5">
             <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
               All feeds
             </span>
-            <span className="font-mono text-[12.5px] tnum text-mute2">
-              sorted by last pull · desc
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-[12.5px] tnum text-mute2">
+                sorted by last pull · desc
+              </span>
+              <button
+                type="button"
+                onClick={onPullAll}
+                disabled={isPullingAll}
+                className="inline-flex items-center justify-center gap-1.5 border border-accent bg-accent px-2.5 py-1 font-mono text-[12.5px] text-paper transition-colors hover:border-accent-deep hover:bg-accent-deep disabled:cursor-not-allowed disabled:border-border disabled:bg-paper2 disabled:text-mute2"
+              >
+                <span className="h-3 w-3">
+                  <RefreshIcon />
+                </span>
+                <span>{isPullingAll ? 'queuing…' : 'pull all'}</span>
+              </button>
+            </div>
           </div>
           {data.feeds.map((feed) => {
             const isPaused = feed.status === 'paused';
@@ -488,7 +584,7 @@ export default function FeedsPage() {
                 key={feed.id}
                 className="grid grid-cols-[20px_1fr_auto] gap-x-4 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/40"
               >
-                <div className="pt-1.5">
+                <div className="self-center">
                   <StatusLeading status={feed.status} />
                 </div>
 
@@ -548,7 +644,7 @@ export default function FeedsPage() {
                   </div>
                 </div>
 
-                <div className="mt-0.5 flex items-center gap-px self-start">
+                <div className="flex items-center gap-px self-center">
                   {isPaused ? (
                     <RowActionBtn
                       icon={<PlayIcon />}
@@ -566,7 +662,7 @@ export default function FeedsPage() {
                   <RowActionBtn
                     icon={<RefreshIcon />}
                     label="Pull now"
-                    onClick={() => onPull(feed.id)}
+                    onClick={() => onPull(feed)}
                     disabled={isPaused}
                   />
                   <RowActionBtn
