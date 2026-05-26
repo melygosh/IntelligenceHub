@@ -4,12 +4,14 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 9 — graph filters + co-mention + indexes.
-> Graph now ships node-type filter (both/articles/entities) with URL state,
-> co-mention edges between entities weighted by shared-article count, and
-> dagre LR auto-layout. Migration 0009 adds 9 indexes covering the FK
-> reverse-direction queries the LLM pipeline + future detail pages will hit.
-> Digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 10 — article + entity detail pages.
+> Click an article row, an entity chip, or a graph node and you land on a
+> real detail page with all the spec'd fields. Article detail surfaces
+> "found N similar in other feeds" by keeping duplicate-pull rows as
+> `status='duplicate'` (with `duplicate_of` self-FK) instead of silently
+> filtering. Entity detail shows mention timeline (pure SVG sparkline),
+> related entities with co-mention weights, and the mentioning-articles
+> list. Digests (Day 12) still pending.
 
 ## Prerequisites
 
@@ -49,7 +51,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 9)
+## What works (end of Phase 2 Day 10)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -120,7 +122,24 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   — returns the discovered channel title + normalised URL + item count, or a
   structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
 - **Articles (`/articles`):** see your articles ordered by publication time, each row
-  showing importance dot, mono timestamp, entity chips with per-type glyphs.
+  showing importance dot, mono timestamp, entity chips with per-type glyphs, and a
+  `· N similar` badge when the same article appears in other feeds. Click a row to
+  open the detail card; click an entity chip to open that entity's page.
+- **Article detail (`/articles/:id`, US-8):** full layout with summary, body (LLM
+  body preserved from Day 8b), entity chips (each links to `/entities/:id`),
+  category + axis tags, and "Found N similar in other feeds" with per-item links
+  to that copy's article page and an `open source ↗` shortcut.
+- **Entity detail (`/entities/:id`, US-10):** canonical name, type, aliases (from
+  Day 6's `entity_alias`), mention count + first/last seen, a pure-SVG **mention
+  timeline** sparkline (per-UTC-day buckets with native `<title>` tooltips), top-20
+  **related entities** with co-mention weights, and the full mentioning-articles list.
+- **Duplicate detection (FR-5 exact):** when the puller sees the same `content_hash`
+  or normalised URL again for the same user, the new row is persisted with
+  `status='duplicate'` + `duplicate_of` pointing to the canonical original (not
+  silently filtered). Pre-filter + LLM pipeline only run on `status='ready'`, so
+  duplicates don't burn tokens. They surface as the `N similar` counter on the
+  list + the expandable list on the article card. Semantic similarity (FR-5
+  Should) deferred to Day 13.
 - **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
   connected by **mention edges** (article → entity) and **co-mention edges**
   (entity ↔ entity, weighted by shared-article count, rendered with a thicker
@@ -128,6 +147,8 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   and entities on the other. Three-way **node-type filter** (`both` / `articles
   only` / `entities only`) + the existing **category filter**, both URL-backed
   via `?nodeKind=` and `?category=` so reloads + share links preserve the view.
+  **Clicking a node** navigates to its detail page (`/articles/:id` or
+  `/entities/:id` based on node kind).
 - **Bull Board:** queue dashboard at **http://localhost:3010/admin/queues** behind HTTP
   Basic auth — credentials via `BULL_BOARD_USER` / `BULL_BOARD_PASS` in `.env`.
 - **Editorial design system:** cream paper, Instrument Serif headlines, IBM Plex Mono
