@@ -90,16 +90,20 @@ export class EntitiesService {
     userId: string,
     entityId: string,
   ): Promise<RelatedEntitySummary[]> {
+    // Asymmetric self-join: anchor ae1 on the target entity, read other_id
+    // from ae2. Each unordered pair {target, other} appears exactly once
+    // per shared article — weight here matches the count Day 9's
+    // GraphService.buildCoMentionEdges produces for the same pair.
     const pairResult = await this.db.execute<{ other_id: string; weight: number }>(sql`
       SELECT
-        CASE WHEN ae1.entity_id = ${entityId} THEN ae2.entity_id ELSE ae1.entity_id END AS other_id,
+        ae2.entity_id AS other_id,
         COUNT(*)::int AS weight
       FROM article_entity ae1
       JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
       JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId} AND a.status = 'ready'
-      WHERE (ae1.entity_id = ${entityId} OR ae2.entity_id = ${entityId})
-        AND ae1.entity_id <> ae2.entity_id
-      GROUP BY other_id
+      WHERE ae1.entity_id = ${entityId}
+        AND ae2.entity_id <> ${entityId}
+      GROUP BY ae2.entity_id
       ORDER BY weight DESC
       LIMIT 20
     `);
