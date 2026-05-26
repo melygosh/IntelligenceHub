@@ -4,13 +4,16 @@ UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, proces
 articles through an LLM pipeline, deduplicates entities, and exposes the result as a
 feed + knowledge graph + on-demand digests.
 
-> **Current phase:** Phase 2 Day 11 — demo data seed. New users who tick
-> "Load demo data" on the registration page get a pre-populated account
-> (3 paused demo feeds + ~20 HN articles + ~7 cross-feed duplicates +
-> entities + categories + axis assignments) loaded asynchronously via a
-> new Bull queue. Reviewers running `docker compose up --build` for the
-> first time can see a working app in seconds without setting an LLM API
-> key or waiting for live RSS. Digests (Day 12) still pending.
+> **Current phase:** Phase 2 Day 12 — digests + generic SSE events.
+> New `/digests` page lets users request a digest for a period
+> (day/week/month) filtered by categories or entities. Backend
+> asynchronously queries in-scope articles, aggregates top entities +
+> categories, and runs a single LLM call to produce a 2-3 paragraph
+> editorial summary. Results render on a `/digests/:id` magazine-layout
+> page with summary + top lists + key articles + per-digest telemetry.
+> A generic SSE events channel pushes status updates from worker to
+> browser without polling — designed to grow for future event types
+> (alerts, regen progress, feed-pull notifications).
 
 ## Prerequisites
 
@@ -50,7 +53,7 @@ local dev servers:
 Inside the docker network, services reach each other on internal ports (e.g. the api
 reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 
-## What works (end of Phase 2 Day 11)
+## What works (end of Phase 2 Day 12)
 
 - `docker compose up --build` brings up Postgres, Redis, API, and Web.
 - API auto-applies Drizzle migrations on container start.
@@ -149,6 +152,28 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   pick this in lieu of waiting for a live HN pull. Demo feeds stay paused so
   the puller worker never tries to GET `demo://...`. To refresh the snapshot
   from new HN content: `cd apps/api && tsx scripts/dump-demo-snapshot.ts <email>`.
+- **Digests (`/digests`, US-11 + Case 3):** request a digest for a period
+  (day/week/month) optionally filtered by categories or entities. Backend
+  asynchronously assembles in-scope articles via Bull queue + single LLM
+  call (`'build_digest_v1'`, both Anthropic + OpenAI adapters supported),
+  produces a 2-3 paragraph editorial summary + top-20 entities + top-10
+  categories + top-10 key articles snapshot. Persisted in `digest_run`
+  table; history list on `/digests`; detail page at `/digests/:id` in
+  magazine layout (header + summary + lists grid + key articles +
+  per-digest telemetry: model + tokens + ms). LLM response cache reuse —
+  identical inputs share the cache (FR-10), zero LLM tokens on cache hit.
+  Empty-scope failure path: if no articles match the window+filter, the
+  build skips the LLM call and marks `status='failed'` with an explicit
+  error message.
+- **Generic SSE events** (`GET /api/events`): server-sent events channel
+  exposing typed `ServerEvent` payloads (discriminated union by `type`).
+  First event type: `digest.status_changed` (drives the digest history
+  live-update without polling). Per-user `EventsService` subjects with
+  refcounted teardown; in-memory only (single api instance; Redis pubsub
+  swap documented for horizontal scaling). Frontend `useServerEvents`
+  hook opens one EventSource and dispatches to typed consumer hooks
+  (e.g. `useDigestStatusEvents`); future event types add new union
+  variants + consumers without changing the channel.
 - **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
   connected by **mention edges** (article → entity) and **co-mention edges**
   (entity ↔ entity, weighted by shared-article count, rendered with a thicker
