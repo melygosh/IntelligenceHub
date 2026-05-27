@@ -4,15 +4,38 @@ import { Link, useParams } from 'react-router-dom';
 import { useGetArticleQuery } from '../../store/api';
 import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
 import { useSetPageTitle } from '../../components/layout/PageTitleContext';
+import { ArticleListCard } from '../../components/articles/ArticleListCard';
 
 type EntityType = ArticleEntitySummary['type'];
 
-const TYPE_GLYPH: Record<EntityType, React.ReactNode> = {
-  company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
-  person: <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />,
-  product: <span className="inline-block h-1.5 w-1.5 rounded-sm bg-current" />,
-  technology: <span className="inline-block h-1.5 w-1.5 rotate-45 bg-current" aria-hidden="true" />,
-  location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
+// SVG glyphs (not bare CSS dots) so they sit on the text's optical centre when
+// wrapped in an `items-center` flex box — matches the entity detail page.
+const TYPE_GLYPH: Record<EntityType, (cls?: string) => React.ReactNode> = {
+  company: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <rect x="1" y="1" width="8" height="8" fill="currentColor" />
+    </svg>
+  ),
+  person: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <circle cx="5" cy="5" r="4" fill="currentColor" />
+    </svg>
+  ),
+  product: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <rect x="1" y="1" width="8" height="8" rx="2.2" fill="currentColor" />
+    </svg>
+  ),
+  technology: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls} aria-hidden="true">
+      <rect x="2.2" y="2.2" width="5.6" height="5.6" fill="currentColor" transform="rotate(45 5 5)" />
+    </svg>
+  ),
+  location: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <circle cx="5" cy="5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
 };
 
 const TYPE_GROUP_ORDER: EntityType[] = ['company', 'person', 'product', 'technology', 'location'];
@@ -195,7 +218,7 @@ export default function ArticleDetail() {
               return (
                 <div key={type} className="space-y-2">
                   <div className="flex items-center gap-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-mute2">
-                    <span className="text-mute2">{TYPE_GLYPH[type]}</span>
+                    <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[type]('h-2.5 w-2.5')}</span>
                     <span>{TYPE_GROUP_LABEL[type]}</span>
                     <span className="tnum">{group.length}</span>
                   </div>
@@ -206,7 +229,7 @@ export default function ArticleDetail() {
                           to={`/entities/${e.id}`}
                           className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
                         >
-                          <span className="text-mute2">{TYPE_GLYPH[e.type]}</span>
+                          <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[e.type]('h-2.5 w-2.5')}</span>
                           <span>{e.canonicalName}</span>
                         </Link>
                       </li>
@@ -224,34 +247,7 @@ export default function ArticleDetail() {
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
             Found {data.similarCount} similar in other feeds
           </div>
-          <ul className="divide-y divide-border">
-            {data.similarArticles.map((s) => {
-              const sDate = new Date(s.ts);
-              return (
-                <li key={s.id} className="flex flex-wrap items-baseline gap-2 py-2">
-                  <Link
-                    to={`/articles/${s.id}`}
-                    className="pretty flex-1 text-[16px] text-ink hover:text-accent-deep"
-                  >
-                    {s.title}
-                  </Link>
-                  <span className="font-mono text-[12.5px] text-mute2">
-                    from <span className="text-muted">{s.feedTitle}</span>{' '}
-                    · <span className="tnum">{sDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>{' '}
-                    ·{' '}
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:text-accent-deep"
-                    >
-                      open ↗
-                    </a>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <ArticleListCard items={data.similarArticles} />
         </section>
       ) : null}
     </article>

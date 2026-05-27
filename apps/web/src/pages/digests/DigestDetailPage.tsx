@@ -33,9 +33,9 @@ function fmt(d: string): string {
 
 function TopEntityRow({ e, rank }: { e: DigestTopEntity; rank: number }) {
   return (
-    <li className="flex items-baseline gap-2 py-1.5 font-mono text-[13px]">
-      <span className="w-5 text-right text-mute2 tnum">{rank}.</span>
-      <span className="text-mute2">{TYPE_GLYPH[e.type]}</span>
+    <li className="flex items-center gap-2 py-1.5 font-mono text-[13px]">
+      <span className="w-5 shrink-0 text-right text-mute2 tnum">{rank}.</span>
+      <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[e.type]}</span>
       <Link
         to={`/entities/${e.id}`}
         className="flex-1 truncate text-ink hover:text-accent-deep"
