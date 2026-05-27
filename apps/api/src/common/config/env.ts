@@ -1,11 +1,23 @@
 import { z } from 'zod';
 
+// Docker Compose forwards `${VAR}` as an empty string when the var is unset in
+// .env; treat empty as "unset" so schema defaults still apply.
+const emptyToUndef = (v: unknown) =>
+  typeof v === 'string' && v.trim() === '' ? undefined : v;
+
 // Boolean from an env string ("true"/"false", case-insensitive).
 const envBool = (def: 'true' | 'false') =>
-  z
-    .string()
-    .default(def)
-    .transform((v) => v.toLowerCase() === 'true');
+  z.preprocess(
+    emptyToUndef,
+    z
+      .string()
+      .default(def)
+      .transform((v) => v.toLowerCase() === 'true'),
+  );
+
+// Fraction in [0,1] from an env string, with a default.
+const envFraction = (def: number) =>
+  z.preprocess(emptyToUndef, z.coerce.number().min(0).max(1).default(def));
 
 const EnvSchema = z
   .object({
@@ -23,13 +35,16 @@ const EnvSchema = z
     WEB_BASE_URL: z.string().url(),
     // Pre-filter (deterministic, pre-LLM rejection). Each check can be toggled
     // off; the spam checks' thresholds are tunable (fraction of body, 0..1).
-    PREFILTER_MIN_LENGTH: z.coerce.number().int().positive().default(200),
+    PREFILTER_MIN_LENGTH: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(200),
+    ),
     PREFILTER_EMPTY_ENABLED: envBool('true'),
     PREFILTER_MIN_LENGTH_ENABLED: envBool('true'),
     PREFILTER_SPAM_TITLE_RATIO_ENABLED: envBool('true'),
     PREFILTER_SPAM_LINK_DENSITY_ENABLED: envBool('true'),
-    PREFILTER_TITLE_RATIO: z.coerce.number().min(0).max(1).default(0.5),
-    PREFILTER_LINK_DENSITY_RATIO: z.coerce.number().min(0).max(1).default(0.5),
+    PREFILTER_TITLE_RATIO: envFraction(0.5),
+    PREFILTER_LINK_DENSITY_RATIO: envFraction(0.5),
     LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
     LLM_FALLBACK_PROVIDER: z.enum(['anthropic', 'openai']).optional(),
     OPENAI_API_KEY: z.string().optional(),
