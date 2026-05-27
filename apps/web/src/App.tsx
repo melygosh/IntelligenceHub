@@ -9,6 +9,7 @@ import CheckEmail from './pages/auth/CheckEmail';
 import Confirm from './pages/auth/Confirm';
 import ArticlesList from './pages/articles/ArticlesList';
 import ArticleDetail from './pages/articles/ArticleDetail';
+import EntitiesList from './pages/entities/EntitiesList';
 import EntityDetail from './pages/entities/EntityDetail';
 import GraphPage from './pages/graph/GraphPage';
 import FeedsPage from './pages/feeds/FeedsPage';
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/articles" replace />} />
         <Route path="/articles" element={<ArticlesList />} />
         <Route path="/articles/:id" element={<ArticleDetail />} />
+        <Route path="/entities" element={<EntitiesList />} />
         <Route path="/entities/:id" element={<EntityDetail />} />
         <Route path="/graph" element={<GraphPage />} />
         <Route path="/feeds" element={<FeedsPage />} />

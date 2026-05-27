@@ -2,25 +2,59 @@ import { Link, useParams } from 'react-router-dom';
 import { useGetEntityQuery } from '../../store/api';
 import type { EntityKind, RelatedEntitySummary } from '@intelligencehub/shared';
 import { MentionTimeline } from './MentionTimeline';
+import { useSetPageTitle } from '../../components/layout/PageTitleContext';
+import { ArticleListCard } from '../../components/articles/ArticleListCard';
 
-const TYPE_GLYPH: Record<EntityKind, React.ReactNode> = {
-  company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
-  person: <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />,
-  product: <span className="inline-block h-1.5 w-1.5 rounded-sm bg-current" />,
-  technology: <span className="inline-block h-1.5 w-1.5 rotate-45 bg-current" aria-hidden="true" />,
-  location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
+// SVG glyphs (not bare CSS dots) so they sit on the text's optical centre when
+// wrapped in an `items-center` flex box — fixes the "icon floats high" look.
+const TYPE_GLYPH: Record<EntityKind, (cls?: string) => React.ReactNode> = {
+  company: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <rect x="1" y="1" width="8" height="8" fill="currentColor" />
+    </svg>
+  ),
+  person: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <circle cx="5" cy="5" r="4" fill="currentColor" />
+    </svg>
+  ),
+  product: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <rect x="1" y="1" width="8" height="8" rx="2.2" fill="currentColor" />
+    </svg>
+  ),
+  technology: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls} aria-hidden="true">
+      <rect x="2.2" y="2.2" width="5.6" height="5.6" fill="currentColor" transform="rotate(45 5 5)" />
+    </svg>
+  ),
+  location: (cls = 'h-2.5 w-2.5') => (
+    <svg viewBox="0 0 10 10" className={cls}>
+      <circle cx="5" cy="5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
 };
-
-const IMPORTANCE_COLOR: Record<string, string> = {
-  high: 'bg-accent',
-  normal: 'bg-muted',
-  junk: 'bg-mute2',
-};
-
-const Sep = () => <span className="text-border2">·</span>;
 
 function formatDate(ts: string): string {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function TypeBadge({ type }: { type: EntityKind }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 border border-border bg-paper2 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
+      <span className="inline-flex items-center text-muted">{TYPE_GLYPH[type]('h-2.5 w-2.5')}</span>
+      <span>{type}</span>
+    </span>
+  );
+}
+
+function StatPair({ label, value, title }: { label: string; value: string; title?: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5" title={title}>
+      <span className="uppercase tracking-[0.08em] text-muted">{label}</span>
+      <span className="tnum text-ink">{value}</span>
+    </span>
+  );
 }
 
 function RelatedChip({ r }: { r: RelatedEntitySummary }) {
@@ -29,7 +63,7 @@ function RelatedChip({ r }: { r: RelatedEntitySummary }) {
       to={`/entities/${r.id}`}
       className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
     >
-      <span className="text-mute2">{TYPE_GLYPH[r.type]}</span>
+      <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[r.type]('h-2.5 w-2.5')}</span>
       <span>{r.canonicalName}</span>
       <span className="text-mute2">· {r.weight}</span>
     </Link>
@@ -39,46 +73,39 @@ function RelatedChip({ r }: { r: RelatedEntitySummary }) {
 export default function EntityDetail() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useGetEntityQuery(id ?? '', { skip: !id });
+  useSetPageTitle(data?.canonicalName);
 
   if (isLoading) {
     return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
   }
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-2xl border border-dashed border-border px-6 py-10 text-center">
+      <div className="mx-auto max-w-5xl border border-dashed border-border px-6 py-10 text-center">
         <p className="font-serif text-[22px] text-ink">Entity not found</p>
         <p className="mt-2 font-mono text-[14px] text-muted">
-          Back to <Link to="/graph" className="text-accent hover:text-accent-deep">graph</Link>.
+          Back to <Link to="/entities" className="text-accent hover:text-accent-deep">entities</Link>.
         </p>
       </div>
     );
   }
 
   return (
-    <article className="mx-auto max-w-2xl space-y-8">
+    <article className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-3">
         <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Entities › Entity
         </div>
-        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="text-mute2">{TYPE_GLYPH[data.type]}</span>
-            <span className="uppercase tracking-[0.06em] text-ink">{data.type}</span>
-          </span>
-          <Sep />
-          <span className="tnum text-ink">{data.mentionCount} mention{data.mentionCount === 1 ? '' : 's'}</span>
-          {data.firstSeenTs && data.lastSeenTs ? (
-            <>
-              <Sep />
-              <span>
-                first <span className="tnum text-ink">{formatDate(data.firstSeenTs)}</span>
-              </span>
-              <Sep />
-              <span>
-                last <span className="tnum text-ink">{formatDate(data.lastSeenTs)}</span>
-              </span>
-            </>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+          <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
+          <TypeBadge type={data.type} />
+        </div>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 font-mono text-[11.5px]">
+          <StatPair label="mentions" value={String(data.mentionCount)} />
+          {data.firstSeenTs ? (
+            <StatPair label="first seen" value={formatDate(data.firstSeenTs)} title={data.firstSeenTs} />
+          ) : null}
+          {data.lastSeenTs ? (
+            <StatPair label="last seen" value={formatDate(data.lastSeenTs)} title={data.lastSeenTs} />
           ) : null}
         </div>
       </header>
@@ -99,10 +126,7 @@ export default function EntityDetail() {
         </section>
       ) : null}
 
-      <section className="space-y-2">
-        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Mention timeline</div>
-        <MentionTimeline buckets={data.timelineBuckets} />
-      </section>
+      <MentionTimeline buckets={data.timelineBuckets} />
 
       {data.relatedEntities.length > 0 ? (
         <section className="space-y-2">
@@ -122,21 +146,7 @@ export default function EntityDetail() {
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
             Mentioned in {data.mentionCount} article{data.mentionCount === 1 ? '' : 's'}
           </div>
-          <ul className="divide-y divide-border">
-            {data.mentioningArticles.map((m) => (
-              <li key={m.id} className="flex items-baseline gap-3 py-2">
-                {m.importance ? (
-                  <span className={`mt-1 inline-block h-2 w-2 shrink-0 ${IMPORTANCE_COLOR[m.importance] ?? 'bg-border'}`} />
-                ) : (
-                  <span className="mt-1 inline-block h-2 w-2 shrink-0 bg-border" />
-                )}
-                <Link to={`/articles/${m.id}`} className="pretty flex-1 text-[16px] text-ink hover:text-accent-deep">
-                  {m.title}
-                </Link>
-                <span className="font-mono text-[12.5px] tnum text-mute2">{formatDate(m.ts)}</span>
-              </li>
-            ))}
-          </ul>
+          <ArticleListCard items={data.mentioningArticles} />
         </section>
       ) : null}
     </article>

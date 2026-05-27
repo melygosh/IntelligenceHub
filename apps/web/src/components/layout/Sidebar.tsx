@@ -35,6 +35,18 @@ const ICONS = {
       <rect x="2" y="8.9" width="7.5" height="2.6" fill="currentColor" opacity="0.75" />
     </svg>
   ),
+  tag: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <path
+        d="M7 1.5 H12 V6.5 L6.5 12 L1.5 7 Z"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.5" cy="4" r="0.9" fill="currentColor" />
+    </svg>
+  ),
   settings: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
       <circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1" fill="none" />
@@ -64,7 +76,8 @@ const NAV: Item[] = [
 ];
 
 const SETTINGS: Item[] = [
-  { to: '/categories', label: 'Categories', icon: 'entities' },
+  { to: '/entities', label: 'Entities', icon: 'entities' },
+  { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/settings/axes', label: 'Axes', icon: 'settings' },
   { to: '/telemetry', label: 'Telemetry', icon: 'bolt' },
 ];

@@ -37,6 +37,26 @@ export const RecentEntitiesResponse = z.object({
 });
 export type RecentEntitiesResponse = z.infer<typeof RecentEntitiesResponse>;
 
+/** Sort orders for the entity directory list. */
+export const EntitySort = z.enum(['recent', 'mentions', 'name']);
+export type EntitySort = z.infer<typeof EntitySort>;
+
+/** A row in the entity directory — superset of RecentEntity with first-seen. */
+export const EntityListItem = z.object({
+  id: z.string().uuid(),
+  canonicalName: z.string(),
+  type: EntityKind,
+  mentionCount: z.number().int().nonnegative(),
+  firstSeenTs: z.string().datetime().nullable(),
+  lastSeenTs: z.string().datetime().nullable(),
+});
+export type EntityListItem = z.infer<typeof EntityListItem>;
+
+export const EntityListResponse = z.object({
+  entities: z.array(EntityListItem),
+});
+export type EntityListResponse = z.infer<typeof EntityListResponse>;
+
 export const EntityDetail = z.object({
   id: z.string().uuid(),
   canonicalName: z.string(),

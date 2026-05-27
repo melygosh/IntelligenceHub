@@ -31,7 +31,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Settings

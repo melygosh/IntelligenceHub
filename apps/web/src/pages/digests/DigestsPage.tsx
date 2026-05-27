@@ -551,7 +551,7 @@ export default function DigestsPage() {
   const { data, isLoading } = useGetDigestsQuery();
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           /digests

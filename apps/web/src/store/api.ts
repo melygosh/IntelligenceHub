@@ -21,6 +21,9 @@ import type {
   DigestDetail,
   DigestSummary,
   EntityDetail,
+  EntityKind,
+  EntityListResponse,
+  EntitySort,
   RecentEntitiesResponse,
   Feed,
   FeedListResponse,
@@ -183,6 +186,21 @@ export const api = createApi({
       query: () => '/entities',
       providesTags: ['Entity'],
     }),
+    getEntityList: build.query<
+      EntityListResponse,
+      { type?: EntityKind; q?: string; sort?: EntitySort } | void
+    >({
+      query: (args) => {
+        const { type, q, sort } = args ?? {};
+        const params = new URLSearchParams();
+        if (type) params.set('type', type);
+        if (q) params.set('q', q);
+        params.set('sort', sort ?? 'mentions');
+        params.set('limit', '500');
+        return `/entities?${params.toString()}`;
+      },
+      providesTags: ['Entity'],
+    }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
       providesTags: ['Categories'],
@@ -257,6 +275,7 @@ export const {
   useGetArticleQuery,
   useGetEntityQuery,
   useGetRecentEntitiesQuery,
+  useGetEntityListQuery,
   useGetGraphQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,

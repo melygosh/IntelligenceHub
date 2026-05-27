@@ -6,8 +6,9 @@ import { articleEntity, articles, entities, entityAlias } from '../db/schema';
 import type {
   EntityDetail,
   EntityKind,
+  EntityListItem,
+  EntitySort,
   MentioningArticleSummary,
-  RecentEntity,
   RelatedEntitySummary,
   TimelineBucket,
 } from '@intelligencehub/shared';
@@ -17,31 +18,71 @@ export class EntitiesService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
   /**
-   * Recently-mentioned entities for the digest form's by-entity scope picker.
-   * Ordered by most-recent mention timestamp DESC (mentionCount as tiebreak).
-   * Caps at `limit` so a small chip set fits the form footprint.
+   * Entity directory list. Powers both the /entities page (full, filterable)
+   * and the digest form's by-entity picker (no args → `recent`, capped at 40).
+   *
+   * Filters: `type` (entity kind), `q` (ILIKE on canonical name OR any alias).
+   * Sort: `recent` (last mention), `mentions` (count), `name` (alphabetical).
+   * `limit` is clamped to [1, 500] so the picker stays small and the directory
+   * never returns an unbounded set.
    */
-  async listRecent(userId: string, limit = 40): Promise<RecentEntity[]> {
+  async list(
+    userId: string,
+    opts: {
+      type?: EntityKind;
+      q?: string;
+      sort?: EntitySort;
+      limit?: number;
+    } = {},
+  ): Promise<EntityListItem[]> {
+    const sort: EntitySort = opts.sort ?? 'recent';
+    const limit = Math.min(Math.max(opts.limit ?? 40, 1), 500);
+
+    const conds = [
+      sql`e.user_id = ${userId}`,
+      sql`a.user_id = ${userId}`,
+      sql`a.status = 'ready'`,
+    ];
+    if (opts.type) conds.push(sql`e.type = ${opts.type}`);
+    const q = opts.q?.trim();
+    if (q) {
+      const pattern = `%${q}%`;
+      conds.push(sql`(
+        e.canonical_name ILIKE ${pattern}
+        OR EXISTS (
+          SELECT 1 FROM entity_alias ea
+          WHERE ea.entity_id = e.id AND ea.alias_original ILIKE ${pattern}
+        )
+      )`);
+    }
+
+    const orderBy =
+      sort === 'name'
+        ? sql`e.canonical_name ASC`
+        : sort === 'mentions'
+          ? sql`COUNT(*) DESC, MAX(a.ts) DESC`
+          : sql`MAX(a.ts) DESC, COUNT(*) DESC`;
+
     const result = await this.db.execute<{
       id: string;
       canonical_name: string;
       type: string;
       mention_count: number;
+      first_seen_ts: string;
       last_seen_ts: string;
     }>(sql`
       SELECT e.id,
              e.canonical_name,
              e.type,
              COUNT(*)::int AS mention_count,
+             MIN(a.ts)     AS first_seen_ts,
              MAX(a.ts)     AS last_seen_ts
       FROM article_entity ae
       JOIN entities e ON e.id = ae.entity_id
       JOIN articles a ON a.id = ae.article_id
-      WHERE e.user_id = ${userId}
-        AND a.user_id = ${userId}
-        AND a.status = 'ready'
+      WHERE ${sql.join(conds, sql` AND `)}
       GROUP BY e.id, e.canonical_name, e.type
-      ORDER BY MAX(a.ts) DESC, COUNT(*) DESC
+      ORDER BY ${orderBy}
       LIMIT ${limit}
     `);
     const rows = (result as unknown as {
@@ -50,6 +91,7 @@ export class EntitiesService {
         canonical_name: string;
         type: string;
         mention_count: number;
+        first_seen_ts: string;
         last_seen_ts: string;
       }>;
     }).rows;
@@ -58,7 +100,8 @@ export class EntitiesService {
       canonicalName: r.canonical_name,
       type: r.type as EntityKind,
       mentionCount: r.mention_count,
-      lastSeenTs: new Date(r.last_seen_ts).toISOString(),
+      firstSeenTs: r.first_seen_ts ? new Date(r.first_seen_ts).toISOString() : null,
+      lastSeenTs: r.last_seen_ts ? new Date(r.last_seen_ts).toISOString() : null,
     }));
   }
 
