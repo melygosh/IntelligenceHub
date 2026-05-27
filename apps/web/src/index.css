@@ -40,6 +40,25 @@ html, body, #root {
 .pretty { text-wrap: pretty; }
 .balance { text-wrap: balance; }
 
+/* Sanitized article body — minimal prose styles for HTML-bearing feeds (HN, Atom). */
+.article-body p { margin: 0 0 0.85em 0; }
+.article-body p:last-child { margin-bottom: 0; }
+.article-body a { color: var(--color-accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.article-body a:hover { color: var(--color-accent-deep); }
+.article-body ul, .article-body ol { margin: 0 0 0.85em 1.5em; padding: 0; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin-bottom: 0.25em; }
+.article-body blockquote { margin: 0 0 0.85em 0; padding-left: 0.9em; border-left: 2px solid var(--color-border); color: var(--color-muted); }
+.article-body code { font-family: var(--font-mono); font-size: 0.92em; background: var(--color-paper2); padding: 0 0.25em; }
+.article-body pre { font-family: var(--font-mono); font-size: 0.92em; background: var(--color-paper2); padding: 0.6em 0.8em; overflow-x: auto; margin: 0 0 0.85em 0; }
+.article-body pre code { background: transparent; padding: 0; }
+.article-body h1, .article-body h2, .article-body h3, .article-body h4 { font-family: var(--font-serif); margin: 1.2em 0 0.4em 0; line-height: 1.2; }
+.article-body h1 { font-size: 1.4em; }
+.article-body h2 { font-size: 1.25em; }
+.article-body h3 { font-size: 1.1em; }
+.article-body img { max-width: 100%; height: auto; margin: 0.6em 0; }
+
 /* Animations */
 @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .pulse-soft { animation: pulse-soft 1.6s ease-in-out infinite; }

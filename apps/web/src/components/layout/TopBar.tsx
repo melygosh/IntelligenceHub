@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api, useGetMeQuery, useLogoutMutation } from '../../store/api';
+import { usePageTitle } from './PageTitleContext';
 
 function breadcrumbsFor(pathname: string): string[] {
   if (pathname === '/' || pathname === '') return ['Articles'];
@@ -10,6 +11,10 @@ function breadcrumbsFor(pathname: string): string[] {
     if (seg === 'auth') return 'Auth';
     return seg.charAt(0).toUpperCase() + seg.slice(1);
   });
+}
+
+function truncate(s: string, n: number): string {
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
 const Chevron = () => (
@@ -45,7 +50,12 @@ export default function TopBar() {
     navigate('/auth/login', { replace: true });
   }
 
-  const crumbs = breadcrumbsFor(location.pathname);
+  const pageTitle = usePageTitle();
+  const rawCrumbs = breadcrumbsFor(location.pathname);
+  const crumbs =
+    pageTitle && rawCrumbs.length > 1
+      ? [...rawCrumbs.slice(0, -1), truncate(pageTitle, 72)]
+      : rawCrumbs;
   const userInitial = me?.email.charAt(0).toUpperCase() ?? '?';
 
   return (
