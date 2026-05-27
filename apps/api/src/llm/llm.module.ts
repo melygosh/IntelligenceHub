@@ -5,7 +5,12 @@ import { LlmResponseCacheService } from './llm-cache.service';
 import { LlmService } from './llm.service';
 
 @Module({
-  providers: [AnthropicAdapter, OpenAiAdapter, LlmResponseCacheService, LlmService],
+  providers: [
+    AnthropicAdapter,
+    OpenAiAdapter,
+    LlmResponseCacheService,
+    LlmService,
+  ],
   exports: [LlmService],
 })
 export class LlmModule {}

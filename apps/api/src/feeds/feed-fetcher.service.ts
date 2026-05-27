@@ -20,7 +20,12 @@ export type FetchedFeed = {
   items: FetchedItem[];
 };
 
-export type FetchErrorReason = 'unreachable' | 'not_a_feed' | 'malformed_url' | 'empty' | 'blocked';
+export type FetchErrorReason =
+  | 'unreachable'
+  | 'not_a_feed'
+  | 'malformed_url'
+  | 'empty'
+  | 'blocked';
 
 @Injectable()
 export class FeedFetcher {
@@ -60,7 +65,10 @@ export class FeedFetcher {
       if (msg.includes('Invalid character')) {
         throw this.makeError('malformed_url', msg);
       }
-      throw this.makeError('not_a_feed', 'URL responded but content is not RSS/Atom');
+      throw this.makeError(
+        'not_a_feed',
+        'URL responded but content is not RSS/Atom',
+      );
     }
 
     const title = (parsed.title ?? '').trim();
@@ -80,7 +88,9 @@ export class FeedFetcher {
       }
       const itemTitle = (item.title ?? '').trim();
       const itemBody =
-        (typeof item['content:encoded'] === 'string' ? item['content:encoded'] : null) ??
+        (typeof item['content:encoded'] === 'string'
+          ? item['content:encoded']
+          : null) ??
         item.content ??
         item.contentSnippet ??
         item.summary ??
@@ -106,8 +116,14 @@ export class FeedFetcher {
     };
   }
 
-  private makeError(reason: FetchErrorReason, detail: string): Error & { reason: FetchErrorReason; detail: string } {
-    const err = new Error(detail) as Error & { reason: FetchErrorReason; detail: string };
+  private makeError(
+    reason: FetchErrorReason,
+    detail: string,
+  ): Error & { reason: FetchErrorReason; detail: string } {
+    const err = new Error(detail) as Error & {
+      reason: FetchErrorReason;
+      detail: string;
+    };
     err.reason = reason;
     err.detail = detail;
     return err;

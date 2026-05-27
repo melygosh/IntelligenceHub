@@ -64,7 +64,12 @@ export class OpenAiAdapter {
         { role: 'system', content: ANALYZE_ARTICLE_SYSTEM_PROMPT },
         {
           role: 'user',
-          content: userPromptFor(input.title, body, input.userCategories, input.userAxes),
+          content: userPromptFor(
+            input.title,
+            body,
+            input.userCategories,
+            input.userAxes,
+          ),
         },
       ],
       response_format: {
@@ -87,12 +92,16 @@ export class OpenAiAdapter {
     try {
       raw = JSON.parse(content);
     } catch (err) {
-      throw new Error(`OpenAI response was not valid JSON: ${(err as Error).message}`);
+      throw new Error(
+        `OpenAI response was not valid JSON: ${(err as Error).message}`,
+      );
     }
 
     const parsed = ArticleAnalysisResult.safeParse(raw);
     if (!parsed.success) {
-      throw new Error(`OpenAI response failed Zod validation: ${parsed.error.message}`);
+      throw new Error(
+        `OpenAI response failed Zod validation: ${parsed.error.message}`,
+      );
     }
 
     return {
@@ -100,7 +109,8 @@ export class OpenAiAdapter {
       telemetry: {
         inputTokens: completion.usage?.prompt_tokens ?? 0,
         outputTokens: completion.usage?.completion_tokens ?? 0,
-        cacheReadTokens: completion.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+        cacheReadTokens:
+          completion.usage?.prompt_tokens_details?.cached_tokens ?? 0,
         cacheCreationTokens: 0, // OpenAI doesn't expose write metrics separately
         latencyMs,
       },
@@ -149,7 +159,9 @@ export class OpenAiAdapter {
     try {
       parsedJson = JSON.parse(raw);
     } catch (err) {
-      throw new Error(`OpenAI buildDigest: not valid JSON: ${(err as Error).message}`);
+      throw new Error(
+        `OpenAI buildDigest: not valid JSON: ${(err as Error).message}`,
+      );
     }
 
     const parsed = BuildDigestLlmResult.safeParse(parsedJson);

@@ -85,23 +85,29 @@ export class EntitiesService {
       ORDER BY ${orderBy}
       LIMIT ${limit}
     `);
-    const rows = (result as unknown as {
-      rows: Array<{
-        id: string;
-        canonical_name: string;
-        type: string;
-        mention_count: number;
-        first_seen_ts: string;
-        last_seen_ts: string;
-      }>;
-    }).rows;
+    const rows = (
+      result as unknown as {
+        rows: Array<{
+          id: string;
+          canonical_name: string;
+          type: string;
+          mention_count: number;
+          first_seen_ts: string;
+          last_seen_ts: string;
+        }>;
+      }
+    ).rows;
     return rows.map((r) => ({
       id: r.id,
       canonicalName: r.canonical_name,
       type: r.type as EntityKind,
       mentionCount: r.mention_count,
-      firstSeenTs: r.first_seen_ts ? new Date(r.first_seen_ts).toISOString() : null,
-      lastSeenTs: r.last_seen_ts ? new Date(r.last_seen_ts).toISOString() : null,
+      firstSeenTs: r.first_seen_ts
+        ? new Date(r.first_seen_ts).toISOString()
+        : null,
+      lastSeenTs: r.last_seen_ts
+        ? new Date(r.last_seen_ts).toISOString()
+        : null,
     }));
   }
 
@@ -184,7 +190,10 @@ export class EntitiesService {
     // from ae2. Each unordered pair {target, other} appears exactly once
     // per shared article — weight here matches the count Day 9's
     // GraphService.buildCoMentionEdges produces for the same pair.
-    const pairResult = await this.db.execute<{ other_id: string; weight: number }>(sql`
+    const pairResult = await this.db.execute<{
+      other_id: string;
+      weight: number;
+    }>(sql`
       SELECT
         ae2.entity_id AS other_id,
         COUNT(*)::int AS weight
@@ -197,9 +206,11 @@ export class EntitiesService {
       ORDER BY weight DESC
       LIMIT 20
     `);
-    const pairs = (pairResult as unknown as {
-      rows: Array<{ other_id: string; weight: number }>;
-    }).rows;
+    const pairs = (
+      pairResult as unknown as {
+        rows: Array<{ other_id: string; weight: number }>;
+      }
+    ).rows;
     if (pairs.length === 0) return [];
 
     const otherIds = pairs.map((p) => p.other_id);
@@ -236,7 +247,10 @@ export class EntitiesService {
     userId: string,
     entityId: string,
   ): Promise<TimelineBucket[]> {
-    const result = await this.db.execute<{ day_utc: string; count: number }>(sql`
+    const result = await this.db.execute<{
+      day_utc: string;
+      count: number;
+    }>(sql`
       SELECT to_char(date_trunc('day', a.ts), 'YYYY-MM-DD') AS day_utc,
              COUNT(*)::int AS count
       FROM article_entity ae
@@ -247,9 +261,13 @@ export class EntitiesService {
       GROUP BY day_utc
       ORDER BY day_utc ASC
     `);
-    const rows = (result as unknown as {
-      rows: Array<{ day_utc: string; count: number }>;
-    }).rows;
-    return rows.map((r): TimelineBucket => ({ dayUtc: r.day_utc, count: r.count }));
+    const rows = (
+      result as unknown as {
+        rows: Array<{ day_utc: string; count: number }>;
+      }
+    ).rows;
+    return rows.map(
+      (r): TimelineBucket => ({ dayUtc: r.day_utc, count: r.count }),
+    );
   }
 }

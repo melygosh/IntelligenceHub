@@ -33,7 +33,9 @@ export class RegenerationWorker extends WorkerHost {
   async process(job: Job<JobData>): Promise<void> {
     const { runId, userId } = job.data;
     const t0 = Date.now();
-    this.log.log(JSON.stringify({ event: 'regen.start', runId, userId, jobId: job.id }));
+    this.log.log(
+      JSON.stringify({ event: 'regen.start', runId, userId, jobId: job.id }),
+    );
 
     const [run] = await this.db
       .select()
@@ -41,7 +43,9 @@ export class RegenerationWorker extends WorkerHost {
       .where(eq(regenerationRun.id, runId))
       .limit(1);
     if (!run) {
-      this.log.error(JSON.stringify({ event: 'regen.run_missing', runId, userId }));
+      this.log.error(
+        JSON.stringify({ event: 'regen.run_missing', runId, userId }),
+      );
       return;
     }
 

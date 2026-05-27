@@ -1,9 +1,18 @@
-import { Controller, Get, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { GraphResponse } from '@intelligencehub/shared';
 import { GraphService } from './graph.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('graph')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)

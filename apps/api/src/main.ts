@@ -20,10 +20,19 @@ async function bootstrap(): Promise<void> {
   });
 
   // Bull Board basic auth — must be applied BEFORE the route is reached.
-  app.use('/admin/queues', basicAuth(env.BULL_BOARD_USER, env.BULL_BOARD_PASS, 'IntelligenceHub Queues'));
+  app.use(
+    '/admin/queues',
+    basicAuth(
+      env.BULL_BOARD_USER,
+      env.BULL_BOARD_PASS,
+      'IntelligenceHub Queues',
+    ),
+  );
 
   // path-to-regexp 8.x (NestJS 11) uses named splats: '*path' replaces the old '(.*)?'.
-  app.setGlobalPrefix('api', { exclude: ['/admin/queues', '/admin/queues/*path'] });
+  app.setGlobalPrefix('api', {
+    exclude: ['/admin/queues', '/admin/queues/*path'],
+  });
 
   await app.listen(env.API_PORT);
   console.warn(`[bootstrap] API listening on ${env.API_PORT}`);

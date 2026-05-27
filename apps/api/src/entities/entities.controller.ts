@@ -12,7 +12,10 @@ import { EntityKind, EntitySort } from '@intelligencehub/shared';
 import { EntitiesService } from './entities.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('entities')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)

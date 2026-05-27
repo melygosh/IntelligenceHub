@@ -19,7 +19,10 @@ import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('categories')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)

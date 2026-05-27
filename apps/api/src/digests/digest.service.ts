@@ -111,10 +111,10 @@ export class DigestService {
     let summary: string[] | null = null;
     if (row.summary) {
       try {
-        const parsed = JSON.parse(row.summary);
+        const parsed: unknown = JSON.parse(row.summary);
         if (
           Array.isArray(parsed) &&
-          parsed.every((p) => typeof p === 'string')
+          parsed.every((p): p is string => typeof p === 'string')
         ) {
           summary = parsed;
         }

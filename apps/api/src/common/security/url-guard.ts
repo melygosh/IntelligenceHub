@@ -119,7 +119,9 @@ export async function assertPublicHttpUrl(rawUrl: string): Promise<void> {
   if (addrs.length === 0) throw new BlockedUrlError('Host did not resolve');
   for (const { address } of addrs) {
     if (isDisallowedAddress(address)) {
-      throw new BlockedUrlError('URL resolves to a private or reserved address');
+      throw new BlockedUrlError(
+        'URL resolves to a private or reserved address',
+      );
     }
   }
 }

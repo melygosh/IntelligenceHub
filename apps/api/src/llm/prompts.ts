@@ -47,7 +47,13 @@ Be strict: if the text doesn't clearly support a claim about importance or an en
 export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['summary', 'importance', 'entities', 'categoryNames', 'axisAssignments'],
+  required: [
+    'summary',
+    'importance',
+    'entities',
+    'categoryNames',
+    'axisAssignments',
+  ],
   properties: {
     summary: { type: 'string', minLength: 1, maxLength: 800 },
     importance: { type: 'string', enum: ['high', 'normal', 'junk'] },
@@ -60,7 +66,10 @@ export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
         required: ['canonicalName', 'type', 'aliases'],
         properties: {
           canonicalName: { type: 'string', minLength: 1, maxLength: 120 },
-          type: { type: 'string', enum: ['company', 'person', 'product', 'technology', 'location'] },
+          type: {
+            type: 'string',
+            enum: ['company', 'person', 'product', 'technology', 'location'],
+          },
           aliases: {
             type: 'array',
             maxItems: 10,

@@ -1,4 +1,8 @@
-import { jaroWinkler, isLikelyMatch, SIMILARITY_THRESHOLD } from './entity-fuzzy';
+import {
+  jaroWinkler,
+  isLikelyMatch,
+  SIMILARITY_THRESHOLD,
+} from './entity-fuzzy';
 
 describe('jaroWinkler', () => {
   it('returns 1 for identical strings', () => {
@@ -40,7 +44,9 @@ describe('isLikelyMatch', () => {
   it('matches token-prefix variants (the "Pope Leo XIV" case)', () => {
     expect(isLikelyMatch('pope leo', 'pope leo xiv')).toBe(true);
     expect(isLikelyMatch('pope leo xiv', 'pope leo')).toBe(true); // symmetric
-    expect(isLikelyMatch('martin luther king', 'martin luther king jr')).toBe(true);
+    expect(isLikelyMatch('martin luther king', 'martin luther king jr')).toBe(
+      true,
+    );
   });
 
   it('matches typo-distance variants via Jaro-Winkler', () => {

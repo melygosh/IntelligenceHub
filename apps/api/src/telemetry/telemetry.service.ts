@@ -73,8 +73,12 @@ export class TelemetryService {
       totalCalls: rows.reduce((s, r) => s + r.callCount, 0),
       unknownModelCount,
       dateRange: {
-        from: dateRangeRow?.fromTs ? new Date(dateRangeRow.fromTs).toISOString() : null,
-        to: dateRangeRow?.toTs ? new Date(dateRangeRow.toTs).toISOString() : null,
+        from: dateRangeRow?.fromTs
+          ? new Date(dateRangeRow.fromTs).toISOString()
+          : null,
+        to: dateRangeRow?.toTs
+          ? new Date(dateRangeRow.toTs).toISOString()
+          : null,
       },
     };
   }

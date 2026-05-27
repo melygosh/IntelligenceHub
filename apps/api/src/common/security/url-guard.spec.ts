@@ -4,20 +4,33 @@ import { assertPublicHttpUrl, BlockedUrlError } from './url-guard';
 const mockLookup = (addrs: LookupAddress[]) =>
   (jest.spyOn(dns, 'lookup') as unknown as jest.Mock).mockResolvedValue(addrs);
 const mockLookupFails = () =>
-  (jest.spyOn(dns, 'lookup') as unknown as jest.Mock).mockRejectedValue(new Error('ENOTFOUND'));
+  (jest.spyOn(dns, 'lookup') as unknown as jest.Mock).mockRejectedValue(
+    new Error('ENOTFOUND'),
+  );
 
 afterEach(() => jest.restoreAllMocks());
 
 describe('assertPublicHttpUrl', () => {
   it('rejects non-http(s) protocols', async () => {
-    for (const u of ['file:///etc/passwd', 'ftp://host/x', 'gopher://host/', 'data:text/plain,hi']) {
-      await expect(assertPublicHttpUrl(u)).rejects.toBeInstanceOf(BlockedUrlError);
+    for (const u of [
+      'file:///etc/passwd',
+      'ftp://host/x',
+      'gopher://host/',
+      'data:text/plain,hi',
+    ]) {
+      await expect(assertPublicHttpUrl(u)).rejects.toBeInstanceOf(
+        BlockedUrlError,
+      );
     }
   });
 
   it('rejects malformed URLs', async () => {
-    await expect(assertPublicHttpUrl('not a url')).rejects.toBeInstanceOf(BlockedUrlError);
-    await expect(assertPublicHttpUrl('')).rejects.toBeInstanceOf(BlockedUrlError);
+    await expect(assertPublicHttpUrl('not a url')).rejects.toBeInstanceOf(
+      BlockedUrlError,
+    );
+    await expect(assertPublicHttpUrl('')).rejects.toBeInstanceOf(
+      BlockedUrlError,
+    );
   });
 
   // IP literals are checked directly (no DNS).
@@ -38,7 +51,9 @@ describe('assertPublicHttpUrl', () => {
     'http://[fc00::1]/', // IPv6 unique-local
     'http://[::ffff:127.0.0.1]/', // IPv4-mapped loopback
   ])('blocks private/reserved IP literal %s', async (url) => {
-    await expect(assertPublicHttpUrl(url)).rejects.toBeInstanceOf(BlockedUrlError);
+    await expect(assertPublicHttpUrl(url)).rejects.toBeInstanceOf(
+      BlockedUrlError,
+    );
   });
 
   it.each([
@@ -53,9 +68,9 @@ describe('assertPublicHttpUrl', () => {
   describe('hostname resolution', () => {
     it('blocks a host that resolves to a private address', async () => {
       mockLookup([{ address: '10.1.2.3', family: 4 }]);
-      await expect(assertPublicHttpUrl('http://evil.example/feed')).rejects.toBeInstanceOf(
-        BlockedUrlError,
-      );
+      await expect(
+        assertPublicHttpUrl('http://evil.example/feed'),
+      ).rejects.toBeInstanceOf(BlockedUrlError);
     });
 
     it('blocks if ANY resolved address is private (split-horizon / rebinding)', async () => {
@@ -63,25 +78,27 @@ describe('assertPublicHttpUrl', () => {
         { address: '93.184.216.34', family: 4 },
         { address: '127.0.0.1', family: 4 },
       ]);
-      await expect(assertPublicHttpUrl('http://mixed.example/')).rejects.toBeInstanceOf(
-        BlockedUrlError,
-      );
+      await expect(
+        assertPublicHttpUrl('http://mixed.example/'),
+      ).rejects.toBeInstanceOf(BlockedUrlError);
     });
 
     it('allows a host that resolves only to public addresses', async () => {
       mockLookup([{ address: '93.184.216.34', family: 4 }]);
-      await expect(assertPublicHttpUrl('https://good.example/rss')).resolves.toBeUndefined();
+      await expect(
+        assertPublicHttpUrl('https://good.example/rss'),
+      ).resolves.toBeUndefined();
     });
 
     it('blocks when resolution fails or is empty', async () => {
       mockLookupFails();
-      await expect(assertPublicHttpUrl('http://nope.example/')).rejects.toBeInstanceOf(
-        BlockedUrlError,
-      );
+      await expect(
+        assertPublicHttpUrl('http://nope.example/'),
+      ).rejects.toBeInstanceOf(BlockedUrlError);
       mockLookup([]);
-      await expect(assertPublicHttpUrl('http://empty.example/')).rejects.toBeInstanceOf(
-        BlockedUrlError,
-      );
+      await expect(
+        assertPublicHttpUrl('http://empty.example/'),
+      ).rejects.toBeInstanceOf(BlockedUrlError);
     });
   });
 });

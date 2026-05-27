@@ -106,7 +106,9 @@ export class RegenerationService {
     return this.toResponse(row);
   }
 
-  private toResponse(row: typeof regenerationRun.$inferSelect): RegenerationRun {
+  private toResponse(
+    row: typeof regenerationRun.$inferSelect,
+  ): RegenerationRun {
     return {
       id: row.id,
       status: row.status as RegenerationRun['status'],

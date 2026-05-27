@@ -103,12 +103,21 @@ export class ArticlesService {
       })
       .from(articleEntity)
       .innerJoin(entities, eq(entities.id, articleEntity.entityId))
-      .where(and(eq(entities.userId, userId), inArray(articleEntity.articleId, articleIds)));
+      .where(
+        and(
+          eq(entities.userId, userId),
+          inArray(articleEntity.articleId, articleIds),
+        ),
+      );
 
     const entitiesByArticle = new Map<string, ArticleListItem['entities']>();
     for (const e of entityRows) {
       const list = entitiesByArticle.get(e.articleId) ?? [];
-      list.push({ id: e.id, canonicalName: e.canonicalName, type: e.type as EntityKind });
+      list.push({
+        id: e.id,
+        canonicalName: e.canonicalName,
+        type: e.type as EntityKind,
+      });
       entitiesByArticle.set(e.articleId, list);
     }
 
@@ -195,7 +204,12 @@ export class ArticlesService {
       .where(eq(feeds.id, a.feedId))
       .limit(1);
 
-    const siblings = await this.findSiblings(userId, a.id, a.contentHash, a.url);
+    const siblings = await this.findSiblings(
+      userId,
+      a.id,
+      a.contentHash,
+      a.url,
+    );
 
     return {
       id: a.id,
@@ -215,7 +229,10 @@ export class ArticlesService {
       body: a.body ?? null,
       feedTitle: feedRow?.title ?? '(untitled feed)',
       axisAssignments: axisRows.map(
-        (r): AxisAssignmentSummary => ({ axisName: r.axisName, value: r.value }),
+        (r): AxisAssignmentSummary => ({
+          axisName: r.axisName,
+          value: r.value,
+        }),
       ),
       similarArticles: siblings,
     };
@@ -280,7 +297,10 @@ export class ArticlesService {
     // Single SQL: for each input id, count other articles sharing its
     // content_hash or url (same user, status in (ready, duplicate)).
     const ids = rows.map((r) => r.id);
-    const result = await this.db.execute<{ article_id: string; count: number }>(sql`
+    const result = await this.db.execute<{
+      article_id: string;
+      count: number;
+    }>(sql`
       SELECT a.id AS article_id, COUNT(b.id)::int AS count
       FROM articles a
       LEFT JOIN articles b
@@ -292,12 +312,17 @@ export class ArticlesService {
          OR b.url = a.url
        )
       WHERE a.user_id = ${userId}
-        AND a.id IN (${sql.join(ids.map((i) => sql`${i}::uuid`), sql`, `)})
+        AND a.id IN (${sql.join(
+          ids.map((i) => sql`${i}::uuid`),
+          sql`, `,
+        )})
       GROUP BY a.id
     `);
-    const resultRows = (result as unknown as {
-      rows: Array<{ article_id: string; count: number }>;
-    }).rows;
+    const resultRows = (
+      result as unknown as {
+        rows: Array<{ article_id: string; count: number }>;
+      }
+    ).rows;
 
     const out = new Map<string, number>();
     for (const r of resultRows) out.set(r.article_id, r.count);

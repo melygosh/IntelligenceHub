@@ -25,7 +25,10 @@ export class EntityResolverService {
 
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async resolveOrInsertEntity(userId: string, llmEntity: ExtractedEntity): Promise<string> {
+  async resolveOrInsertEntity(
+    userId: string,
+    llmEntity: ExtractedEntity,
+  ): Promise<string> {
     const normalizedCanonical = normalize(llmEntity.canonicalName);
     if (normalizedCanonical === '') {
       // Defensive: Zod minLength(1) should already reject this upstream. Throw
@@ -44,7 +47,10 @@ export class EntityResolverService {
       .where(
         and(
           eq(entities.userId, userId),
-          eq(sql<string>`lower(${entities.canonicalName})`, normalizedCanonical),
+          eq(
+            sql<string>`lower(${entities.canonicalName})`,
+            normalizedCanonical,
+          ),
         ),
       )
       .limit(1);
@@ -60,7 +66,10 @@ export class EntityResolverService {
       .select({ entityId: entityAlias.entityId })
       .from(entityAlias)
       .where(
-        and(eq(entityAlias.userId, userId), eq(entityAlias.aliasNormalized, normalizedCanonical)),
+        and(
+          eq(entityAlias.userId, userId),
+          eq(entityAlias.aliasNormalized, normalizedCanonical),
+        ),
       )
       .limit(1);
 
@@ -75,7 +84,9 @@ export class EntityResolverService {
     const sameTypeRows = await this.db
       .select({ id: entities.id, canonicalName: entities.canonicalName })
       .from(entities)
-      .where(and(eq(entities.userId, userId), eq(entities.type, llmEntity.type)));
+      .where(
+        and(eq(entities.userId, userId), eq(entities.type, llmEntity.type)),
+      );
 
     for (const row of sameTypeRows) {
       const normalizedExisting = normalize(row.canonicalName);
@@ -94,7 +105,10 @@ export class EntityResolverService {
         );
         // The LLM's canonical becomes an alias of the existing entity (so future
         // articles that emit the same surface form hit step 2 instead of re-fuzzying).
-        await this.ingestAliases(userId, row.id, [llmEntity.canonicalName, ...llmEntity.aliases]);
+        await this.ingestAliases(userId, row.id, [
+          llmEntity.canonicalName,
+          ...llmEntity.aliases,
+        ]);
         return row.id;
       }
     }
@@ -113,7 +127,11 @@ export class EntityResolverService {
     return inserted.id;
   }
 
-  private async ingestAliases(userId: string, entityId: string, aliases: string[]): Promise<void> {
+  private async ingestAliases(
+    userId: string,
+    entityId: string,
+    aliases: string[],
+  ): Promise<void> {
     for (const alias of aliases) {
       const n = normalize(alias);
       if (n === '') continue;
@@ -143,7 +161,11 @@ export class EntityResolverService {
     }
   }
 
-  private warnOnTypeMismatch(entityId: string, existingType: string, llmType: string): void {
+  private warnOnTypeMismatch(
+    entityId: string,
+    existingType: string,
+    llmType: string,
+  ): void {
     if (existingType === llmType) return;
     this.log.warn(
       JSON.stringify({

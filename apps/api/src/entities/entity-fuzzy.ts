@@ -65,10 +65,13 @@ export function jaroWinkler(a: string, b: string): number {
 }
 
 function jaro(a: string, b: string): number {
-  const matchWindow = Math.max(0, Math.floor(Math.max(a.length, b.length) / 2) - 1);
+  const matchWindow = Math.max(
+    0,
+    Math.floor(Math.max(a.length, b.length) / 2) - 1,
+  );
 
-  const aMatches: boolean[] = new Array(a.length).fill(false);
-  const bMatches: boolean[] = new Array(b.length).fill(false);
+  const aMatches: boolean[] = new Array<boolean>(a.length).fill(false);
+  const bMatches: boolean[] = new Array<boolean>(b.length).fill(false);
 
   let matches = 0;
   for (let i = 0; i < a.length; i++) {
@@ -97,5 +100,10 @@ function jaro(a: string, b: string): number {
   }
   transpositions = transpositions / 2;
 
-  return (matches / a.length + matches / b.length + (matches - transpositions) / matches) / 3;
+  return (
+    (matches / a.length +
+      matches / b.length +
+      (matches - transpositions) / matches) /
+    3
+  );
 }

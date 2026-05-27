@@ -8,15 +8,22 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { ArticleDetail, ArticleListResponse } from '@intelligencehub/shared';
+import type {
+  ArticleDetail,
+  ArticleListResponse,
+} from '@intelligencehub/shared';
 import { GetArticlesQuery } from '@intelligencehub/shared';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Parse a CSV query-string value into a deduped, non-empty array of trimmed
  * tokens. Returns [] for undefined / empty / whitespace-only input. */

@@ -23,7 +23,8 @@ export async function fetchTextSafely(initialUrl: string): Promise<string> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: {
         'User-Agent': USER_AGENT,
-        Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+        Accept:
+          'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
       },
     });
 

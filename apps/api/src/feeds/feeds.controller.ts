@@ -25,7 +25,10 @@ import { FeedsService } from './feeds.service';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('feeds')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
@@ -42,15 +45,22 @@ export class FeedsController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @CurrentUser() user: AuthUserContext,
-    @Body(new ZodValidationPipe(CreateFeedRequest)) body: typeof CreateFeedRequest._type,
+    @Body(new ZodValidationPipe(CreateFeedRequest))
+    body: typeof CreateFeedRequest._type,
   ): Promise<Feed> {
-    return this.feedsService.create(user.userId, body.url, body.title, body.iconUrl);
+    return this.feedsService.create(
+      user.userId,
+      body.url,
+      body.title,
+      body.iconUrl,
+    );
   }
 
   @Post('validate')
   @HttpCode(HttpStatus.OK)
   async validate(
-    @Body(new ZodValidationPipe(ValidateFeedRequest)) body: typeof ValidateFeedRequest._type,
+    @Body(new ZodValidationPipe(ValidateFeedRequest))
+    body: typeof ValidateFeedRequest._type,
   ): Promise<ValidateFeedResponse> {
     return this.feedsService.validate(body.url);
   }
@@ -59,7 +69,8 @@ export class FeedsController {
   async update(
     @CurrentUser() user: AuthUserContext,
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body(new ZodValidationPipe(UpdateFeedRequest)) body: typeof UpdateFeedRequest._type,
+    @Body(new ZodValidationPipe(UpdateFeedRequest))
+    body: typeof UpdateFeedRequest._type,
   ): Promise<Feed> {
     return this.feedsService.updateStatus(user.userId, id, body.status);
   }

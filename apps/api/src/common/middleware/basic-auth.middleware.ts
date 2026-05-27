@@ -17,11 +17,18 @@ export function basicAuth(
   const expectedPass = Buffer.from(password, 'utf-8');
 
   function reject(res: Response): void {
-    res.set('WWW-Authenticate', `Basic realm="${realm.replace(/"/g, '')}", charset="UTF-8"`);
+    res.set(
+      'WWW-Authenticate',
+      `Basic realm="${realm.replace(/"/g, '')}", charset="UTF-8"`,
+    );
     res.status(401).send('Authentication required');
   }
 
-  return function basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+  return function basicAuthMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
     const header = req.headers.authorization;
     if (!header || !header.toLowerCase().startsWith('basic ')) {
       reject(res);
@@ -46,9 +53,11 @@ export function basicAuth(
     // Length-mismatched buffers can't be passed to timingSafeEqual; pad with a constant-size
     // dummy comparison to keep the work constant regardless of input length.
     const userOk =
-      givenUser.length === expectedUser.length && timingSafeEqual(givenUser, expectedUser);
+      givenUser.length === expectedUser.length &&
+      timingSafeEqual(givenUser, expectedUser);
     const passOk =
-      givenPass.length === expectedPass.length && timingSafeEqual(givenPass, expectedPass);
+      givenPass.length === expectedPass.length &&
+      timingSafeEqual(givenPass, expectedPass);
 
     if (!userOk || !passOk) {
       reject(res);

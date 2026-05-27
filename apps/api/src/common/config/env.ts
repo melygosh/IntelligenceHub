@@ -22,7 +22,11 @@ const EnvSchema = z
     LLM_MODEL_OPENAI: z.string().default('gpt-4o-mini'),
     LLM_MODEL_ANTHROPIC: z.string().default('claude-haiku-4-5'),
     LLM_CONCURRENCY: z.coerce.number().int().positive().default(2),
-    LLM_TOKEN_LIMIT_PER_ARTICLE: z.coerce.number().int().positive().default(4000),
+    LLM_TOKEN_LIMIT_PER_ARTICLE: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(4000),
   })
   .superRefine((env, ctx) => {
     if (env.LLM_FALLBACK_PROVIDER) {
@@ -55,7 +59,10 @@ export function loadEnv(): Env {
   if (!cached) {
     const parsed = EnvSchema.safeParse(process.env);
     if (!parsed.success) {
-      console.error('[env] Invalid environment variables:', parsed.error.format());
+      console.error(
+        '[env] Invalid environment variables:',
+        parsed.error.format(),
+      );
       throw new Error('Invalid environment configuration');
     }
     cached = parsed.data;

@@ -32,7 +32,9 @@ export class RegenerationController {
   }
 
   @Get('current')
-  async current(@CurrentUser() user: AuthUserContext): Promise<RegenerationRun> {
+  async current(
+    @CurrentUser() user: AuthUserContext,
+  ): Promise<RegenerationRun> {
     return this.regen.current(user.userId);
   }
 }

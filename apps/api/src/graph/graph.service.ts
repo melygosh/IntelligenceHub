@@ -2,7 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
-import { articleCategory, articleEntity, articles, entities } from '../db/schema';
+import {
+  articleCategory,
+  articleEntity,
+  articles,
+  entities,
+} from '../db/schema';
 import type {
   EntityKind,
   GraphEdge,
@@ -23,7 +28,10 @@ export class GraphService {
         .from(articles)
         .innerJoin(articleCategory, eq(articleCategory.articleId, articles.id))
         .where(
-          and(eq(articles.userId, userId), eq(articleCategory.categoryId, categoryId)),
+          and(
+            eq(articles.userId, userId),
+            eq(articleCategory.categoryId, categoryId),
+          ),
         );
     } else {
       articleRows = await this.db
@@ -43,7 +51,8 @@ export class GraphService {
     }
 
     // Step 3 — entities referenced by the filtered article set.
-    let entityRows: Array<{ id: string; canonicalName: string; type: string }> = [];
+    let entityRows: Array<{ id: string; canonicalName: string; type: string }> =
+      [];
     if (mentionEdgeRows.length > 0) {
       const entityIds = Array.from(new Set(mentionEdgeRows.map((e) => e.to)));
       entityRows = await this.db
@@ -53,7 +62,9 @@ export class GraphService {
           type: entities.type,
         })
         .from(entities)
-        .where(and(eq(entities.userId, userId), inArray(entities.id, entityIds)));
+        .where(
+          and(eq(entities.userId, userId), inArray(entities.id, entityIds)),
+        );
     }
 
     // Step 4 — co-mention edges (entity <-> entity, weighted by shared articles).
@@ -141,7 +152,11 @@ export class GraphService {
         `);
 
     // Drizzle's `execute` returns a result object with `.rows` for pg.
-    const rows = (result as unknown as { rows: Array<{ from_id: string; to_id: string; weight: number }> }).rows;
+    const rows = (
+      result as unknown as {
+        rows: Array<{ from_id: string; to_id: string; weight: number }>;
+      }
+    ).rows;
     return rows.map(
       (r): GraphEdge => ({
         from: r.from_id,

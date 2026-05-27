@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, type JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { AuthController } from './auth.controller';
@@ -18,12 +18,13 @@ import { AxesModule } from '../axes/axes.module';
     JwtModule.registerAsync({
       useFactory: () => {
         const env = loadEnv();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return {
           secret: env.JWT_SECRET,
           // JWT_EXPIRES_IN is validated at startup (Zod env schema); cast needed because
           // jsonwebtoken expects StringValue (branded string) but env yields plain string.
-          signOptions: { expiresIn: env.JWT_EXPIRES_IN as any },
+          signOptions: {
+            expiresIn: env.JWT_EXPIRES_IN as JwtSignOptions['expiresIn'],
+          },
         };
       },
     }),

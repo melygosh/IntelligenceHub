@@ -58,17 +58,30 @@ export class AxesService {
     }));
   }
 
-  async create(userId: string, rawName: string, rawValues: string[]): Promise<Axis> {
+  async create(
+    userId: string,
+    rawName: string,
+    rawValues: string[],
+  ): Promise<Axis> {
     const name = rawName.normalize('NFKC').trim();
     if (name === '') {
-      throw new HttpException({ error: 'invalid_name' }, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        { error: 'invalid_name' },
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const values = this.dedupValues(rawValues);
     if (values.length === 0) {
-      throw new HttpException({ error: 'at_least_one_value_required' }, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        { error: 'at_least_one_value_required' },
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (values.length > MAX_VALUES_PER_AXIS) {
-      throw new HttpException({ error: 'too_many_values' }, HttpStatus.CONFLICT);
+      throw new HttpException(
+        { error: 'too_many_values' },
+        HttpStatus.CONFLICT,
+      );
     }
     const existing = await this.listMine(userId);
     if (existing.length >= MAX_AXES_PER_USER) {
@@ -84,18 +97,32 @@ export class AxesService {
 
       const valueRows = await this.db
         .insert(axisValue)
-        .values(values.map((v, i) => ({ axisId: axisRow.id, value: v, position: i })))
-        .returning({ id: axisValue.id, value: axisValue.value, position: axisValue.position });
+        .values(
+          values.map((v, i) => ({ axisId: axisRow.id, value: v, position: i })),
+        )
+        .returning({
+          id: axisValue.id,
+          value: axisValue.value,
+          position: axisValue.position,
+        });
 
       return {
         id: axisRow.id,
         name: axisRow.name,
         position: axisRow.position,
-        values: valueRows.map((v) => ({ id: v.id, value: v.value, position: v.position })),
+        values: valueRows.map((v) => ({
+          id: v.id,
+          value: v.value,
+          position: v.position,
+        })),
       };
     } catch (err) {
-      const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
-      if (cause?.code === '23505' && cause.constraint === 'axis_user_name_unique') {
+      const cause = (err as { cause?: { code?: string; constraint?: string } })
+        .cause;
+      if (
+        cause?.code === '23505' &&
+        cause.constraint === 'axis_user_name_unique'
+      ) {
         throw new ConflictException({ error: 'duplicate_name' });
       }
       throw err;
@@ -117,13 +144,21 @@ export class AxesService {
     if (patch.name !== undefined) {
       const name = patch.name.normalize('NFKC').trim();
       if (name === '') {
-        throw new HttpException({ error: 'invalid_name' }, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          { error: 'invalid_name' },
+          HttpStatus.BAD_REQUEST,
+        );
       }
       try {
         await this.db.update(axis).set({ name }).where(eq(axis.id, id));
       } catch (err) {
-        const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
-        if (cause?.code === '23505' && cause.constraint === 'axis_user_name_unique') {
+        const cause = (
+          err as { cause?: { code?: string; constraint?: string } }
+        ).cause;
+        if (
+          cause?.code === '23505' &&
+          cause.constraint === 'axis_user_name_unique'
+        ) {
           throw new ConflictException({ error: 'duplicate_name' });
         }
         throw err;
@@ -133,10 +168,16 @@ export class AxesService {
     if (patch.values !== undefined) {
       const values = this.dedupValues(patch.values);
       if (values.length === 0) {
-        throw new HttpException({ error: 'at_least_one_value_required' }, HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          { error: 'at_least_one_value_required' },
+          HttpStatus.BAD_REQUEST,
+        );
       }
       if (values.length > MAX_VALUES_PER_AXIS) {
-        throw new HttpException({ error: 'too_many_values' }, HttpStatus.CONFLICT);
+        throw new HttpException(
+          { error: 'too_many_values' },
+          HttpStatus.CONFLICT,
+        );
       }
       // Full replacement: delete all values for this axis, insert new ones.
       // Cascade delete propagates to article_axis_value automatically.

@@ -1,4 +1,17 @@
-import { pgTable, uuid, text, boolean, timestamp, primaryKey, integer, jsonb, uniqueIndex, index, customType, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  primaryKey,
+  integer,
+  jsonb,
+  uniqueIndex,
+  index,
+  customType,
+  type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // Postgres tsvector — Drizzle has no built-in helper; used by articles.searchVector
@@ -13,7 +26,9 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   emailConfirmed: boolean('email_confirmed').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -23,15 +38,21 @@ export const feeds = pgTable(
   'feeds',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     url: text('url').notNull(),
     title: text('title'),
     iconUrl: text('icon_url'),
     status: text('status').notNull().default('active'),
     lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
     lastPullError: text('last_pull_error'),
-    pullIntervalSeconds: integer('pull_interval_seconds').notNull().default(900),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    pullIntervalSeconds: integer('pull_interval_seconds')
+      .notNull()
+      .default(900),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     userIdx: index('feeds_user_idx').on(t.userId),
@@ -42,8 +63,12 @@ export const articles = pgTable(
   'articles',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    feedId: uuid('feed_id').notNull().references(() => feeds.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    feedId: uuid('feed_id')
+      .notNull()
+      .references(() => feeds.id, { onDelete: 'cascade' }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     summary: text('summary'),
@@ -52,22 +77,33 @@ export const articles = pgTable(
     status: text('status').notNull().default('ready'),
     filterReason: text('filter_reason'),
     ts: timestamp('ts', { withTimezone: true }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     configHash: text('config_hash'),
     body: text('body'),
     searchVector: tsvector('search_vector').generatedAlwaysAs(
       sql`to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))`,
     ),
-    duplicateOf: uuid('duplicate_of').references((): AnyPgColumn => articles.id, {
-      onDelete: 'set null',
-    }),
+    duplicateOf: uuid('duplicate_of').references(
+      (): AnyPgColumn => articles.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
   },
   (t) => ({
     userTsIdx: index('articles_user_ts_idx').on(t.userId, t.ts.desc()),
     feedIdx: index('articles_feed_idx').on(t.feedId),
-    userContentHashIdx: index('articles_user_contenthash_idx').on(t.userId, t.contentHash),
+    userContentHashIdx: index('articles_user_contenthash_idx').on(
+      t.userId,
+      t.contentHash,
+    ),
     userUrlIdx: index('articles_user_url_idx').on(t.userId, t.url),
-    searchVectorIdx: index('articles_search_vector_idx').using('gin', t.searchVector),
+    searchVectorIdx: index('articles_search_vector_idx').using(
+      'gin',
+      t.searchVector,
+    ),
   }),
 );
 
@@ -75,13 +111,20 @@ export const entities = pgTable(
   'entities',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     canonicalName: text('canonical_name').notNull(),
     type: text('type').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
-    userCanonicalUnique: uniqueIndex('entities_user_canonical_unique').on(t.userId, t.canonicalName),
+    userCanonicalUnique: uniqueIndex('entities_user_canonical_unique').on(
+      t.userId,
+      t.canonicalName,
+    ),
     userTypeIdx: index('entities_user_type_idx').on(t.userId, t.type),
   }),
 );
@@ -89,8 +132,12 @@ export const entities = pgTable(
 export const articleEntity = pgTable(
   'article_entity',
   {
-    articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
-    entityId: uuid('entity_id').notNull().references(() => entities.id, { onDelete: 'cascade' }),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'cascade' }),
+    entityId: uuid('entity_id')
+      .notNull()
+      .references(() => entities.id, { onDelete: 'cascade' }),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.entityId] }),
@@ -102,18 +149,23 @@ export const entityAlias = pgTable(
   'entity_alias',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    entityId: uuid('entity_id').notNull().references(() => entities.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    entityId: uuid('entity_id')
+      .notNull()
+      .references(() => entities.id, { onDelete: 'cascade' }),
     aliasNormalized: text('alias_normalized').notNull(),
     aliasOriginal: text('alias_original').notNull(),
     source: text('source').notNull(), // 'llm' | 'normalization' | 'user'
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
-    userAliasNormalizedUnique: uniqueIndex('entity_alias_user_normalized_unique').on(
-      t.userId,
-      t.aliasNormalized,
-    ),
+    userAliasNormalizedUnique: uniqueIndex(
+      'entity_alias_user_normalized_unique',
+    ).on(t.userId, t.aliasNormalized),
   }),
 );
 
@@ -124,30 +176,44 @@ export const emailConfirmationToken = pgTable(
   'email_confirmation_token',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     usedAt: timestamp('used_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
-    tokenHashUnique: uniqueIndex('email_confirmation_token_hash_unique').on(t.tokenHash),
+    tokenHashUnique: uniqueIndex('email_confirmation_token_hash_unique').on(
+      t.tokenHash,
+    ),
   }),
 );
 
 export type EmailConfirmationToken = typeof emailConfirmationToken.$inferSelect;
-export type NewEmailConfirmationToken = typeof emailConfirmationToken.$inferInsert;
+export type NewEmailConfirmationToken =
+  typeof emailConfirmationToken.$inferInsert;
 
 export const category = pgTable(
   'category',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
-    userNameUnique: uniqueIndex('category_user_name_unique').on(t.userId, t.name),
+    userNameUnique: uniqueIndex('category_user_name_unique').on(
+      t.userId,
+      t.name,
+    ),
   }),
 );
 
@@ -155,10 +221,14 @@ export const axis = pgTable(
   'axis',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     position: integer('position').notNull().default(0),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     userNameUnique: uniqueIndex('axis_user_name_unique').on(t.userId, t.name),
@@ -169,13 +239,20 @@ export const axisValue = pgTable(
   'axis_value',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    axisId: uuid('axis_id').notNull().references(() => axis.id, { onDelete: 'cascade' }),
+    axisId: uuid('axis_id')
+      .notNull()
+      .references(() => axis.id, { onDelete: 'cascade' }),
     value: text('value').notNull(),
     position: integer('position').notNull().default(0),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
-    axisValueUnique: uniqueIndex('axis_value_axis_value_unique').on(t.axisId, t.value),
+    axisValueUnique: uniqueIndex('axis_value_axis_value_unique').on(
+      t.axisId,
+      t.value,
+    ),
     axisIdx: index('axis_value_axis_idx').on(t.axisId),
   }),
 );
@@ -183,8 +260,12 @@ export const axisValue = pgTable(
 export const articleCategory = pgTable(
   'article_category',
   {
-    articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
-    categoryId: uuid('category_id').notNull().references(() => category.id, { onDelete: 'cascade' }),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => category.id, { onDelete: 'cascade' }),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.categoryId] }),
@@ -195,9 +276,15 @@ export const articleCategory = pgTable(
 export const articleAxisValue = pgTable(
   'article_axis_value',
   {
-    articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
-    axisId: uuid('axis_id').notNull().references(() => axis.id, { onDelete: 'cascade' }),
-    axisValueId: uuid('axis_value_id').notNull().references(() => axisValue.id, { onDelete: 'cascade' }),
+    articleId: uuid('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'cascade' }),
+    axisId: uuid('axis_id')
+      .notNull()
+      .references(() => axis.id, { onDelete: 'cascade' }),
+    axisValueId: uuid('axis_value_id')
+      .notNull()
+      .references(() => axisValue.id, { onDelete: 'cascade' }),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.axisId] }),
@@ -238,7 +325,10 @@ export const llmCalls = pgTable(
       .defaultNow(),
   },
   (t) => ({
-    articleStatusIdx: index('llm_calls_article_status_idx').on(t.articleId, t.status),
+    articleStatusIdx: index('llm_calls_article_status_idx').on(
+      t.articleId,
+      t.status,
+    ),
   }),
 );
 
@@ -267,23 +357,24 @@ export type NewArticle = typeof articles.$inferInsert;
 export type Entity = typeof entities.$inferSelect;
 export type NewEntity = typeof entities.$inferInsert;
 
-export const regenerationRun = pgTable(
-  'regeneration_run',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-    status: text('status').notNull(), // 'running' | 'completed' | 'failed'
-    configHash: text('config_hash').notNull(),
-    articlesTotal: integer('articles_total').notNull().default(0),
-    articlesProcessed: integer('articles_processed').notNull().default(0),
-    articlesCacheHit: integer('articles_cache_hit').notNull().default(0),
-    articlesLlmCalled: integer('articles_llm_called').notNull().default(0),
-    articlesErrored: integer('articles_errored').notNull().default(0),
-    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
-    finishedAt: timestamp('finished_at', { withTimezone: true }),
-    errorMessage: text('error_message'),
-  },
-);
+export const regenerationRun = pgTable('regeneration_run', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  status: text('status').notNull(), // 'running' | 'completed' | 'failed'
+  configHash: text('config_hash').notNull(),
+  articlesTotal: integer('articles_total').notNull().default(0),
+  articlesProcessed: integer('articles_processed').notNull().default(0),
+  articlesCacheHit: integer('articles_cache_hit').notNull().default(0),
+  articlesLlmCalled: integer('articles_llm_called').notNull().default(0),
+  articlesErrored: integer('articles_errored').notNull().default(0),
+  startedAt: timestamp('started_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  errorMessage: text('error_message'),
+});
 
 export type RegenerationRun = typeof regenerationRun.$inferSelect;
 export type NewRegenerationRun = typeof regenerationRun.$inferInsert;
@@ -292,10 +383,14 @@ export const digestRun = pgTable(
   'digest_run',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     period: text('period').notNull(), // 'day' | 'week' | 'month'
     scopeKind: text('scope_kind').notNull(), // 'category' | 'entity'
-    scopeFilterIds: jsonb('scope_filter_ids').notNull().default([] as string[]),
+    scopeFilterIds: jsonb('scope_filter_ids')
+      .notNull()
+      .default([] as string[]),
     windowFrom: timestamp('window_from', { withTimezone: true }).notNull(),
     windowTo: timestamp('window_to', { withTimezone: true }).notNull(),
     status: text('status').notNull(), // 'building' | 'ready' | 'failed'
@@ -311,11 +406,16 @@ export const digestRun = pgTable(
     latencyMs: integer('latency_ms').notNull().default(0),
     model: text('model'),
     errorMessage: text('error_message'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
   },
   (t) => ({
-    userCreatedIdx: index('digest_run_user_created_idx').on(t.userId, t.createdAt.desc()),
+    userCreatedIdx: index('digest_run_user_created_idx').on(
+      t.userId,
+      t.createdAt.desc(),
+    ),
   }),
 );
 

@@ -50,7 +50,9 @@ export class DigestBuilderWorker extends WorkerHost {
       .where(eq(digestRun.id, digestRunId))
       .limit(1);
     if (!run) {
-      this.log.error(JSON.stringify({ event: 'digest.build.run_missing', digestRunId }));
+      this.log.error(
+        JSON.stringify({ event: 'digest.build.run_missing', digestRunId }),
+      );
       return;
     }
 
@@ -71,7 +73,8 @@ export class DigestBuilderWorker extends WorkerHost {
           .update(digestRun)
           .set({
             status: 'failed',
-            errorMessage: 'No articles in scope for the selected period and filters.',
+            errorMessage:
+              'No articles in scope for the selected period and filters.',
             latencyMs: Date.now() - t0,
             finishedAt: new Date(),
           })
@@ -80,17 +83,25 @@ export class DigestBuilderWorker extends WorkerHost {
           type: 'digest.status_changed',
           payload: { digestId: digestRunId, status: 'failed' },
         });
-        this.log.warn(JSON.stringify({ event: 'digest.build.empty_scope', digestRunId }));
+        this.log.warn(
+          JSON.stringify({ event: 'digest.build.empty_scope', digestRunId }),
+        );
         return;
       }
 
       const inScopeIds = inScope.map((a) => a.id);
 
       // 2. Aggregate top entities (top-20 by mention count in scope)
-      const topEntities = await this.aggregateTopEntities(run.userId, inScopeIds);
+      const topEntities = await this.aggregateTopEntities(
+        run.userId,
+        inScopeIds,
+      );
 
       // 3. Aggregate top categories (top-10 by article count in scope)
-      const topCategories = await this.aggregateTopCategories(run.userId, inScopeIds);
+      const topCategories = await this.aggregateTopCategories(
+        run.userId,
+        inScopeIds,
+      );
 
       // 4. Pick top-10 key articles by importance then recency, then enrich
       // each with its feed title + top-4 entities (used by the UI for the
@@ -99,7 +110,11 @@ export class DigestBuilderWorker extends WorkerHost {
       const keyArticles = await this.enrichKeyArticles(run.userId, picked);
 
       // 5. Call LLM
-      const scopeLabel = await this.buildScopeLabel(run, topCategories, topEntities);
+      const scopeLabel = await this.buildScopeLabel(
+        run,
+        topCategories,
+        topEntities,
+      );
       const llmInput = {
         userId: run.userId,
         period: run.period as DigestPeriod,
@@ -161,15 +176,17 @@ export class DigestBuilderWorker extends WorkerHost {
         payload: { digestId: digestRunId, status: 'failed' },
       });
       this.log.error(
-        JSON.stringify({ event: 'digest.build.failed', digestRunId, error: msg }),
+        JSON.stringify({
+          event: 'digest.build.failed',
+          digestRunId,
+          error: msg,
+        }),
       );
       throw err;
     }
   }
 
-  private async queryInScope(
-    run: typeof digestRun.$inferSelect,
-  ): Promise<
+  private async queryInScope(run: typeof digestRun.$inferSelect): Promise<
     Array<{
       id: string;
       title: string;
@@ -358,7 +375,9 @@ export class DigestBuilderWorker extends WorkerHost {
       .from(articles)
       .innerJoin(feeds, eq(feeds.id, articles.feedId))
       .where(and(eq(articles.userId, userId), inArray(articles.id, ids)));
-    const feedByArticleId = new Map(feedRows.map((r) => [r.articleId, r.feedTitle]));
+    const feedByArticleId = new Map(
+      feedRows.map((r) => [r.articleId, r.feedTitle]),
+    );
 
     const entityRows = await this.db
       .select({
@@ -370,10 +389,7 @@ export class DigestBuilderWorker extends WorkerHost {
       .from(articleEntity)
       .innerJoin(entities, eq(entities.id, articleEntity.entityId))
       .where(
-        and(
-          eq(entities.userId, userId),
-          inArray(articleEntity.articleId, ids),
-        ),
+        and(eq(entities.userId, userId), inArray(articleEntity.articleId, ids)),
       );
     const entitiesByArticleId = new Map<
       string,
@@ -381,7 +397,11 @@ export class DigestBuilderWorker extends WorkerHost {
     >();
     for (const r of entityRows) {
       const list = entitiesByArticleId.get(r.articleId) ?? [];
-      list.push({ id: r.id, canonicalName: r.canonicalName, type: r.type as EntityKind });
+      list.push({
+        id: r.id,
+        canonicalName: r.canonicalName,
+        type: r.type as EntityKind,
+      });
       entitiesByArticleId.set(r.articleId, list);
     }
 
@@ -406,7 +426,10 @@ export class DigestBuilderWorker extends WorkerHost {
         .select({ name: category.name })
         .from(category)
         .where(
-          and(eq(category.userId, run.userId), inArray(category.id, scopeFilterIds)),
+          and(
+            eq(category.userId, run.userId),
+            inArray(category.id, scopeFilterIds),
+          ),
         );
       if (cats.length === 0) {
         return 'Categories: (none — all filter targets deleted)';
@@ -417,7 +440,10 @@ export class DigestBuilderWorker extends WorkerHost {
       .select({ name: entities.canonicalName })
       .from(entities)
       .where(
-        and(eq(entities.userId, run.userId), inArray(entities.id, scopeFilterIds)),
+        and(
+          eq(entities.userId, run.userId),
+          inArray(entities.id, scopeFilterIds),
+        ),
       );
     if (ents.length === 0) {
       return 'Entities: (none — all filter targets deleted)';

@@ -31,9 +31,13 @@ export class AxesSeederService {
           .values({ userId, name: def.name, position })
           .returning({ id: axis.id });
         if (!axisRow) continue;
-        await this.db
-          .insert(axisValue)
-          .values(def.values.map((v, i) => ({ axisId: axisRow.id, value: v, position: i })));
+        await this.db.insert(axisValue).values(
+          def.values.map((v, i) => ({
+            axisId: axisRow.id,
+            value: v,
+            position: i,
+          })),
+        );
       } catch (err) {
         this.log.warn(
           JSON.stringify({

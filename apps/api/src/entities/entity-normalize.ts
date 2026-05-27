@@ -59,7 +59,9 @@ export function normalize(input: string): string {
   // Strip a single trailing suffix (case-insensitive, token-aligned).
   // Longest-first ensures "Corporation" beats "Corp", "S.p.A." beats "S.A.".
   // The list is already declared longest-first; sort defensively in case it gets edited.
-  const sortedSuffixes = [...TRAILING_SUFFIXES].sort((a, b) => b.length - a.length);
+  const sortedSuffixes = [...TRAILING_SUFFIXES].sort(
+    (a, b) => b.length - a.length,
+  );
   for (const suffix of sortedSuffixes) {
     const lower = s.toLowerCase();
     const lowerSuffix = ' ' + suffix.toLowerCase();

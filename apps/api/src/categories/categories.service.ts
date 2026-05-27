@@ -38,11 +38,17 @@ export class CategoriesService {
   async create(userId: string, rawName: string): Promise<Category> {
     const name = rawName.normalize('NFKC').trim();
     if (name === '') {
-      throw new HttpException({ error: 'invalid_name' }, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        { error: 'invalid_name' },
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const existing = await this.listMine(userId);
     if (existing.length >= MAX_CATEGORIES_PER_USER) {
-      throw new HttpException({ error: 'too_many_categories' }, HttpStatus.CONFLICT);
+      throw new HttpException(
+        { error: 'too_many_categories' },
+        HttpStatus.CONFLICT,
+      );
     }
     try {
       const [row] = await this.db
@@ -59,8 +65,12 @@ export class CategoriesService {
         createdAt: row.createdAt.toISOString(),
       };
     } catch (err) {
-      const cause = (err as { cause?: { code?: string; constraint?: string } }).cause;
-      if (cause?.code === '23505' && cause.constraint === 'category_user_name_unique') {
+      const cause = (err as { cause?: { code?: string; constraint?: string } })
+        .cause;
+      if (
+        cause?.code === '23505' &&
+        cause.constraint === 'category_user_name_unique'
+      ) {
         throw new ConflictException({ error: 'duplicate_name' });
       }
       throw err;

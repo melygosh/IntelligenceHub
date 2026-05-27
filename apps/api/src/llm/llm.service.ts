@@ -13,7 +13,10 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { llmCalls } from '../db/schema';
 import { loadEnv } from '../common/config/env';
-import { AnthropicAdapter, type AnthropicCallResult } from './anthropic.adapter';
+import {
+  AnthropicAdapter,
+  type AnthropicCallResult,
+} from './anthropic.adapter';
 import { OpenAiAdapter, type OpenAiCallResult } from './openai.adapter';
 import { LlmResponseCacheService } from './llm-cache.service';
 
@@ -43,10 +46,14 @@ export class LlmService implements ILlmService {
   }
 
   private get activeModel(): string {
-    return this.provider === 'anthropic' ? this.anthropic.model : this.openai.model;
+    return this.provider === 'anthropic'
+      ? this.anthropic.model
+      : this.openai.model;
   }
 
-  async analyzeArticle(input: ArticleAnalysisInput): Promise<ArticleAnalysisResult> {
+  async analyzeArticle(
+    input: ArticleAnalysisInput,
+  ): Promise<ArticleAnalysisResult> {
     // Cache lookup keyed by content_hash + provider + model + operation
     const cached = await this.cache.read(
       input.contentHash,
@@ -118,13 +125,15 @@ export class LlmService implements ILlmService {
 
     return this.withSemaphore(async () => {
       try {
-        const adapter = this.provider === 'anthropic' ? this.anthropic : this.openai;
+        const adapter =
+          this.provider === 'anthropic' ? this.anthropic : this.openai;
         const t0 = Date.now();
         let lastErr: Error | null = null;
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            const { result, telemetry, model } = await adapter.buildDigest(input);
+            const { result, telemetry, model } =
+              await adapter.buildDigest(input);
             await this.recordTelemetry({
               userId: input.userId,
               articleId: null,
@@ -153,7 +162,10 @@ export class LlmService implements ILlmService {
                   event: 'llm.digest_cache_write_failed',
                   userId: input.userId,
                   provider: this.provider,
-                  error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+                  error:
+                    cacheErr instanceof Error
+                      ? cacheErr.message
+                      : String(cacheErr),
                 }),
               );
               // Swallow — primary call succeeded, result is valid even without cache.
@@ -212,7 +224,11 @@ export class LlmService implements ILlmService {
             reason,
           }),
         );
-        return await this.callOnceWithFallbackDigest(input, contentHash, reason);
+        return await this.callOnceWithFallbackDigest(
+          input,
+          contentHash,
+          reason,
+        );
       }
     });
   }
@@ -220,17 +236,25 @@ export class LlmService implements ILlmService {
   private hashDigestInput(input: BuildDigestLlmInput): string {
     // Deterministic content hash: same period + scope + article subset → same hash.
     // Articles ordered by title to neutralise upstream ordering changes.
-    const articles = [...input.articles].sort((a, b) => a.title.localeCompare(b.title));
+    const articles = [...input.articles].sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
     const canonical = JSON.stringify({
       period: input.period,
       scopeLabel: input.scopeLabel,
-      articles: articles.map((a) => ({ title: a.title, summary: a.summary ?? '' })),
+      articles: articles.map((a) => ({
+        title: a.title,
+        summary: a.summary ?? '',
+      })),
     });
     return createHash('sha256').update(canonical).digest('hex');
   }
 
-  private async callWithRetry(input: ArticleAnalysisInput): Promise<ArticleAnalysisResult> {
-    const adapter = this.provider === 'anthropic' ? this.anthropic : this.openai;
+  private async callWithRetry(
+    input: ArticleAnalysisInput,
+  ): Promise<ArticleAnalysisResult> {
+    const adapter =
+      this.provider === 'anthropic' ? this.anthropic : this.openai;
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -258,7 +282,8 @@ export class LlmService implements ILlmService {
               event: 'llm.cache_write_failed',
               articleId: input.articleId,
               provider: this.provider,
-              error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+              error:
+                cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
             }),
           );
           // Swallow — primary call succeeded, result is valid even without cache.
@@ -320,12 +345,23 @@ export class LlmService implements ILlmService {
     const status = (err as { status?: number })?.status;
     if (status === 401 || status === 403) return 'auth';
     if (status === 429) return 'rate_limit';
-    const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+    const msg =
+      err instanceof Error
+        ? err.message.toLowerCase()
+        : String(err).toLowerCase();
     if (msg.includes('timeout')) return 'timeout';
-    if (msg.includes('econnrefused') || msg.includes('enotfound') || msg.includes('network')) {
+    if (
+      msg.includes('econnrefused') ||
+      msg.includes('enotfound') ||
+      msg.includes('network')
+    ) {
       return 'network';
     }
-    if (msg.includes('zod validation') || msg.includes('not valid json') || msg.includes('missing tool_use')) {
+    if (
+      msg.includes('zod validation') ||
+      msg.includes('not valid json') ||
+      msg.includes('missing tool_use')
+    ) {
       return 'invalid_response';
     }
     return 'unknown';
@@ -374,7 +410,8 @@ export class LlmService implements ILlmService {
             event: 'llm.cache_write_failed',
             articleId: input.articleId,
             provider,
-            error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+            error:
+              cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
           }),
         );
         // Swallow — fallback call succeeded, result is valid even without cache.
@@ -418,7 +455,11 @@ export class LlmService implements ILlmService {
     const model = this.modelFor(provider);
     const t0 = Date.now();
     try {
-      const { result, telemetry, model: respModel } = await adapter.buildDigest(input);
+      const {
+        result,
+        telemetry,
+        model: respModel,
+      } = await adapter.buildDigest(input);
       await this.recordTelemetry({
         userId: input.userId,
         articleId: null,
@@ -436,14 +477,21 @@ export class LlmService implements ILlmService {
         failoverReason,
       });
       try {
-        await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v2', result);
+        await this.cache.writeDigest(
+          contentHash,
+          provider,
+          respModel,
+          'build_digest_v2',
+          result,
+        );
       } catch (cacheErr) {
         this.log.warn(
           JSON.stringify({
             event: 'llm.digest_cache_write_failed',
             userId: input.userId,
             provider,
-            error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+            error:
+              cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
           }),
         );
         // Swallow — fallback call succeeded, result is valid even without cache.

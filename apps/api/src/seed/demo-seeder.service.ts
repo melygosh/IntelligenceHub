@@ -195,7 +195,11 @@ export class DemoSeederService {
         }
         await this.db
           .insert(articleAxisValue)
-          .values({ articleId: row.id, axisId: ax.axisId, axisValueId: valueId })
+          .values({
+            articleId: row.id,
+            axisId: ax.axisId,
+            axisValueId: valueId,
+          })
           .onConflictDoNothing();
       }
     }

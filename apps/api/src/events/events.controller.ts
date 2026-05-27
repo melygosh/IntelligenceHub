@@ -3,7 +3,10 @@ import { map, type Observable } from 'rxjs';
 import { EventsService } from './events.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
-import { CurrentUser, type AuthUserContext } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type AuthUserContext,
+} from '../common/decorators/current-user.decorator';
 
 /**
  * GET /api/events — Server-Sent Events stream for the authenticated user.
@@ -18,8 +21,8 @@ export class EventsController {
 
   @Sse()
   stream(@CurrentUser() user: AuthUserContext): Observable<MessageEvent> {
-    return this.events.subscribe(user.userId).pipe(
-      map((event) => ({ data: event })),
-    );
+    return this.events
+      .subscribe(user.userId)
+      .pipe(map((event) => ({ data: event })));
   }
 }

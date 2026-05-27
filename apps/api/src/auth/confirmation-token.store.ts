@@ -1,11 +1,11 @@
-import {Inject, Injectable} from '@nestjs/common';
-import {and, desc, eq, isNull} from 'drizzle-orm';
-import {DB} from '../db/db.module';
-import type {Db} from '../db/client';
-import {emailConfirmationToken} from '../db/schema';
-import {hashToken, TOKEN_EXPIRY_MS} from './confirmation-token.utils';
+import { Inject, Injectable } from '@nestjs/common';
+import { and, desc, eq, isNull } from 'drizzle-orm';
+import { DB } from '../db/db.module';
+import type { Db } from '../db/client';
+import { emailConfirmationToken } from '../db/schema';
+import { hashToken, TOKEN_EXPIRY_MS } from './confirmation-token.utils';
 
-export type ActiveTokenLookup = {userId: string; tokenRowId: string};
+export type ActiveTokenLookup = { userId: string; tokenRowId: string };
 
 /**
  * Thin DB layer over email_confirmation_token. All token raw values are hashed
@@ -45,7 +45,7 @@ export class ConfirmationTokenStore {
       .limit(1);
     if (!row) return null;
     if (row.expiresAt.getTime() <= Date.now()) return null;
-    return {userId: row.userId, tokenRowId: row.id};
+    return { userId: row.userId, tokenRowId: row.id };
   }
 
   /**
@@ -57,7 +57,7 @@ export class ConfirmationTokenStore {
   async findOwnerOfAnyToken(rawToken: string): Promise<string | null> {
     const hash = hashToken(rawToken);
     const [row] = await this.db
-      .select({userId: emailConfirmationToken.userId})
+      .select({ userId: emailConfirmationToken.userId })
       .from(emailConfirmationToken)
       .where(eq(emailConfirmationToken.tokenHash, hash))
       .limit(1);
@@ -67,7 +67,7 @@ export class ConfirmationTokenStore {
   async markUsed(tokenRowId: string): Promise<void> {
     await this.db
       .update(emailConfirmationToken)
-      .set({usedAt: new Date()})
+      .set({ usedAt: new Date() })
       .where(eq(emailConfirmationToken.id, tokenRowId));
   }
 
@@ -78,7 +78,7 @@ export class ConfirmationTokenStore {
   async invalidateAllActiveFor(userId: string): Promise<void> {
     await this.db
       .update(emailConfirmationToken)
-      .set({usedAt: new Date()})
+      .set({ usedAt: new Date() })
       .where(
         and(
           eq(emailConfirmationToken.userId, userId),
@@ -93,7 +93,7 @@ export class ConfirmationTokenStore {
    */
   async mostRecentActiveCreatedAt(userId: string): Promise<Date | null> {
     const [row] = await this.db
-      .select({createdAt: emailConfirmationToken.createdAt})
+      .select({ createdAt: emailConfirmationToken.createdAt })
       .from(emailConfirmationToken)
       .where(
         and(

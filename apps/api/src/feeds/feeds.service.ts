@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import { and, desc, eq, sql } from 'drizzle-orm';
@@ -19,7 +24,8 @@ export type FeedPullJobData = { feedId: string; userId: string };
 export class FeedsService {
   constructor(
     @Inject(DB) private readonly db: Db,
-    @InjectQueue(QUEUE_NAMES.FEED_PULL) private readonly feedPullQueue: Queue<FeedPullJobData>,
+    @InjectQueue(QUEUE_NAMES.FEED_PULL)
+    private readonly feedPullQueue: Queue<FeedPullJobData>,
     private readonly fetcher: FeedFetcher,
   ) {}
 

@@ -53,7 +53,10 @@ export class UserConfigService {
         list.push(v.value);
         byAxis.set(v.axisId, list);
       }
-      axes = axisRows.map((a) => ({ name: a.name, values: byAxis.get(a.id) ?? [] }));
+      axes = axisRows.map((a) => ({
+        name: a.name,
+        values: byAxis.get(a.id) ?? [],
+      }));
     }
 
     return {

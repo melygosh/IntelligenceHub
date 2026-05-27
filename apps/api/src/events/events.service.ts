@@ -34,7 +34,10 @@ export class EventsService implements OnModuleDestroy {
     const target = subject;
     return new Observable<ServerEvent>((observer) => {
       const sub = target.subscribe(observer);
-      this.subscriberCounts.set(userId, (this.subscriberCounts.get(userId) ?? 0) + 1);
+      this.subscriberCounts.set(
+        userId,
+        (this.subscriberCounts.get(userId) ?? 0) + 1,
+      );
       return () => {
         sub.unsubscribe();
         const remaining = (this.subscriberCounts.get(userId) ?? 1) - 1;

@@ -66,7 +66,9 @@ export class AnthropicAdapter {
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
   }
 
-  async analyzeArticle(input: ArticleAnalysisInput): Promise<AnthropicCallResult> {
+  async analyzeArticle(
+    input: ArticleAnalysisInput,
+  ): Promise<AnthropicCallResult> {
     const client = this.getClient();
     const t0 = Date.now();
     const body = this.truncateForBudget(input.body);
@@ -89,14 +91,20 @@ export class AnthropicAdapter {
         {
           name: 'record_analysis',
           description: 'Record the structured analysis of the article.',
-          input_schema: ANALYZE_ARTICLE_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+          input_schema:
+            ANALYZE_ARTICLE_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
         },
       ],
       tool_choice: { type: 'tool', name: 'record_analysis' },
       messages: [
         {
           role: 'user',
-          content: userPromptFor(input.title, body, input.userCategories, input.userAxes),
+          content: userPromptFor(
+            input.title,
+            body,
+            input.userCategories,
+            input.userAxes,
+          ),
         },
       ],
     });
@@ -112,7 +120,9 @@ export class AnthropicAdapter {
 
     const parsed = ArticleAnalysisResult.safeParse(toolUse.input);
     if (!parsed.success) {
-      throw new Error(`Anthropic response failed Zod validation: ${parsed.error.message}`);
+      throw new Error(
+        `Anthropic response failed Zod validation: ${parsed.error.message}`,
+      );
     }
 
     return {
@@ -128,7 +138,9 @@ export class AnthropicAdapter {
     };
   }
 
-  async buildDigest(input: BuildDigestLlmInput): Promise<AnthropicDigestResult> {
+  async buildDigest(
+    input: BuildDigestLlmInput,
+  ): Promise<AnthropicDigestResult> {
     const client = this.getClient();
 
     const response = await client.messages.create({
@@ -145,11 +157,14 @@ export class AnthropicAdapter {
         {
           name: 'submit_digest',
           description: 'Submit the assembled digest summary.',
-          input_schema: BUILD_DIGEST_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+          input_schema:
+            BUILD_DIGEST_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
         },
       ],
       tool_choice: { type: 'tool', name: 'submit_digest' },
-      messages: [{ role: 'user', content: formatBuildDigestUserMessage(input) }],
+      messages: [
+        { role: 'user', content: formatBuildDigestUserMessage(input) },
+      ],
     });
 
     const toolUse = response.content.find(

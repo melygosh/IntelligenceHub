@@ -2,7 +2,9 @@ import { configHash, EMPTY_CONFIG_HASH } from './config-hash';
 
 describe('configHash', () => {
   it('returns a 64-char sha256 hex', () => {
-    expect(configHash(['A'], [{ name: 'axis1', values: ['v1'] }])).toMatch(/^[0-9a-f]{64}$/);
+    expect(configHash(['A'], [{ name: 'axis1', values: ['v1'] }])).toMatch(
+      /^[0-9a-f]{64}$/,
+    );
   });
 
   it('is independent of category order', () => {
