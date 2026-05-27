@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { EntityKind } from './articles.js';
-import { DigestPeriod } from './digests.js';
+import type { DigestPeriod } from './digests.js';
 
 export const Importance = z.enum(['high', 'normal', 'junk']);
 export type Importance = z.infer<typeof Importance>;

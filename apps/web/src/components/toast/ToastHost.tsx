@@ -1,12 +1,11 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
+import { ToastContext } from './toast-context';
 
 export type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 
@@ -38,14 +37,6 @@ export type Toast = {
   /** Auto-set from severity + progress on push; overridable. */
   persistent?: boolean;
 };
-
-type ToastCtx = {
-  push: (t: Omit<Toast, 'id'>) => string;
-  update: (id: string, patch: Partial<Omit<Toast, 'id'>>) => void;
-  dismiss: (id: string) => void;
-};
-
-const Ctx = createContext<ToastCtx | null>(null);
 
 const DEFAULT_TTL_MS = 6_000;
 
@@ -127,17 +118,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({ push, update, dismiss }), [push, update, dismiss]);
 
   return (
-    <Ctx.Provider value={value}>
+    <ToastContext.Provider value={value}>
       {children}
       <ToastHost toasts={toasts} onDismiss={dismiss} />
-    </Ctx.Provider>
+    </ToastContext.Provider>
   );
-}
-
-export function useToasts(): ToastCtx {
-  const v = useContext(Ctx);
-  if (!v) throw new Error('useToasts must be used inside <ToastProvider>');
-  return v;
 }
 
 // ── Visuals ─────────────────────────────────────────────────────────────

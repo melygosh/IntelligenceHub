@@ -5,7 +5,7 @@ import {
 } from '@intelligencehub/shared';
 import { useGetDigestQuery } from '../../store/api';
 import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
-import { useSetPageTitle } from '../../components/layout/PageTitleContext';
+import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 

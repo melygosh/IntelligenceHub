@@ -11,8 +11,8 @@ export const GraphNode = z.object({
   id: z.string().uuid(),
   kind: GraphNodeKind,
   label: z.string(),
-  ts: z.number().int().nullable(),       // unix seconds — only set on article nodes
-  entityType: EntityKind.nullable(),     // only set on entity nodes
+  ts: z.number().int().nullable(), // unix seconds — only set on article nodes
+  entityType: EntityKind.nullable(), // only set on entity nodes
 });
 export type GraphNode = z.infer<typeof GraphNode>;
 
@@ -20,7 +20,7 @@ export const GraphEdge = z.object({
   from: z.string().uuid(),
   to: z.string().uuid(),
   kind: GraphEdgeKind,
-  weight: z.number().int().nullable(),   // co_mention has weight; mentions/similar may not
+  weight: z.number().int().nullable(), // co_mention has weight; mentions/similar may not
 });
 export type GraphEdge = z.infer<typeof GraphEdge>;
 

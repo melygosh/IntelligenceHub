@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { usePageTitle } from './PageTitleContext';
+import { usePageTitle } from './usePageTitle';
 
 const APP_NAME = 'News Intelligence';
 

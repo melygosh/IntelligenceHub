@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useGetEntityQuery } from '../../store/api';
 import type { EntityKind, RelatedEntitySummary } from '@intelligencehub/shared';
 import { MentionTimeline } from './MentionTimeline';
-import { useSetPageTitle } from '../../components/layout/PageTitleContext';
+import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 

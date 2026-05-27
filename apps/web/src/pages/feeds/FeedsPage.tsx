@@ -10,7 +10,7 @@ import {
 } from '../../store/api';
 import type { Feed, ValidateFeedResponse } from '@intelligencehub/shared';
 import { useFeedPullEvents } from '../../events/useFeedPullEvents';
-import { useToasts } from '../../components/toast/ToastHost';
+import { useToasts } from '../../components/toast/useToasts';
 
 const Sep = () => <span className="text-border2">·</span>;
 

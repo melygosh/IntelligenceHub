@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, useGetMeQuery, useLogoutMutation } from '../../store/api';
-import { usePageTitle } from './PageTitleContext';
+import { usePageTitle } from './usePageTitle';
 
 type Crumb = { label: string; path: string };
 

@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify';
 import { Link, useParams } from 'react-router-dom';
 import { useGetArticleQuery } from '../../store/api';
 import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
-import { useSetPageTitle } from '../../components/layout/PageTitleContext';
+import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 

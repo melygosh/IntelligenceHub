@@ -19,7 +19,12 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        // e2e specs live outside src/ (tsconfig excludes test/), so let the
+        // project service fall back to an inferred project for them instead of
+        // erroring that they aren't part of any tsconfig.
+        projectService: {
+          allowDefaultProject: ['test/*.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },

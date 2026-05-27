@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { api } from '../store/api';
-import { useToasts } from '../components/toast/ToastHost';
+import { useToasts } from '../components/toast/useToasts';
 import { useServerEvents } from './useServerEvents';
 
 /**
