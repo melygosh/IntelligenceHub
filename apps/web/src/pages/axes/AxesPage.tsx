@@ -3,11 +3,11 @@ import {
   useCreateAxisMutation,
   useDeleteAxisMutation,
   useGetAxesQuery,
-  useGetCurrentRegenerationQuery,
-  useStartRegenerationMutation,
   useUpdateAxisMutation,
 } from '../../store/api';
 import type { Axis } from '@intelligencehub/shared';
+import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
+import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
 
 export default function AxesPage() {
   const { data, isLoading } = useGetAxesQuery();
@@ -35,19 +35,10 @@ export default function AxesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Settings
-        </div>
-        <h1 className="pretty mb-1 font-serif text-[30px] leading-tight text-ink">
-          Categorization axes
-        </h1>
-        <p className="font-mono text-[12.5px] text-mute2">
-          The LLM picks one value per axis per article, or omits the axis if none fit.
-        </p>
-      </header>
-
+    <SettingsScaffold
+      title="Categorization axes"
+      description="The LLM picks one value per axis per article, or omits the axis if none fit."
+    >
       <form onSubmit={onAddAxis} className="space-y-2 border border-border bg-surface p-3">
         <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Add axis
@@ -85,9 +76,7 @@ export default function AxesPage() {
           ))}
         </ul>
       )}
-
-      <RegenerateButton />
-    </div>
+    </SettingsScaffold>
   );
 }
 
@@ -130,25 +119,13 @@ function AxisRow({ axis }: { axis: Axis }) {
     <li className="border border-border bg-surface p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-serif text-[18px] text-ink">{axis.name}</span>
-        <button
-          type="button"
+        <DeleteIconButton
+          label="Delete axis"
           onClick={() => {
             if (confirm(`Delete axis "${axis.name}" and all its assignments?`))
               deleteAxis(axis.id);
           }}
-          title="Delete axis"
-          aria-label="Delete axis"
-          className="inline-flex h-6 w-6 items-center justify-center text-mute2 hover:text-critical"
-        >
-          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5">
-            <path
-              d="M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+        />
       </div>
       <ul className="mb-2 flex flex-wrap gap-1.5">
         {axis.values.map((v) => (
@@ -186,55 +163,5 @@ function AxisRow({ axis }: { axis: Axis }) {
       </div>
       {error ? <p className="mt-1.5 font-mono text-[12.5px] text-critical">{error}</p> : null}
     </li>
-  );
-}
-
-function RegenerateButton() {
-  const { data: run } = useGetCurrentRegenerationQuery();
-  const [startRegen, { isLoading }] = useStartRegenerationMutation();
-  const [message, setMessage] = useState<string | null>(null);
-
-  const isRunning = run?.status === 'running';
-
-  async function onClick() {
-    setMessage(null);
-    try {
-      const result = await startRegen().unwrap();
-      if (result.eligibleArticles === 0) {
-        setMessage('Nothing to regenerate — all articles already match your current config.');
-      } else {
-        setMessage(`Regeneration started — ${result.eligibleArticles} articles will be re-tagged.`);
-      }
-    } catch (err) {
-      const code = (err as { data?: { error?: string } }).data?.error;
-      if (code === 'already_running') {
-        setMessage('A regeneration is already in progress.');
-      } else {
-        setMessage('Could not start regeneration. Try again in a moment.');
-      }
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={isLoading || isRunning}
-        className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
-      >
-        {isRunning
-          ? 'Regeneration in progress…'
-          : isLoading
-            ? 'Starting…'
-            : 'Regenerate articles'}
-      </button>
-      <p className="font-mono text-[12.5px] text-mute2">
-        Re-tags every article processed under your previous config. Uses cached LLM responses where the article markup didn't change.
-      </p>
-      {message ? (
-        <p className="font-mono text-[12.5px] text-muted">{message}</p>
-      ) : null}
-    </div>
   );
 }
