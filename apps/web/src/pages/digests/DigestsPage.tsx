@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   type BuildDigestRequest,
@@ -6,7 +6,6 @@ import {
   type DigestScopeKind,
   type DigestStatus,
   type DigestSummary,
-  type RecentEntity,
 } from '@intelligencehub/shared';
 import {
   useGetCategoriesQuery,
@@ -15,14 +14,8 @@ import {
   useStartDigestMutation,
 } from '../../store/api';
 import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
-
-const ENTITY_GLYPH: Record<RecentEntity['type'], React.ReactNode> = {
-  company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
-  person: <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />,
-  product: <span className="inline-block h-1.5 w-1.5 rounded-sm bg-current" />,
-  technology: <span className="inline-block h-1.5 w-1.5 rotate-45 bg-current" aria-hidden="true" />,
-  location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
-};
+import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { useSlashToFocus } from '../../components/filters/useSlashToFocus';
 
 function EntitySearchInput({
   value,
@@ -32,21 +25,7 @@ function EntitySearchInput({
   onChange: (v: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  // Press "/" anywhere on the page to focus — matches the ArticlesList search
-  // shortcut so users get the same affordance across pages.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/') return;
-      const tgt = e.target as HTMLElement | null;
-      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) {
-        return;
-      }
-      e.preventDefault();
-      inputRef.current?.focus();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  useSlashToFocus(inputRef);
 
   return (
     <div className="flex w-full items-center gap-2 border border-border bg-paper2 px-2.5 py-1.5">
@@ -111,7 +90,7 @@ function EntityPicker({
                     : 'border-border bg-paper text-ink hover:bg-paper2')
                 }
               >
-                <span className={on ? 'text-paper' : 'text-mute2'}>{ENTITY_GLYPH[e.type]}</span>
+                <span className={on ? 'text-paper' : 'text-mute2'}><EntityGlyph type={e.type} /></span>
                 <span>{e.canonicalName}</span>
                 {on ? <span aria-hidden="true">✓</span> : null}
               </button>

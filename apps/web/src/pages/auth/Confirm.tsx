@@ -10,13 +10,12 @@ export default function Confirm() {
   const [confirmEmail] = useConfirmEmailMutation();
   const navigate = useNavigate();
   const { data: me } = useGetMeQuery();
-  const [state, setState] = useState<State>('pending');
+  // Initial state derived from token presence — avoids a synchronous setState
+  // in the effect for the no-token case.
+  const [state, setState] = useState<State>(token ? 'pending' : 'error');
 
   useEffect(() => {
-    if (!token) {
-      setState('error');
-      return;
-    }
+    if (!token) return;
     let cancelled = false;
     (async () => {
       try {

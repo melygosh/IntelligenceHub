@@ -12,7 +12,7 @@ type Day = { dayUtc: string; count: number };
  * MIN_WINDOW_DAYS of context (capped at MAX_WINDOW_DAYS), with count=0 filled
  * for quiet days so cadence and gaps read honestly.
  */
-export function buildSeries(buckets: TimelineBucket[]): Day[] {
+function buildSeries(buckets: TimelineBucket[]): Day[] {
   if (buckets.length === 0) return [];
   const byDay = new Map(buckets.map((b) => [b.dayUtc, b.count]));
   const days = [...byDay.keys()].sort();

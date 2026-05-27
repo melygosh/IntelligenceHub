@@ -5,38 +5,9 @@ import { useGetArticleQuery } from '../../store/api';
 import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
 import { useSetPageTitle } from '../../components/layout/PageTitleContext';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
+import { EntityGlyph } from '../../components/entities/EntityGlyph';
 
 type EntityType = ArticleEntitySummary['type'];
-
-// SVG glyphs (not bare CSS dots) so they sit on the text's optical centre when
-// wrapped in an `items-center` flex box — matches the entity detail page.
-const TYPE_GLYPH: Record<EntityType, (cls?: string) => React.ReactNode> = {
-  company: (cls = 'h-2.5 w-2.5') => (
-    <svg viewBox="0 0 10 10" className={cls}>
-      <rect x="1" y="1" width="8" height="8" fill="currentColor" />
-    </svg>
-  ),
-  person: (cls = 'h-2.5 w-2.5') => (
-    <svg viewBox="0 0 10 10" className={cls}>
-      <circle cx="5" cy="5" r="4" fill="currentColor" />
-    </svg>
-  ),
-  product: (cls = 'h-2.5 w-2.5') => (
-    <svg viewBox="0 0 10 10" className={cls}>
-      <rect x="1" y="1" width="8" height="8" rx="2.2" fill="currentColor" />
-    </svg>
-  ),
-  technology: (cls = 'h-2.5 w-2.5') => (
-    <svg viewBox="0 0 10 10" className={cls} aria-hidden="true">
-      <rect x="2.2" y="2.2" width="5.6" height="5.6" fill="currentColor" transform="rotate(45 5 5)" />
-    </svg>
-  ),
-  location: (cls = 'h-2.5 w-2.5') => (
-    <svg viewBox="0 0 10 10" className={cls}>
-      <circle cx="5" cy="5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  ),
-};
 
 const TYPE_GROUP_ORDER: EntityType[] = ['company', 'person', 'product', 'technology', 'location'];
 const TYPE_GROUP_LABEL: Record<EntityType, string> = {
@@ -218,7 +189,7 @@ export default function ArticleDetail() {
               return (
                 <div key={type} className="space-y-2">
                   <div className="flex items-center gap-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-mute2">
-                    <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[type]('h-2.5 w-2.5')}</span>
+                    <span className="inline-flex items-center text-mute2"><EntityGlyph type={type} /></span>
                     <span>{TYPE_GROUP_LABEL[type]}</span>
                     <span className="tnum">{group.length}</span>
                   </div>
@@ -229,7 +200,7 @@ export default function ArticleDetail() {
                           to={`/entities/${e.id}`}
                           className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
                         >
-                          <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[e.type]('h-2.5 w-2.5')}</span>
+                          <span className="inline-flex items-center text-mute2"><EntityGlyph type={e.type} /></span>
                           <span>{e.canonicalName}</span>
                         </Link>
                       </li>

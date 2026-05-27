@@ -231,7 +231,8 @@ export const api = createApi({
     }),
     getCurrentRegeneration: build.query<RegenerationRun | null, void>({
       query: () => '/regeneration/current',
-      transformErrorResponse: (err) => (err.status === 404 ? null : err) as any,
+      transformErrorResponse: (err) =>
+        (err as FetchBaseQueryError).status === 404 ? null : err,
       providesTags: ['Regeneration'],
     }),
     startRegeneration: build.mutation<StartRegenerationResponse, void>({

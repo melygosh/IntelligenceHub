@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   useGetArticleQuery,
@@ -7,113 +7,12 @@ import {
   useGetFeedsQuery,
 } from '../../store/api';
 import type { ArticleListItem, ArticleEntitySummary, Feed } from '@intelligencehub/shared';
+import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { IMP_STYLE } from '../../components/articles/importance';
+import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
+import { SearchInput } from '../../components/filters/SearchInput';
 
 const Sep = () => <span className="text-border2">·</span>;
-
-function ChevronDown() {
-  return (
-    <svg viewBox="0 0 10 10" className="h-2 w-2">
-      <path d="M2 4 L5 7 L8 4" stroke="currentColor" strokeWidth="1.4" fill="none" />
-    </svg>
-  );
-}
-
-/** Generic facet dropdown — button trigger ("Label" or "Label · value") with a
- * chevron, opens a popover panel beneath. Click-outside or Escape closes.
- * The button styling switches to ink-on-paper2 when a value is active so the
- * user can see at a glance which facets are filtering the list. */
-function FacetDropdown({
-  label,
-  valueLabel,
-  isActive,
-  children,
-  panelClassName,
-}: {
-  label: string;
-  valueLabel?: string | null;
-  isActive: boolean;
-  children: (close: () => void) => React.ReactNode;
-  panelClassName?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onClick);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const close = () => setOpen(false);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className={
-          'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
-          (isActive
-            ? 'bg-paper2 text-ink'
-            : 'bg-paper text-muted hover:text-ink')
-        }
-      >
-        <span>{label}</span>
-        {valueLabel ? (
-          <span className="text-ink">· {valueLabel}</span>
-        ) : null}
-        <span className="text-mute2">
-          <ChevronDown />
-        </span>
-      </button>
-      {open ? (
-        <div
-          className={
-            'absolute left-0 top-full z-30 mt-1 min-w-[200px] border border-border bg-paper py-1 shadow-[0_8px_24px_-8px_rgba(28,26,22,0.2)] ' +
-            (panelClassName ?? '')
-          }
-        >
-          {children(close)}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function CheckboxIcon({ on }: { on: boolean }) {
-  return (
-    <span
-      className={
-        'inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center border ' +
-        (on ? 'border-ink bg-ink text-paper' : 'border-border bg-paper')
-      }
-    >
-      {on ? (
-        <svg viewBox="0 0 10 10" className="h-2 w-2">
-          <path
-            d="M2 5.5 L4 7.5 L8 3"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : null}
-    </span>
-  );
-}
 
 function CategoryDropdown({
   selected,
@@ -386,85 +285,6 @@ function DateDropdown({
   );
 }
 
-function SearchInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [local, setLocal] = useState(value);
-  // Sync prop → local when the URL-driven value changes from outside (e.g.
-  // user clears the URL param). React's documented "adjust state while
-  // rendering" pattern — uses two pieces of state, not an effect.
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const [prevValue, setPrevValue] = useState(value);
-  if (prevValue !== value) {
-    setPrevValue(value);
-    setLocal(value);
-  }
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (local !== value) onChange(local);
-    }, 250);
-    return () => clearTimeout(t);
-  }, [local, value, onChange]);
-
-  // Press "/" anywhere on the page to focus this input — common pattern in
-  // search-heavy apps (matches the design's kbd hint).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/') return;
-      const tgt = e.target as HTMLElement | null;
-      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) {
-        return;
-      }
-      e.preventDefault();
-      inputRef.current?.focus();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
-
-  return (
-    <div className="flex w-full items-center gap-2 border border-border bg-paper2 px-2.5 py-1.5 md:w-[300px]">
-      <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 shrink-0 text-muted">
-        <circle cx="5" cy="5" r="3.2" stroke="currentColor" strokeWidth="1.1" fill="none" />
-        <path d="M7.5 7.5 L10 10" stroke="currentColor" strokeWidth="1.1" />
-      </svg>
-      <input
-        ref={inputRef}
-        type="text"
-        value={local}
-        onChange={(e) => setLocal(e.target.value)}
-        placeholder="search title, entity, summary…"
-        className="flex-1 bg-transparent font-mono text-[13.5px] text-ink outline-none placeholder:text-mute2"
-      />
-      <kbd className="border border-border bg-paper px-1 font-mono text-[11.5px] text-mute2">
-        /
-      </kbd>
-    </div>
-  );
-}
-
-const TYPE_GLYPH: Record<ArticleEntitySummary['type'], React.ReactNode> = {
-  company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
-  person: <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />,
-  product: <span className="inline-block h-1.5 w-1.5 rounded-sm bg-current" />,
-  technology: <span className="inline-block h-1.5 w-1.5 rotate-45 bg-current" aria-hidden="true" />,
-  location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
-};
-
-// Importance pill — soft-bg with colored dot; matches the StatusBadge pattern
-// from /feeds. `critical` is reserved for future use (we currently emit only
-// high/normal/junk from the LLM analyzer).
-const IMP_STYLE: Record<NonNullable<ArticleListItem['importance']>, { bg: string; fg: string; dot: string }> = {
-  high: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e' },
-  normal: { bg: '#ece6d8', fg: '#3d3a32', dot: '#6b6557' },
-  junk: { bg: '#ece6d8', fg: '#857f74', dot: '#9b9486' },
-};
-
 function ImportanceDot({ level }: { level: ArticleListItem['importance'] }) {
   if (!level) {
     return <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 bg-border" />;
@@ -555,7 +375,7 @@ function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
       className="inline-flex items-center gap-1 font-mono text-[12.5px] text-muted hover:text-ink"
     >
       <span className="inline-flex h-3 w-3 items-center justify-center text-mute2">
-        {TYPE_GLYPH[entity.type]}
+        <EntityGlyph type={entity.type} />
       </span>
       <span>{entity.canonicalName}</span>
     </Link>
@@ -962,6 +782,7 @@ export default function ArticlesList() {
           <SearchInput
             value={q}
             onChange={(v) => updateParams({ q: v || undefined })}
+            placeholder="search title, entity, summary…"
           />
         </div>
 

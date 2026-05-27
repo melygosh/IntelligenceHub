@@ -18,7 +18,11 @@ type Dispatcher = (event: ServerEvent) => void;
  */
 export function useServerEvents(onEvent: Dispatcher): void {
   const handlerRef = useRef(onEvent);
-  handlerRef.current = onEvent;
+  // Keep the ref pointing at the latest callback without re-subscribing the
+  // EventSource. Done in an effect (not during render) to respect purity.
+  useEffect(() => {
+    handlerRef.current = onEvent;
+  });
 
   useEffect(() => {
     const source = new EventSource('/api/events', { withCredentials: true });

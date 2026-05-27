@@ -2,12 +2,12 @@ import { Link, useParams } from 'react-router-dom';
 import {
   type DigestTopCategory,
   type DigestTopEntity,
-  type EntityKind,
 } from '@intelligencehub/shared';
 import { useGetDigestQuery } from '../../store/api';
 import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
 import { useSetPageTitle } from '../../components/layout/PageTitleContext';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
+import { EntityGlyph } from '../../components/entities/EntityGlyph';
 
 const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
   day: 'Last 24 hours',
@@ -16,14 +16,6 @@ const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
 };
 
 const Sep = () => <span className="text-border2">·</span>;
-
-const TYPE_GLYPH: Record<EntityKind, React.ReactNode> = {
-  company: <span className="inline-block h-1.5 w-1.5 bg-current" />,
-  person: <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />,
-  product: <span className="inline-block h-1.5 w-1.5 rounded-sm bg-current" />,
-  technology: <span className="inline-block h-1.5 w-1.5 rotate-45 bg-current" aria-hidden="true" />,
-  location: <span className="inline-block h-1.5 w-1.5 rounded-full border border-current bg-transparent" />,
-};
 
 function fmt(d: string): string {
   return new Date(d).toLocaleDateString(undefined, {
@@ -35,7 +27,7 @@ function TopEntityRow({ e, rank }: { e: DigestTopEntity; rank: number }) {
   return (
     <li className="flex items-center gap-2 py-1.5 font-mono text-[13px]">
       <span className="w-5 shrink-0 text-right text-mute2 tnum">{rank}.</span>
-      <span className="inline-flex items-center text-mute2">{TYPE_GLYPH[e.type]}</span>
+      <span className="inline-flex items-center text-mute2"><EntityGlyph type={e.type} /></span>
       <Link
         to={`/entities/${e.id}`}
         className="flex-1 truncate text-ink hover:text-accent-deep"

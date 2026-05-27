@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { IMP_STYLE } from './importance';
 
 /** Minimal article shape rendered by the shared list card. `feedTitle` and
  * `entities` are optional so callers with leaner data (e.g. an entity's
@@ -13,14 +14,6 @@ export type ArticleListItemData = {
 };
 
 const Sep = () => <span className="px-1 text-border2">·</span>;
-
-// Filled importance pill matching the ArticlesList badge palette so every
-// surface that lists articles reads as the same primitive.
-const IMP_STYLE: Record<'high' | 'normal' | 'junk', { bg: string; fg: string; dot: string }> = {
-  high: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e' },
-  normal: { bg: '#ece6d8', fg: '#3d3a32', dot: '#6b6557' },
-  junk: { bg: '#ece6d8', fg: '#857f74', dot: '#9b9486' },
-};
 
 export function ImportanceBadge({ importance }: { importance: 'high' | 'normal' | 'junk' | null }) {
   if (!importance) return null;
