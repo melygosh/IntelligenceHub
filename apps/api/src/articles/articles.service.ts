@@ -198,11 +198,14 @@ export class ArticlesService {
       .innerJoin(axisValue, eq(axisValue.id, articleAxisValue.axisValueId))
       .where(eq(articleAxisValue.articleId, id));
 
-    const [feedRow] = await this.db
-      .select({ title: feeds.title })
-      .from(feeds)
-      .where(eq(feeds.id, a.feedId))
-      .limit(1);
+    // a.feedId is null once the source feed was deleted (US-3 detach).
+    const [feedRow] = a.feedId
+      ? await this.db
+          .select({ title: feeds.title })
+          .from(feeds)
+          .where(eq(feeds.id, a.feedId))
+          .limit(1)
+      : [];
 
     const siblings = await this.findSiblings(
       userId,
@@ -259,7 +262,9 @@ export class ArticlesService {
         feedTitle: feeds.title,
       })
       .from(articles)
-      .innerJoin(feeds, eq(feeds.id, articles.feedId))
+      // Left join: a sibling whose source feed was deleted (feedId NULL) must
+      // still surface — its feedTitle just falls back below.
+      .leftJoin(feeds, eq(feeds.id, articles.feedId))
       .where(
         and(
           eq(articles.userId, userId),

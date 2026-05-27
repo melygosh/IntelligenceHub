@@ -828,7 +828,7 @@ export default function ArticlesList() {
             <ArticleRow
               key={a.id}
               article={a}
-              feed={feedById.get(a.feedId)}
+              feed={a.feedId ? feedById.get(a.feedId) : undefined}
               onOpenSimilar={setOpenSimilarId}
             />
           ))

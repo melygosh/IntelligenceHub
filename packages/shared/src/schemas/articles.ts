@@ -17,7 +17,8 @@ export const ArticleListItem = z.object({
   summary: z.string().nullable(),
   importance: z.enum(['high', 'normal', 'junk']).nullable(),
   ts: z.string().datetime(),
-  feedId: z.string().uuid(),
+  // Null once the source feed has been deleted (US-3 detach).
+  feedId: z.string().uuid().nullable(),
   entities: z.array(ArticleEntitySummary),
   categoryNames: z.array(z.string()).default([]),
   similarCount: z.number().int().nonnegative().default(0),

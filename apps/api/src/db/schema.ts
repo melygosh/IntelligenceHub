@@ -66,9 +66,13 @@ export const articles = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    feedId: uuid('feed_id')
-      .notNull()
-      .references(() => feeds.id, { onDelete: 'cascade' }),
+    // Nullable + ON DELETE SET NULL: deleting a feed source detaches its
+    // articles (US-3) rather than destroying the pulled+analyzed history.
+    // Orphaned rows survive; the read path falls back to an "unknown source"
+    // label. Feed-pull always sets this on insert.
+    feedId: uuid('feed_id').references(() => feeds.id, {
+      onDelete: 'set null',
+    }),
     url: text('url').notNull(),
     title: text('title').notNull(),
     summary: text('summary'),
