@@ -7,6 +7,7 @@ import type {
   EntityDetail,
   EntityKind,
   MentioningArticleSummary,
+  RecentEntity,
   RelatedEntitySummary,
   TimelineBucket,
 } from '@intelligencehub/shared';
@@ -14,6 +15,52 @@ import type {
 @Injectable()
 export class EntitiesService {
   constructor(@Inject(DB) private readonly db: Db) {}
+
+  /**
+   * Recently-mentioned entities for the digest form's by-entity scope picker.
+   * Ordered by most-recent mention timestamp DESC (mentionCount as tiebreak).
+   * Caps at `limit` so a small chip set fits the form footprint.
+   */
+  async listRecent(userId: string, limit = 40): Promise<RecentEntity[]> {
+    const result = await this.db.execute<{
+      id: string;
+      canonical_name: string;
+      type: string;
+      mention_count: number;
+      last_seen_ts: string;
+    }>(sql`
+      SELECT e.id,
+             e.canonical_name,
+             e.type,
+             COUNT(*)::int AS mention_count,
+             MAX(a.ts)     AS last_seen_ts
+      FROM article_entity ae
+      JOIN entities e ON e.id = ae.entity_id
+      JOIN articles a ON a.id = ae.article_id
+      WHERE e.user_id = ${userId}
+        AND a.user_id = ${userId}
+        AND a.status = 'ready'
+      GROUP BY e.id, e.canonical_name, e.type
+      ORDER BY MAX(a.ts) DESC, COUNT(*) DESC
+      LIMIT ${limit}
+    `);
+    const rows = (result as unknown as {
+      rows: Array<{
+        id: string;
+        canonical_name: string;
+        type: string;
+        mention_count: number;
+        last_seen_ts: string;
+      }>;
+    }).rows;
+    return rows.map((r) => ({
+      id: r.id,
+      canonicalName: r.canonical_name,
+      type: r.type as EntityKind,
+      mentionCount: r.mention_count,
+      lastSeenTs: new Date(r.last_seen_ts).toISOString(),
+    }));
+  }
 
   async getById(id: string, userId: string): Promise<EntityDetail | null> {
     const [e] = await this.db

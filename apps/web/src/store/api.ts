@@ -21,6 +21,7 @@ import type {
   DigestDetail,
   DigestSummary,
   EntityDetail,
+  RecentEntitiesResponse,
   Feed,
   FeedListResponse,
   GraphResponse,
@@ -178,6 +179,10 @@ export const api = createApi({
       query: (id) => `/entities/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Entity', id }],
     }),
+    getRecentEntities: build.query<RecentEntitiesResponse, void>({
+      query: () => '/entities',
+      providesTags: ['Entity'],
+    }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
       providesTags: ['Categories'],
@@ -251,6 +256,7 @@ export const {
   useGetArticlesQuery,
   useGetArticleQuery,
   useGetEntityQuery,
+  useGetRecentEntitiesQuery,
   useGetGraphQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,

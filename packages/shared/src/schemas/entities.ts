@@ -23,6 +23,20 @@ export const TimelineBucket = z.object({
 });
 export type TimelineBucket = z.infer<typeof TimelineBucket>;
 
+export const RecentEntity = z.object({
+  id: z.string().uuid(),
+  canonicalName: z.string(),
+  type: EntityKind,
+  mentionCount: z.number().int().nonnegative(),
+  lastSeenTs: z.string().datetime(),
+});
+export type RecentEntity = z.infer<typeof RecentEntity>;
+
+export const RecentEntitiesResponse = z.object({
+  entities: z.array(RecentEntity),
+});
+export type RecentEntitiesResponse = z.infer<typeof RecentEntitiesResponse>;
+
 export const EntityDetail = z.object({
   id: z.string().uuid(),
   canonicalName: z.string(),
