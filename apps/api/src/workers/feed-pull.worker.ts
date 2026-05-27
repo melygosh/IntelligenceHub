@@ -1,7 +1,7 @@
 import { Inject, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articles, feeds } from '../db/schema';
@@ -150,18 +150,19 @@ export class FeedPullWorker extends WorkerHost {
     userId: string,
     feedId: string,
     item: FetchedItem,
-  ): Promise<'inserted' | 'filtered' | 'duplicate' | 'llm_error'> {
-    // Sibling search restricted to 'ready' rows — only original articles
-    // count as the canonical "first seen". Pre-existing legacy duplicates
-    // (status='filtered', filter_reason='duplicate_url') are ignored here
-    // by design.
+  ): Promise<'inserted' | 'filtered' | 'duplicate' | 'pending'> {
+    // Sibling search over already-handled rows: 'ready' originals anchor the
+    // cross-source "similar" feature, while 'pending'/'failed' siblings mean a
+    // prior attempt already exists — matching them stops a re-pull from
+    // re-inserting and re-analyzing the same item (and PendingRetryWorker owns
+    // the retry). Legacy 'filtered'/'duplicate' rows are ignored by design.
     const [existing] = await this.db
-      .select({ id: articles.id })
+      .select({ id: articles.id, status: articles.status })
       .from(articles)
       .where(
         and(
           eq(articles.userId, userId),
-          eq(articles.status, 'ready'),
+          inArray(articles.status, ['ready', 'pending', 'failed']),
           or(
             eq(articles.url, item.normalisedUrl),
             eq(articles.contentHash, item.contentHash),
@@ -170,26 +171,30 @@ export class FeedPullWorker extends WorkerHost {
       )
       .limit(1);
     if (existing) {
-      await this.db.insert(articles).values({
-        userId,
-        feedId,
-        url: item.normalisedUrl,
-        title: item.title || 'Untitled',
-        contentHash: item.contentHash,
-        body: item.body,
-        status: 'duplicate',
-        duplicateOf: existing.id,
-        ts: item.ts,
-      });
-      this.log.log(
-        JSON.stringify({
-          event: 'feed.pull.duplicate',
-          feedId,
+      // Only 'ready' originals get a duplicate row (the similar-articles
+      // anchor); for pending/failed we just skip so retries don't pile up.
+      if (existing.status === 'ready') {
+        await this.db.insert(articles).values({
           userId,
-          originalId: existing.id,
+          feedId,
           url: item.normalisedUrl,
-        }),
-      );
+          title: item.title || 'Untitled',
+          contentHash: item.contentHash,
+          body: item.body,
+          status: 'duplicate',
+          duplicateOf: existing.id,
+          ts: item.ts,
+        });
+        this.log.log(
+          JSON.stringify({
+            event: 'feed.pull.duplicate',
+            feedId,
+            userId,
+            originalId: existing.id,
+            url: item.normalisedUrl,
+          }),
+        );
+      }
       return 'duplicate';
     }
 

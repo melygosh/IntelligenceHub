@@ -11,6 +11,7 @@ import { RegenerationWorker } from './regeneration.worker';
 import { RegenerationStartupCleanup } from './regeneration-startup.cleanup';
 import { DemoSeederWorker } from './demo-seeder.worker';
 import { DigestBuilderWorker } from './digest-builder.worker';
+import { PendingRetryWorker } from './pending-retry.worker';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DigestBuilderWorker } from './digest-builder.worker';
     RegenerationStartupCleanup,
     DemoSeederWorker,
     DigestBuilderWorker,
+    PendingRetryWorker,
   ],
 })
 export class WorkersModule {}
