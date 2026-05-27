@@ -1,6 +1,6 @@
 import { Inject, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import type { Job } from 'bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job, Queue } from 'bullmq';
 import { and, eq, inArray, or } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
@@ -14,6 +14,10 @@ import { runPreFilter } from '../articles/pre-filter';
 import { ArticleProcessor } from '../articles/article-processor.service';
 // value import required for Nest DI metadata
 import { EventsService } from '../events/events.service';
+import {
+  ANALYZE_JOB_OPTS,
+  type AnalyzeJobData,
+} from './article-analyze.worker';
 
 type ProcessResult = {
   feedId: string;
@@ -33,6 +37,8 @@ export class FeedPullWorker extends WorkerHost {
     private readonly fetcher: FeedFetcher,
     private readonly processor: ArticleProcessor,
     private readonly events: EventsService,
+    @InjectQueue(QUEUE_NAMES.ARTICLE_ANALYZE)
+    private readonly analyzeQueue: Queue<AnalyzeJobData>,
   ) {
     super();
   }
@@ -76,14 +82,16 @@ export class FeedPullWorker extends WorkerHost {
       let inserted = 0;
       let filtered = 0;
       let duplicates = 0;
-      let llmErrors = 0;
+      // Analysis is async now (enqueued per article), so the pull never knows
+      // an LLM outcome at done-time. Kept at 0 for the event's stable shape;
+      // analysis results surface via article.analyzed events instead.
+      const llmErrors = 0;
 
       for (const item of fetched.items) {
         const outcome = await this.handleItem(userId, feedId, item);
         if (outcome === 'inserted') inserted += 1;
         else if (outcome === 'filtered') filtered += 1;
-        else if (outcome === 'duplicate') duplicates += 1;
-        else llmErrors += 1;
+        else duplicates += 1;
       }
 
       await this.db
@@ -150,12 +158,12 @@ export class FeedPullWorker extends WorkerHost {
     userId: string,
     feedId: string,
     item: FetchedItem,
-  ): Promise<'inserted' | 'filtered' | 'duplicate' | 'pending'> {
+  ): Promise<'inserted' | 'filtered' | 'duplicate'> {
     // Sibling search over already-handled rows: 'ready' originals anchor the
     // cross-source "similar" feature, while 'pending'/'failed' siblings mean a
     // prior attempt already exists — matching them stops a re-pull from
-    // re-inserting and re-analyzing the same item (and PendingRetryWorker owns
-    // the retry). Legacy 'filtered'/'duplicate' rows are ignored by design.
+    // re-inserting and re-enqueuing the same item (the article-analyze queue
+    // owns the retry). Legacy 'filtered'/'duplicate' rows are ignored by design.
     const [existing] = await this.db
       .select({ id: articles.id, status: articles.status })
       .from(articles)
@@ -224,6 +232,15 @@ export class FeedPullWorker extends WorkerHost {
       return 'filtered';
     }
 
-    return this.processor.process(userId, feedId, item);
+    // Persist as 'pending' and hand analysis off to the article-analyze queue.
+    // jobId = articleId makes the enqueue idempotent (a boot reconcile or a
+    // re-pull can't create a second analyze job for the same article).
+    const articleId = await this.processor.insertPending(userId, feedId, item);
+    await this.analyzeQueue.add(
+      'analyze',
+      { articleId, userId },
+      { jobId: articleId, ...ANALYZE_JOB_OPTS },
+    );
+    return 'inserted';
   }
 }

@@ -31,6 +31,17 @@ export const ServerEvent = z.discriminatedUnion('type', [
       error: z.string(),
     }),
   }),
+  // Emitted by the article-analyze worker when an article reaches a terminal
+  // analysis state — 'ready' (analysis applied) or 'failed' (retries exhausted).
+  // The frontend invalidates the Articles list so newly-ready rows surface as
+  // they are analyzed (async, after the pull completes).
+  z.object({
+    type: z.literal('article.analyzed'),
+    payload: z.object({
+      articleId: z.string().uuid(),
+      status: z.enum(['ready', 'failed']),
+    }),
+  }),
   z.object({
     type: z.literal('regeneration.started'),
     payload: z.object({

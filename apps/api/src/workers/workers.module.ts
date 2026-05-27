@@ -7,15 +7,17 @@ import { SeedModule } from '../seed/seed.module';
 import { LlmModule } from '../llm/llm.module';
 import { EventsModule } from '../events/events.module';
 import { FeedPullWorker } from './feed-pull.worker';
+import { ArticleAnalyzeWorker } from './article-analyze.worker';
+import { PendingAnalyzeReconcile } from './pending-analyze.reconcile';
 import { RegenerationWorker } from './regeneration.worker';
 import { RegenerationStartupCleanup } from './regeneration-startup.cleanup';
 import { DemoSeederWorker } from './demo-seeder.worker';
 import { DigestBuilderWorker } from './digest-builder.worker';
-import { PendingRetryWorker } from './pending-retry.worker';
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: QUEUE_NAMES.FEED_PULL }),
+    BullModule.registerQueue({ name: QUEUE_NAMES.ARTICLE_ANALYZE }),
     BullModule.registerQueue({ name: QUEUE_NAMES.REGENERATION }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DEMO_SEED }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DIGEST_BUILD }),
@@ -27,11 +29,12 @@ import { PendingRetryWorker } from './pending-retry.worker';
   ],
   providers: [
     FeedPullWorker,
+    ArticleAnalyzeWorker,
+    PendingAnalyzeReconcile,
     RegenerationWorker,
     RegenerationStartupCleanup,
     DemoSeederWorker,
     DigestBuilderWorker,
-    PendingRetryWorker,
   ],
 })
 export class WorkersModule {}

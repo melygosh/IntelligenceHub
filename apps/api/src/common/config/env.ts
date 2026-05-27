@@ -57,6 +57,23 @@ const EnvSchema = z
       .int()
       .positive()
       .default(4000),
+    // Article-analyze queue (async LLM analysis). A job retries up to
+    // ANALYZE_MAX_ATTEMPTS times with a fixed ANALYZE_BACKOFF_SECONDS delay
+    // between attempts (sitting in the queue's `delayed` set), then lands in
+    // `failed`. ANALYZE_CONCURRENCY bounds how many analyze jobs are `active`
+    // at once (the LlmService semaphore is the real LLM rate gate).
+    ANALYZE_MAX_ATTEMPTS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(20),
+    ),
+    ANALYZE_BACKOFF_SECONDS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(60),
+    ),
+    ANALYZE_CONCURRENCY: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(2),
+    ),
   })
   .superRefine((env, ctx) => {
     if (env.LLM_FALLBACK_PROVIDER) {

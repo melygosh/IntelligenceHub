@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import {
@@ -21,15 +21,8 @@ import {
 import type { ArticleAnalysisResult } from '@intelligencehub/shared';
 import type { FetchedItem } from '../feeds/feed-fetcher.service';
 
-type ProcessOutcome = 'inserted' | 'pending';
 export type RetagOutcome = 'cache_hit' | 'llm_called' | 'error';
-export type ReprocessOutcome = 'recovered' | 'still_pending' | 'gave_up';
-
-// A 'pending' article retries every PendingRetryWorker tick. Once this many
-// non-success LLM calls have accumulated for it, we stop retrying and mark it
-// terminally 'failed' so a permanently-unprocessable article can't loop forever
-// (a transient outage recovers long before this).
-const MAX_PENDING_FAILED_CALLS = 20;
+export type AnalyzeOutcome = 'analyzed' | 'skipped';
 
 @Injectable()
 export class ArticleProcessor {
@@ -42,15 +35,18 @@ export class ArticleProcessor {
     private readonly userConfig: UserConfigService,
   ) {}
 
-  async process(
+  /**
+   * Persist a freshly-fetched item as a 'pending' article — all deterministic
+   * data (row, body, url/hash) but no analysis yet — and return its id. The
+   * caller enqueues an article-analyze job; analysis happens asynchronously so
+   * the pull never blocks on the LLM and the queue of awaiting work is visible
+   * in Bull Board. Body is persisted so analyzePending()/retag() can re-run.
+   */
+  async insertPending(
     userId: string,
     feedId: string,
     item: FetchedItem,
-    configSnapshot?: UserConfigSnapshot,
-  ): Promise<ProcessOutcome> {
-    const config =
-      configSnapshot ?? (await this.userConfig.snapshotFor(userId));
-
+  ): Promise<string> {
     const [article] = await this.db
       .insert(articles)
       .values({
@@ -59,52 +55,74 @@ export class ArticleProcessor {
         url: item.normalisedUrl,
         title: item.title || 'Untitled',
         contentHash: item.contentHash,
-        body: item.body, // persist body so retag (Day 8b) can re-run analysis
-        status: 'ready',
+        body: item.body,
+        status: 'pending',
         ts: item.ts,
       })
       .returning({ id: articles.id });
+    return article.id;
+  }
 
-    let analysis: ArticleAnalysisResult;
-    try {
-      analysis = await this.llm.analyzeArticle({
-        title: item.title || 'Untitled',
-        body: item.body,
-        articleId: article.id,
-        userId,
-        contentHash: item.contentHash,
-        userCategories: config.categories,
-        userAxes: config.axes,
-        configHash: config.hash,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.log.warn(
-        JSON.stringify({
-          event: 'article.llm_error',
-          articleId: article.id,
-          userId,
-          error: msg,
-        }),
-      );
-      // Defer, don't drop. The article keeps all deterministic data (row, body,
-      // url/hash) and is marked 'pending' for PendingRetryWorker to re-analyze
-      // when the LLM recovers. No synthetic summary/entities are written (FR-3).
-      await this.db
-        .update(articles)
-        .set({ status: 'pending' })
-        .where(eq(articles.id, article.id));
-      return 'pending';
-    }
+  /**
+   * Analyze a 'pending' article and promote it to 'ready'. Called by the
+   * article-analyze worker. Throws on LLM failure so BullMQ owns the retry +
+   * backoff (the job goes back to 'delayed' until its next attempt). Returns
+   * 'skipped' if the article is already gone or no longer pending (a duplicate
+   * job — idempotent no-op). No synthetic summary/entities are written (FR-3).
+   */
+  async analyzePending(
+    articleId: string,
+    userId: string,
+  ): Promise<AnalyzeOutcome> {
+    const [article] = await this.db
+      .select({
+        id: articles.id,
+        title: articles.title,
+        body: articles.body,
+        contentHash: articles.contentHash,
+      })
+      .from(articles)
+      .where(
+        and(
+          eq(articles.id, articleId),
+          eq(articles.userId, userId),
+          eq(articles.status, 'pending'),
+        ),
+      )
+      .limit(1);
+    if (!article?.contentHash) return 'skipped';
 
-    await this.applyAnalysis(article.id, userId, analysis, config.hash);
-    return 'inserted';
+    const config = await this.userConfig.snapshotFor(userId);
+    const analysis = await this.llm.analyzeArticle({
+      title: article.title,
+      body: article.body ?? '',
+      articleId: article.id,
+      userId,
+      contentHash: article.contentHash,
+      userCategories: config.categories,
+      userAxes: config.axes,
+      configHash: config.hash,
+    });
+
+    await this.applyAnalysis(articleId, userId, analysis, config.hash);
+    return 'analyzed';
+  }
+
+  /**
+   * Mark an article terminally 'failed' after the analyze job exhausts its
+   * retries. Scoped to the owning user; idempotent.
+   */
+  async markFailed(articleId: string, userId: string): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ status: 'failed' })
+      .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
   }
 
   /**
    * Persist a successful analysis onto an article — summary + importance +
    * config_hash, resolved entities, and category/axis tags — and promote it to
-   * 'ready'. Shared by process() (insert-time) and reprocessPending() (retry).
+   * 'ready'. Used by analyzePending() (the article-analyze queue).
    */
   private async applyAnalysis(
     articleId: string,
@@ -132,92 +150,6 @@ export class ArticleProcessor {
     }
 
     await this.writeTagsFor(articleId, userId, analysis);
-  }
-
-  /**
-   * Re-run analysis for an article left 'pending' by an earlier LLM failure.
-   * Success → 'ready' with full analysis. Failure → stays 'pending' (retried
-   * next tick) until MAX_PENDING_FAILED_CALLS non-success LLM calls accumulate,
-   * then it is marked terminally 'failed'.
-   */
-  async reprocessPending(
-    articleId: string,
-    userId: string,
-  ): Promise<ReprocessOutcome> {
-    const [article] = await this.db
-      .select({
-        id: articles.id,
-        title: articles.title,
-        body: articles.body,
-        contentHash: articles.contentHash,
-      })
-      .from(articles)
-      .where(
-        and(
-          eq(articles.id, articleId),
-          eq(articles.userId, userId),
-          eq(articles.status, 'pending'),
-        ),
-      )
-      .limit(1);
-    if (!article?.contentHash) return 'still_pending';
-
-    const config = await this.userConfig.snapshotFor(userId);
-    let analysis: ArticleAnalysisResult;
-    try {
-      analysis = await this.llm.analyzeArticle({
-        title: article.title,
-        body: article.body ?? '',
-        articleId: article.id,
-        userId,
-        contentHash: article.contentHash,
-        userCategories: config.categories,
-        userAxes: config.axes,
-        configHash: config.hash,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      const failed = await this.db
-        .select({ id: llmCalls.id })
-        .from(llmCalls)
-        .where(
-          and(
-            eq(llmCalls.articleId, articleId),
-            ne(llmCalls.status, 'success'),
-          ),
-        );
-      if (failed.length >= MAX_PENDING_FAILED_CALLS) {
-        await this.db
-          .update(articles)
-          .set({ status: 'failed' })
-          .where(eq(articles.id, articleId));
-        this.log.error(
-          JSON.stringify({
-            event: 'pending.gave_up',
-            articleId,
-            userId,
-            failedCalls: failed.length,
-            error: msg,
-          }),
-        );
-        return 'gave_up';
-      }
-      this.log.warn(
-        JSON.stringify({
-          event: 'pending.retry_failed',
-          articleId,
-          userId,
-          error: msg,
-        }),
-      );
-      return 'still_pending';
-    }
-
-    await this.applyAnalysis(articleId, userId, analysis, config.hash);
-    this.log.log(
-      JSON.stringify({ event: 'pending.recovered', articleId, userId }),
-    );
-    return 'recovered';
   }
 
   /**

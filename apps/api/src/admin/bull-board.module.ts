@@ -13,6 +13,7 @@ export class BullBoardModule {
       imports: [
         BullModule.registerQueue(
           { name: QUEUE_NAMES.FEED_PULL },
+          { name: QUEUE_NAMES.ARTICLE_ANALYZE },
           { name: QUEUE_NAMES.REGENERATION },
           { name: QUEUE_NAMES.DEMO_SEED },
           { name: QUEUE_NAMES.DIGEST_BUILD },
@@ -23,6 +24,7 @@ export class BullBoardModule {
         }),
         NestBullBoard.forFeature(
           { name: QUEUE_NAMES.FEED_PULL, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.ARTICLE_ANALYZE, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.REGENERATION, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.DEMO_SEED, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.DIGEST_BUILD, adapter: BullMQAdapter },

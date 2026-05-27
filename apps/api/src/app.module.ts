@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,8 +25,6 @@ import { TelemetryModule } from './telemetry/telemetry.module';
     // throttled; the tight per-route limit on auth endpoints (see AuthController)
     // is what actually deters brute-force / credential stuffing.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 600 }]),
-    // Enables @Interval (PendingRetryWorker re-analyzes 'pending' articles).
-    ScheduleModule.forRoot(),
     DbModule,
     AuthModule,
     QueueModule,
