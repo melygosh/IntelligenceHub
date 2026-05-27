@@ -64,20 +64,28 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 - **Feeds (`/feeds`):** add an RSS/Atom feed by URL — the puller worker fetches it
   (10s timeout, custom UA), parses items, normalises URLs (strips tracking params),
   computes content hashes, dedups against existing articles, runs a heuristic
-  pre-filter (length / emptiness / spam / link density), and persists each item with
-  `status='ready'` or `status='filtered' + filter_reason`. Each row shows status
+  pre-filter (length / emptiness / spam / link density), and persists each item as
+  `status='pending'` (enqueued for analysis) or `status='filtered' + filter_reason`
+  (no LLM call). Each row shows status
   (active / paused / error), title, last-pull timestamp; pause/resume + delete +
   manual pull-now actions. Try `https://hnrss.org/frontpage` to see real articles
   flow through.
-- **LLM extraction pipeline:** each `ready` article is analysed by a single LLM call
-  that returns a structured `{summary, importance, entities[]}`. Our own abstraction
-  layer (no third-party agent framework — per spec) ships two adapters:
-  Anthropic (via `@anthropic-ai/sdk`, structured output via `tool_use`, system prompt
-  marked `cache_control: ephemeral`) and OpenAI (via `openai`, structured output via
-  `response_format.json_schema`, automatic prefix caching). Active provider via
-  `LLM_PROVIDER` env (`anthropic` or `openai`); the other adapter stays inert.
-  Response shape is Zod-validated at the boundary; an invalid response is retried
-  once, then the article flips to `status='llm_error'`.
+- **LLM extraction pipeline:** analysis is a first-class **`article.analyze` BullMQ
+  queue** — feed-pull enqueues one job per `pending` article (it never analyses
+  inline, so a pull can't block on the LLM). The worker makes a single LLM call
+  returning a structured `{summary, importance, entities[]}` and promotes the row to
+  `status='ready'`. Our own abstraction layer (no third-party agent framework — per
+  spec) ships two adapters: Anthropic (via `@anthropic-ai/sdk`, structured output via
+  `tool_use`, system prompt marked `cache_control: ephemeral`) and OpenAI (via
+  `openai`, structured output via `response_format.json_schema`, automatic prefix
+  caching). Active provider via `LLM_PROVIDER` env; the other adapter stays inert.
+  Response shape is Zod-validated; an invalid response is retried once in-call. On
+  failure the job throws and **BullMQ owns retry/backoff** (fixed delay, configurable
+  via `ANALYZE_MAX_ATTEMPTS` / `ANALYZE_BACKOFF_SECONDS`) — the job sits in the queue's
+  `delayed` set between attempts (visible in Bull Board) and lands in `status='failed'`
+  only after the budget is spent. Postgres `status='pending'` is the durable source of
+  truth; a boot-time reconcile re-enqueues any orphaned pending article so a Redis flush
+  can't strand work.
 - **Cost controls (FR-10):** content-hash response cache (`llm_response_cache`) — a
   repeated article body short-circuits before reaching the model. Per-call telemetry
   in `llm_calls` records provider, model, status, input/output/cache tokens, latency,
@@ -136,10 +144,10 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 - **Duplicate detection (FR-5 exact):** when the puller sees the same `content_hash`
   or normalised URL again for the same user, the new row is persisted with
   `status='duplicate'` + `duplicate_of` pointing to the canonical original (not
-  silently filtered). Pre-filter + LLM pipeline only run on `status='ready'`, so
-  duplicates don't burn tokens. They surface as the `N similar` counter on the
-  list + the expandable list on the article card. Semantic similarity (FR-5
-  Should) deferred to Day 13.
+  silently filtered). Duplicates are never enqueued for analysis, so they don't
+  burn tokens. They surface as the `N similar` counter on the list + the expandable
+  list on the article card. Semantic similarity (FR-5 Should) not implemented —
+  see Should/Could status below.
 - **Demo data seed (spec §6):** the registration page has a "Load demo data"
   checkbox (default unchecked). When ticked, `AuthService` enqueues a
   `demo.seed` Bull job that asynchronously loads a frozen HN-snapshot dataset
@@ -209,6 +217,106 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
 - **Editorial design system:** cream paper, Instrument Serif headlines, IBM Plex Mono
   metadata, single deep-moss accent. Applied consistently across auth pages, sidebar,
   topbar, feeds, articles, graph.
+
+## Should / Could status (§9.5)
+
+Honest snapshot of the optional tiers. Musts are covered in "What works" above.
+
+**Should (+10):**
+
+- ✅ **LLM provider failover** — opt-in via `LLM_FALLBACK_PROVIDER`; retries once on the
+  secondary adapter after the primary exhausts; both attempts persist to `llm_calls`.
+- ✅ **Period digests** — `/digests`, day/week/month, category/entity scoped (also a Must).
+- ✅ **LLM-telemetry aggregate view** — `/telemetry`, per (operation, provider, model)
+  with computed USD cost.
+- ◐ **Extended graph filters** — time-window + full-text search are implemented on the
+  **article list**, not the graph canvas; the graph itself has node-type + category
+  filters. Counted partial against the literal "graph filters" wording.
+- ◐ **Meaningful unit tests on critical parts** — entity dedup, pre-filter, and the SSRF
+  URL-guard have unit tests; **article dedup (content-hash + URL) is not yet unit-tested**
+  (known gap).
+
+**Could (+10):**
+
+- ✅ **Full-text article search** — Postgres `tsvector` + GIN, `ts_rank` ordering.
+- ◐ **Top entities / top categories for a period** — surfaced via digests (top-20 entities
+  + top-10 categories per window), not as a standalone dashboard.
+- ❌ Edge animation along timestamps · timeline scrubber · graph clustering by category ·
+  graph export · semantic article similarity (deterministic exact dedup only). Not built.
+
+## Architectural decisions
+
+ADRs reflect decisions actually in the code. Format: Context / Decision / Alternatives / Trade-offs.
+
+### ADR-1 — Own LLM abstraction, no agent framework (Principle 1, FR-3)
+
+- **Context:** §5.2/§6 require the LLM to be used only for genuinely semantic work and
+  forbid a high-level framework (LangChain/LlamaIndex) as the architecture unless every
+  component is explainable.
+- **Decision:** a provider-agnostic `LlmService` with hand-written `AnthropicAdapter` and
+  `OpenAIAdapter`. Deterministic work — URL normalization, content hashing, pre-filter,
+  exact dedup, alias normalization — is plain code; the LLM does only NER, summary,
+  importance, category/axis assignment, and alias proposal.
+- **Alternatives:** LangChain/LlamaIndex (opaque, violates §5.2); a single-provider SDK
+  wired directly into services (no switchability).
+- **Trade-offs:** more adapter code to own; in return, full control over request shaping,
+  validation, and caching, plus provider switching via one env var.
+
+### ADR-2 — Asynchronous analysis queue with durable pending + Bull-native retry (Principles 2 & 3, FR-2)
+
+- **Context:** P3 keeps expensive work off the request path; P2 requires graceful
+  degradation on LLM failure (retry/backoff, or switch adapter, or mark pending), one dead
+  feed not halting others, and no swallowed errors.
+- **Decision:** feed-pull inserts each article as `pending` and enqueues one
+  `article.analyze` job; the worker analyses and promotes to `ready`, or throws so BullMQ
+  retries with fixed backoff (jobs observable in the `delayed` set), marking `failed` only
+  after `ANALYZE_MAX_ATTEMPTS`. Postgres status is the durable source of truth; a boot
+  reconcile re-enqueues orphaned pending rows. Optional cross-provider failover (ADR-1
+  adapters) covers provider-level outages.
+- **Alternatives:** analyse inline inside the pull job (blocks the pull, opaque retries);
+  a custom `@Interval` DB-poller (we had this — invisible in Bull Board, reinvents backoff).
+- **Trade-offs:** a Redis-backed queue plus DB status to keep in sync (the reconcile absorbs
+  drift); in return, every attempt is visible in Bull Board and retry/backoff is built-in.
+
+### ADR-3 — Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
+
+- **Context:** FR-10 caps ≤1 LLM call per article in normal mode, mandates a content-hash
+  cache, a concurrency cap, and telemetry, and forbids pre-filter/dedup from fanning out
+  LLM calls.
+- **Decision:** `llm_response_cache` keyed on `content_hash + config_hash + operation`, so a
+  repeated body — or a reverted config — short-circuits before the model. Deterministic
+  pre-filter + exact dedup gate the queue so junk and duplicates never reach the LLM.
+  `LLM_CONCURRENCY` caps parallelism; every call lands in `llm_calls` (tokens, cost, latency)
+  and aggregates at `/telemetry`.
+- **Alternatives:** no cache (re-pull/regen re-bills); per-user-only cache (identical configs
+  wouldn't share); cache by raw URL (misses content-identical cross-source copies).
+- **Trade-offs:** correctness hinges on the `config_hash`; in return, regeneration after a
+  config revert is ~free and cross-source duplicates cost nothing.
+
+### ADR-4 — Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
+
+- **Context:** FR-6 must merge `Microsoft` / `MSFT` / `Microsoft Corp.` / a Cyrillic spelling
+  / `MS`-in-context into one entity with an alias set, without pairwise LLM comparison.
+- **Decision:** the analysis call emits aliases alongside entities (no extra call);
+  `EntityResolver` normalizes (NFKC + lowercase + Latin-suffix strip) then resolves by exact
+  name → alias table → type-scoped likely-match (token-prefix shortcut OR Jaro-Winkler ≥ 0.95),
+  inserting a new row only when nothing matches. Aliases persist to `entity_alias`.
+- **Alternatives:** pure string similarity (can't separate `MSFT`↔`Microsoft` from random
+  near-misses); pairwise LLM dedup (O(n²) calls, breaks FR-10); embeddings (extra infra/cost
+  for MVP scope).
+- **Trade-offs:** depends on the LLM proposing good aliases and a tuned threshold; in return,
+  dedup costs zero extra LLM calls and is mostly deterministic and debuggable.
+
+### ADR-5 — NestJS over Directus for the backend
+
+- **Context:** the spec offers NestJS or Directus. We need custom BullMQ workers, an LLM
+  abstraction, SSE, auth guards, and a typed contract shared with the frontend.
+- **Decision:** NestJS — DI + modules fit the worker/service/guard split, BullMQ and schedule
+  integrate first-class, and the same Zod schemas in `packages/shared` give end-to-end types.
+- **Alternatives:** Directus — a headless-CMS/admin model fights the custom pipeline + queue +
+  LLM-abstraction work; we'd be working around it rather than with it.
+- **Trade-offs:** more boilerplate than a batteries-included CMS; in return, no impedance
+  mismatch with the async pipeline and every layer stays explainable (§9.7).
 
 ## Stack
 
