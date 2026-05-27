@@ -210,6 +210,17 @@ export class FeedPullWorker extends WorkerHost {
         filterReason: verdict.reason,
         ts: item.ts,
       });
+      this.log.log(
+        JSON.stringify({
+          event: 'feed.pull.filtered',
+          feedId,
+          userId,
+          url: item.normalisedUrl,
+          title: item.title || '(untitled)',
+          reason: verdict.reason,
+          detail: verdict.detail,
+        }),
+      );
       return 'filtered';
     }
 

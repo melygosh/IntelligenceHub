@@ -4,7 +4,7 @@ export type PreFilterReason = 'too_short' | 'empty' | 'spam';
 
 export type PreFilterResult =
   | { filtered: false }
-  | { filtered: true; reason: PreFilterReason };
+  | { filtered: true; reason: PreFilterReason; detail: string };
 
 export type PreFilterInput = {
   title: string;
@@ -21,21 +21,39 @@ export function runPreFilter(input: PreFilterInput): PreFilterResult {
   const body = input.body.trim();
 
   if (title.length === 0 || body.length === 0) {
-    return { filtered: true, reason: 'empty' };
+    const which =
+      title.length === 0 && body.length === 0
+        ? 'title and body are both empty'
+        : title.length === 0
+          ? 'title is empty'
+          : 'body is empty';
+    return { filtered: true, reason: 'empty', detail: which };
   }
   if (body.length < env.PREFILTER_MIN_LENGTH) {
-    return { filtered: true, reason: 'too_short' };
+    return {
+      filtered: true,
+      reason: 'too_short',
+      detail: `body is ${body.length} chars, below the ${env.PREFILTER_MIN_LENGTH}-char minimum`,
+    };
   }
 
   // Spam heuristic 1: title is more than half the body (placeholder / SEO stub)
   if (title.length > body.length * 0.5) {
-    return { filtered: true, reason: 'spam' };
+    return {
+      filtered: true,
+      reason: 'spam',
+      detail: `title (${title.length} chars) is over half the body (${body.length} chars) — likely an SEO/placeholder stub`,
+    };
   }
 
   // Spam heuristic 2: link density — sum of anchor inner-text > 50% of body
   const linkTextChars = sumLinkTextChars(body);
   if (linkTextChars > body.length * 0.5) {
-    return { filtered: true, reason: 'spam' };
+    return {
+      filtered: true,
+      reason: 'spam',
+      detail: `link text (${linkTextChars} chars) is over half the body (${body.length} chars) — likely a link farm`,
+    };
   }
 
   return { filtered: false };
