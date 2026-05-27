@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   useCreateFeedMutation,
   useDeleteFeedMutation,
@@ -61,6 +61,12 @@ const ExternalIcon = () => (
   <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
     <path d="M4 2 H10 V8 M10 2 L3 9" stroke="currentColor" strokeWidth="1.1" fill="none" />
   </svg>
+);
+const SpinnerIcon = () => (
+  <span
+    aria-hidden="true"
+    className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+  />
 );
 
 function RowActionBtn({
@@ -432,6 +438,47 @@ export default function FeedsPage() {
   const [updateFeed] = useUpdateFeedMutation();
   const { push: pushToast } = useToasts();
 
+  // Feed IDs currently in-flight (queued or being processed). Add on pull
+  // dispatch, remove on the matching feed.pull.done / feed.pull.failed SSE
+  // event. 60s safety timeout clears stale entries if the SSE event is missed.
+  const [pendingPulls, setPendingPulls] = useState<Set<string>>(new Set());
+  const pendingTimeouts = useRef<Map<string, number>>(new Map());
+
+  const clearPending = useCallback((ids: string[]) => {
+    setPendingPulls((prev) => {
+      let mutated = false;
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (next.delete(id)) mutated = true;
+      }
+      return mutated ? next : prev;
+    });
+    for (const id of ids) {
+      const t = pendingTimeouts.current.get(id);
+      if (t !== undefined) {
+        window.clearTimeout(t);
+        pendingTimeouts.current.delete(id);
+      }
+    }
+  }, []);
+
+  const addPending = useCallback(
+    (ids: string[]) => {
+      setPendingPulls((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.add(id);
+        return next;
+      });
+      for (const id of ids) {
+        const existing = pendingTimeouts.current.get(id);
+        if (existing !== undefined) window.clearTimeout(existing);
+        const t = window.setTimeout(() => clearPending([id]), 60_000);
+        pendingTimeouts.current.set(id, t);
+      }
+    },
+    [clearPending],
+  );
+
   // feedId → label lookup so SSE callbacks can show "OpenAI Blog: 4 new
   // articles" instead of an opaque UUID. Closure captures the latest map
   // on every render (useServerEvents stores the callback in a ref).
@@ -443,6 +490,7 @@ export default function FeedsPage() {
 
   useFeedPullEvents({
     onDone: ({ feedId, inserted, filtered, duplicates }) => {
+      clearPending([feedId]);
       const label = labelById.get(feedId) ?? 'Feed';
       const total = inserted + duplicates + filtered;
       if (total === 0) {
@@ -460,6 +508,7 @@ export default function FeedsPage() {
       });
     },
     onFailed: ({ feedId, error }) => {
+      clearPending([feedId]);
       const label = labelById.get(feedId) ?? 'Feed';
       pushToast({
         severity: 'error',
@@ -471,6 +520,7 @@ export default function FeedsPage() {
   });
 
   async function onPullAll() {
+    const candidates = (data?.feeds ?? []).filter((f) => f.status !== 'paused').map((f) => f.id);
     try {
       const res = await pullAllFeeds().unwrap();
       if (res.enqueued === 0) {
@@ -484,6 +534,7 @@ export default function FeedsPage() {
         });
         return;
       }
+      addPending(candidates);
       const parts = [`${res.enqueued} feed${res.enqueued === 1 ? '' : 's'} queued`];
       if (res.skippedPaused > 0) {
         parts.push(`${res.skippedPaused} paused skipped`);
@@ -506,10 +557,12 @@ export default function FeedsPage() {
 
   async function onPull(feed: Feed) {
     const label = feed.title ?? feed.url;
+    addPending([feed.id]);
     try {
       await pullFeed(feed.id).unwrap();
       pushToast({ severity: 'info', title: 'Queued for pull', subtitle: label });
     } catch {
+      clearPending([feed.id]);
       pushToast({ severity: 'error', title: 'Failed to enqueue', subtitle: label });
     }
   }
@@ -577,19 +630,26 @@ export default function FeedsPage() {
               <button
                 type="button"
                 onClick={onPullAll}
-                disabled={isPullingAll}
+                disabled={isPullingAll || pendingPulls.size > 0}
                 className="inline-flex items-center justify-center gap-1.5 border border-accent bg-accent px-2.5 py-1 font-mono text-[12.5px] text-paper transition-colors hover:border-accent-deep hover:bg-accent-deep disabled:cursor-not-allowed disabled:border-border disabled:bg-paper2 disabled:text-mute2"
               >
-                <span className="h-3 w-3">
-                  <RefreshIcon />
+                <span className="inline-flex h-3 w-3 items-center justify-center">
+                  {isPullingAll || pendingPulls.size > 0 ? <SpinnerIcon /> : <RefreshIcon />}
                 </span>
-                <span>{isPullingAll ? 'queuing…' : 'pull all'}</span>
+                <span>
+                  {isPullingAll
+                    ? 'queuing…'
+                    : pendingPulls.size > 0
+                      ? `pulling ${pendingPulls.size}…`
+                      : 'pull all'}
+                </span>
               </button>
             </div>
           </div>
           {data.feeds.map((feed) => {
             const isPaused = feed.status === 'paused';
             const isError = feed.status === 'error';
+            const isPulling = pendingPulls.has(feed.id);
             return (
               <article
                 key={feed.id}
@@ -662,25 +722,28 @@ export default function FeedsPage() {
                       label="Resume"
                       variant="primary"
                       onClick={() => onTogglePause(feed)}
+                      disabled={isPulling}
                     />
                   ) : (
                     <RowActionBtn
                       icon={<PauseIcon />}
                       label="Pause"
                       onClick={() => onTogglePause(feed)}
+                      disabled={isPulling}
                     />
                   )}
                   <RowActionBtn
-                    icon={<RefreshIcon />}
-                    label="Pull now"
+                    icon={isPulling ? <SpinnerIcon /> : <RefreshIcon />}
+                    label={isPulling ? 'Pulling…' : 'Pull now'}
                     onClick={() => onPull(feed)}
-                    disabled={isPaused}
+                    disabled={isPaused || isPulling}
                   />
                   <RowActionBtn
                     icon={<TrashIcon />}
                     label="Delete"
                     variant="danger"
                     onClick={() => onDelete(feed.id)}
+                    disabled={isPulling}
                   />
                 </div>
               </article>
