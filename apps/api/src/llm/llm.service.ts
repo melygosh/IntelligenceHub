@@ -92,7 +92,7 @@ export class LlmService implements ILlmService {
     outputTokens: number;
     model: string;
   }> {
-    const contentHash = await this.hashDigestInput(input);
+    const contentHash = this.hashDigestInput(input);
 
     const cached = await this.cache.readDigest(
       contentHash,
@@ -235,7 +235,7 @@ export class LlmService implements ILlmService {
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const result = (await adapter.analyzeArticle(input)) as AdapterResult;
+        const result = await adapter.analyzeArticle(input);
         await this.recordTelemetry({
           userId: input.userId,
           articleId: input.articleId,
@@ -348,7 +348,7 @@ export class LlmService implements ILlmService {
     const model = this.modelFor(provider);
     const t0 = Date.now();
     try {
-      const result = (await adapter.analyzeArticle(input)) as AdapterResult;
+      const result = await adapter.analyzeArticle(input);
       await this.recordTelemetry({
         userId: input.userId,
         articleId: input.articleId,

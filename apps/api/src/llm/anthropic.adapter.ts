@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ArticleAnalysisResult,
   BuildDigestLlmResult,
@@ -54,7 +54,6 @@ const BUILD_DIGEST_OUTPUT_SCHEMA = {
 
 @Injectable()
 export class AnthropicAdapter {
-  private readonly log = new Logger(AnthropicAdapter.name);
   // Lazy: only constructed if/when this adapter is actually used, so a missing
   // ANTHROPIC_API_KEY does not crash boot when LLM_PROVIDER=openai.
   private client: Anthropic | undefined;

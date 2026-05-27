@@ -7,12 +7,12 @@ import type { Db } from '../db/client';
 import { articles, feeds } from '../db/schema';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 import type { FeedPullJobData } from '../feeds/feeds.service';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 import { runPreFilter } from '../articles/pre-filter';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { ArticleProcessor } from '../articles/article-processor.service';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { EventsService } from '../events/events.service';
 
 type ProcessResult = {

@@ -6,11 +6,11 @@ import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articles, regenerationRun } from '../db/schema';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { ArticleProcessor } from '../articles/article-processor.service';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { UserConfigService } from '../articles/user-config.service';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { EventsService } from '../events/events.service';
 
 type JobData = { runId: string; userId: string };

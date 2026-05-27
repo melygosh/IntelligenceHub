@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { DemoSeederService } from '../seed/demo-seeder.service';
 
 type JobData = { userId: string };

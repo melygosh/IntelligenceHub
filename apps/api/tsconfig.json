@@ -11,9 +11,7 @@
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
-    "composite": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "composite": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test"]

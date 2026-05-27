@@ -21,9 +21,9 @@ import {
   entities,
   feeds,
 } from '../db/schema';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { LlmService } from '../llm/llm.service';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+// value import required for Nest DI metadata
 import { EventsService } from '../events/events.service';
 
 type JobData = { digestRunId: string };

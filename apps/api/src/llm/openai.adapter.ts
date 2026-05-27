@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ArticleAnalysisResult,
   BuildDigestLlmResult,
@@ -39,7 +39,6 @@ export type OpenAiDigestResult = {
 
 @Injectable()
 export class OpenAiAdapter {
-  private readonly log = new Logger(OpenAiAdapter.name);
   // Lazy: only constructed if/when this adapter is actually used, so a missing
   // OPENAI_API_KEY does not crash boot when LLM_PROVIDER=anthropic.
   private client: OpenAI | undefined;
@@ -73,7 +72,7 @@ export class OpenAiAdapter {
         json_schema: {
           name: 'article_analysis',
           strict: true,
-          schema: ANALYZE_ARTICLE_OUTPUT_SCHEMA as unknown as Record<string, unknown>,
+          schema: ANALYZE_ARTICLE_OUTPUT_SCHEMA,
         },
       },
     });

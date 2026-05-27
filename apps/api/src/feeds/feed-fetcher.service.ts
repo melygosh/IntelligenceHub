@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import Parser from 'rss-parser';
 import { normaliseUrl } from '@intelligencehub/shared';
 import { contentHash } from './content-hash';
@@ -22,7 +22,6 @@ export type FetchErrorReason = 'unreachable' | 'not_a_feed' | 'malformed_url' | 
 
 @Injectable()
 export class FeedFetcher {
-  private readonly log = new Logger(FeedFetcher.name);
   // customFields surfaces Atom's top-level <icon> + <logo> elements; rss-parser
   // already exposes RSS 2.0 <image><url> as `parsed.image.url` by default.
   private readonly parser = new Parser({
@@ -69,7 +68,7 @@ export class FeedFetcher {
       }
       const itemTitle = (item.title ?? '').trim();
       const itemBody =
-        (typeof item['content:encoded'] === 'string' ? (item['content:encoded'] as string) : null) ??
+        (typeof item['content:encoded'] === 'string' ? item['content:encoded'] : null) ??
         item.content ??
         item.contentSnippet ??
         item.summary ??
