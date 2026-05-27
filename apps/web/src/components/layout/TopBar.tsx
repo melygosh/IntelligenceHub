@@ -1,15 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, useGetMeQuery, useLogoutMutation } from '../../store/api';
 import { usePageTitle } from './PageTitleContext';
 
-function breadcrumbsFor(pathname: string): string[] {
-  if (pathname === '/' || pathname === '') return ['Articles'];
+type Crumb = { label: string; path: string };
+
+// Cumulative paths that are real navigable routes — only these get linkified
+// as breadcrumbs. (`/settings` has no page of its own, so "Settings / Axes"
+// keeps "Settings" as plain text rather than a dead link.)
+const LINKABLE_PATHS = new Set([
+  '/articles',
+  '/entities',
+  '/digests',
+  '/graph',
+  '/feeds',
+  '/categories',
+  '/telemetry',
+  '/settings/axes',
+]);
+
+function breadcrumbsFor(pathname: string): Crumb[] {
+  if (pathname === '/' || pathname === '') return [{ label: 'Articles', path: '/articles' }];
   const segments = pathname.split('/').filter(Boolean);
+  let acc = '';
   return segments.map((seg) => {
-    if (seg === 'auth') return 'Auth';
-    return seg.charAt(0).toUpperCase() + seg.slice(1);
+    acc += `/${seg}`;
+    const label = seg === 'auth' ? 'Auth' : seg.charAt(0).toUpperCase() + seg.slice(1);
+    return { label, path: acc };
   });
 }
 
@@ -52,21 +70,32 @@ export default function TopBar() {
 
   const pageTitle = usePageTitle();
   const rawCrumbs = breadcrumbsFor(location.pathname);
-  const crumbs =
+  const lastRaw = rawCrumbs[rawCrumbs.length - 1];
+  const crumbs: Crumb[] =
     pageTitle && rawCrumbs.length > 1
-      ? [...rawCrumbs.slice(0, -1), truncate(pageTitle, 72)]
+      ? [...rawCrumbs.slice(0, -1), { ...lastRaw, label: truncate(pageTitle, 72) }]
       : rawCrumbs;
   const userInitial = me?.email.charAt(0).toUpperCase() ?? '?';
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-paper px-3">
       <div className="flex min-w-0 items-center gap-1.5 font-mono text-[13px] text-muted">
-        {crumbs.map((c, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            {i > 0 ? <span className="text-border2">/</span> : null}
-            <span className={i === crumbs.length - 1 ? 'text-ink' : ''}>{c}</span>
-          </span>
-        ))}
+        {crumbs.map((c, i) => {
+          const isLast = i === crumbs.length - 1;
+          const linkable = !isLast && LINKABLE_PATHS.has(c.path);
+          return (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 ? <span className="text-border2">/</span> : null}
+              {linkable ? (
+                <Link to={c.path} className="underline-offset-2 hover:text-ink hover:underline">
+                  {c.label}
+                </Link>
+              ) : (
+                <span className={isLast ? 'text-ink' : ''}>{c.label}</span>
+              )}
+            </span>
+          );
+        })}
       </div>
 
       <div className="flex-1" />
