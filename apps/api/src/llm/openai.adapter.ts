@@ -121,12 +121,13 @@ export class OpenAiAdapter {
       response_format: {
         type: 'json_schema',
         json_schema: {
-          name: 'build_digest_v1',
+          name: 'build_digest_v2',
           strict: true,
           schema: {
             type: 'object',
             additionalProperties: false,
             properties: {
+              title: { type: 'string', minLength: 6, maxLength: 120 },
               summary: {
                 type: 'array',
                 items: { type: 'string', minLength: 20 },
@@ -134,7 +135,7 @@ export class OpenAiAdapter {
                 maxItems: 3,
               },
             },
-            required: ['summary'],
+            required: ['title', 'summary'],
           },
         },
       },

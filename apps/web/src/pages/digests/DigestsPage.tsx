@@ -503,8 +503,14 @@ function DigestRow({ d }: { d: DigestSummary }) {
 
       <div className="min-w-0">
         <div className="mb-1 flex flex-wrap items-baseline gap-2">
-          <span className="pretty text-[16px] font-medium leading-snug text-ink">
-            {PERIOD_LABEL[d.period]}
+          <span className="pretty text-[16px] leading-snug text-ink">
+            <span className="font-medium text-muted">{PERIOD_LABEL[d.period]}</span>
+            {d.title ? (
+              <>
+                <span className="text-border2">: </span>
+                <span className="font-medium text-ink">{d.title}</span>
+              </>
+            ) : null}
           </span>
           <span className="font-mono text-[12.5px] text-mute2">
             {fmtWindow(d.windowFrom, d.windowTo)}
@@ -545,7 +551,7 @@ export default function DigestsPage() {
   const { data, isLoading } = useGetDigestsQuery();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8">
       <header>
         <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           /digests

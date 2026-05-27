@@ -48,7 +48,8 @@ export type LlmOperation =
   | 'analyze_article_v2'
   | 'analyze_article_v3'
   | 'match_entities'
-  | 'build_digest_v1';
+  | 'build_digest_v1'
+  | 'build_digest_v2';
 
 export type DigestLlmArticleSummary = {
   title: string;
@@ -63,6 +64,10 @@ export type BuildDigestLlmInput = {
 };
 
 export const BuildDigestLlmResult = z.object({
+  // 5-9 word editorial headline rendered in the UI as "Last week: {title}".
+  // No trailing punctuation. Min/max chars are a soft guard against single-
+  // word stubs or runaway sentences; the prompt does the real shaping.
+  title: z.string().min(6).max(120),
   summary: z.array(z.string().min(20)).min(2).max(3),
 });
 export type BuildDigestLlmResult = z.infer<typeof BuildDigestLlmResult>;

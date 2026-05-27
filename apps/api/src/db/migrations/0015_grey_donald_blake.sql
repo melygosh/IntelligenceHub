@@ -1,0 +1,1 @@
+ALTER TABLE "digest_run" ADD COLUMN "title" text;

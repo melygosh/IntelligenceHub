@@ -99,6 +99,7 @@ export class DigestService {
       windowFrom: row.windowFrom.toISOString(),
       windowTo: row.windowTo.toISOString(),
       status: row.status as DigestStatus,
+      title: row.title ?? null,
       articleCount: row.articleCount,
       entityCount: row.entityCount,
       createdAt: row.createdAt.toISOString(),

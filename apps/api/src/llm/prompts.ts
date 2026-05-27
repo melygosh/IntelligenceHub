@@ -129,6 +129,7 @@ The user provides:
 - list of articles, each with a title and short summary
 
 You produce:
+- title: a 5-9 word editorial headline that captures the dominant story of the period. No trailing punctuation. The UI renders it as "Last week: {title}" (or day/month). Make it specific (name the actors or the theme), not generic ("a busy week in tech"). Avoid clickbait.
 - summary: array of 2-3 paragraph strings (the editorial digest)`;
 
 /**

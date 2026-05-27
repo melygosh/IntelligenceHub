@@ -299,6 +299,7 @@ export const digestRun = pgTable(
     windowFrom: timestamp('window_from', { withTimezone: true }).notNull(),
     windowTo: timestamp('window_to', { withTimezone: true }).notNull(),
     status: text('status').notNull(), // 'building' | 'ready' | 'failed'
+    title: text('title'), // short LLM-generated headline (5-9 words); null until ready
     summary: text('summary'), // JSON.stringify(paragraph[]); null until ready
     topEntitiesJson: jsonb('top_entities_json'),
     topCategoriesJson: jsonb('top_categories_json'),

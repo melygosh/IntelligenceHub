@@ -40,6 +40,7 @@ export type AnthropicDigestResult = {
 const BUILD_DIGEST_OUTPUT_SCHEMA = {
   type: 'object' as const,
   properties: {
+    title: { type: 'string' as const, minLength: 6, maxLength: 120 },
     summary: {
       type: 'array' as const,
       items: { type: 'string' as const, minLength: 20 },
@@ -47,7 +48,7 @@ const BUILD_DIGEST_OUTPUT_SCHEMA = {
       maxItems: 3,
     },
   },
-  required: ['summary'],
+  required: ['title', 'summary'],
   additionalProperties: false,
 };
 

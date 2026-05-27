@@ -19,6 +19,7 @@ import {
   category,
   digestRun,
   entities,
+  feeds,
 } from '../db/schema';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
 import { LlmService } from '../llm/llm.service';
@@ -91,8 +92,11 @@ export class DigestBuilderWorker extends WorkerHost {
       // 3. Aggregate top categories (top-10 by article count in scope)
       const topCategories = await this.aggregateTopCategories(run.userId, inScopeIds);
 
-      // 4. Pick top-10 key articles by importance then recency
-      const keyArticles = this.pickKeyArticles(inScope, 10);
+      // 4. Pick top-10 key articles by importance then recency, then enrich
+      // each with its feed title + top-4 entities (used by the UI for the
+      // source kicker and entities chip line under the title).
+      const picked = this.pickKeyArticles(inScope, 10);
+      const keyArticles = await this.enrichKeyArticles(run.userId, picked);
 
       // 5. Call LLM
       const scopeLabel = await this.buildScopeLabel(run, topCategories, topEntities);
@@ -109,6 +113,7 @@ export class DigestBuilderWorker extends WorkerHost {
         .update(digestRun)
         .set({
           status: 'ready',
+          title: llmResult.result.title,
           summary: JSON.stringify(llmResult.result.summary),
           topEntitiesJson: topEntities,
           topCategoriesJson: topCategories,
@@ -329,7 +334,62 @@ export class DigestBuilderWorker extends WorkerHost {
         title: a.title,
         ts: a.ts.toISOString(),
         importance: a.importance as 'high' | 'normal' | 'junk' | null,
+        feedTitle: null,
+        entities: [],
       }));
+  }
+
+  /**
+   * Augment the picked key articles with their feed title and top-4 entities
+   * (by mention count in the article). Two batched queries — feed via articles
+   * JOIN feeds, entities via article_entity JOIN entities — then we collate in
+   * JS. The point-in-time snapshot is intentional: digests record what was
+   * true when built.
+   */
+  private async enrichKeyArticles(
+    userId: string,
+    picked: DigestKeyArticle[],
+  ): Promise<DigestKeyArticle[]> {
+    if (picked.length === 0) return picked;
+    const ids = picked.map((a) => a.id);
+
+    const feedRows = await this.db
+      .select({ articleId: articles.id, feedTitle: feeds.title })
+      .from(articles)
+      .innerJoin(feeds, eq(feeds.id, articles.feedId))
+      .where(and(eq(articles.userId, userId), inArray(articles.id, ids)));
+    const feedByArticleId = new Map(feedRows.map((r) => [r.articleId, r.feedTitle]));
+
+    const entityRows = await this.db
+      .select({
+        articleId: articleEntity.articleId,
+        id: entities.id,
+        canonicalName: entities.canonicalName,
+        type: entities.type,
+      })
+      .from(articleEntity)
+      .innerJoin(entities, eq(entities.id, articleEntity.entityId))
+      .where(
+        and(
+          eq(entities.userId, userId),
+          inArray(articleEntity.articleId, ids),
+        ),
+      );
+    const entitiesByArticleId = new Map<
+      string,
+      Array<{ id: string; canonicalName: string; type: EntityKind }>
+    >();
+    for (const r of entityRows) {
+      const list = entitiesByArticleId.get(r.articleId) ?? [];
+      list.push({ id: r.id, canonicalName: r.canonicalName, type: r.type as EntityKind });
+      entitiesByArticleId.set(r.articleId, list);
+    }
+
+    return picked.map((a) => ({
+      ...a,
+      feedTitle: feedByArticleId.get(a.id) ?? null,
+      entities: (entitiesByArticleId.get(a.id) ?? []).slice(0, 4),
+    }));
   }
 
   private async buildScopeLabel(

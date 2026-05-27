@@ -37,6 +37,19 @@ export const DigestKeyArticle = z.object({
   title: z.string(),
   ts: z.string().datetime(),
   importance: z.enum(['high', 'normal', 'junk']).nullable(),
+  // Snapshot of the article's feed + top entities at digest-build time.
+  // Nullable + optional default-[] because digests built before the
+  // schema bump don't have these populated; UI renders them when present.
+  feedTitle: z.string().nullable().default(null),
+  entities: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        canonicalName: z.string(),
+        type: EntityKind,
+      }),
+    )
+    .default([]),
 });
 export type DigestKeyArticle = z.infer<typeof DigestKeyArticle>;
 
@@ -48,6 +61,7 @@ export const DigestSummary = z.object({
   windowFrom: z.string().datetime(),
   windowTo: z.string().datetime(),
   status: DigestStatus,
+  title: z.string().nullable(),
   articleCount: z.number().int().nonnegative(),
   entityCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),

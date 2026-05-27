@@ -98,7 +98,7 @@ export class LlmService implements ILlmService {
       contentHash,
       this.provider,
       this.activeModel,
-      'build_digest_v1',
+      'build_digest_v2',
     );
     if (cached) {
       this.log.log(
@@ -137,14 +137,14 @@ export class LlmService implements ILlmService {
                 cacheCreationTokens: 0,
                 latencyMs: Date.now() - t0,
               },
-              operation: 'build_digest_v1',
+              operation: 'build_digest_v2',
             });
             try {
               await this.cache.writeDigest(
                 contentHash,
                 this.provider,
                 model,
-                'build_digest_v1',
+                'build_digest_v2',
                 result,
               );
             } catch (cacheErr) {
@@ -179,7 +179,7 @@ export class LlmService implements ILlmService {
                 cacheCreationTokens: 0,
                 latencyMs: Date.now() - t0,
               },
-              operation: 'build_digest_v1',
+              operation: 'build_digest_v2',
               errorMessage: lastErr.message,
             });
             this.log.warn(
@@ -205,7 +205,7 @@ export class LlmService implements ILlmService {
         this.log.warn(
           JSON.stringify({
             event: 'llm.failover.fire',
-            operation: 'build_digest_v1',
+            operation: 'build_digest_v2',
             userId: input.userId,
             primary: this.provider,
             fallback: this.fallbackProvider,
@@ -431,12 +431,12 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: 'build_digest_v1',
+        operation: 'build_digest_v2',
         provider,
         failoverReason,
       });
       try {
-        await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v1', result);
+        await this.cache.writeDigest(contentHash, provider, respModel, 'build_digest_v2', result);
       } catch (cacheErr) {
         this.log.warn(
           JSON.stringify({
@@ -468,7 +468,7 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: 'build_digest_v1',
+        operation: 'build_digest_v2',
         provider,
         failoverReason,
         errorMessage: msg,
