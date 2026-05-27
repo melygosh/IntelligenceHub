@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './auth/auth.module';
 import { QueueModule } from './queue/queue.module';
@@ -18,6 +20,29 @@ import { DigestModule } from './digests/digest.module';
 import { TelemetryModule } from './telemetry/telemetry.module';
 
 @Module({
-  imports: [DbModule, AuthModule, QueueModule, FeedsModule, WorkersModule, BullBoardModule.register(), ArticlesModule, EntitiesModule, GraphModule, LlmModule, CategoriesModule, AxesModule, RegenerationModule, SeedModule, EventsModule, DigestModule, TelemetryModule],
+  imports: [
+    // Global rate-limit backstop (per IP). Generous so normal SPA use is never
+    // throttled; the tight per-route limit on auth endpoints (see AuthController)
+    // is what actually deters brute-force / credential stuffing.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 600 }]),
+    DbModule,
+    AuthModule,
+    QueueModule,
+    FeedsModule,
+    WorkersModule,
+    BullBoardModule.register(),
+    ArticlesModule,
+    EntitiesModule,
+    GraphModule,
+    LlmModule,
+    CategoriesModule,
+    AxesModule,
+    RegenerationModule,
+    SeedModule,
+    EventsModule,
+    DigestModule,
+    TelemetryModule,
+  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

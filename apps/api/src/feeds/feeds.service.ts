@@ -155,7 +155,8 @@ export class FeedsService {
         e.reason === 'unreachable' ||
         e.reason === 'not_a_feed' ||
         e.reason === 'malformed_url' ||
-        e.reason === 'empty'
+        e.reason === 'empty' ||
+        e.reason === 'blocked'
           ? e.reason
           : 'unreachable';
       return { ok: false, reason, detail: e.detail ?? e.message };

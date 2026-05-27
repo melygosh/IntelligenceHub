@@ -54,7 +54,7 @@ export const ValidateFeedResponse = z.discriminatedUnion('ok', [
   }),
   z.object({
     ok: z.literal(false),
-    reason: z.enum(['unreachable', 'not_a_feed', 'malformed_url', 'empty']),
+    reason: z.enum(['unreachable', 'not_a_feed', 'malformed_url', 'empty', 'blocked']),
     detail: z.string(),
   }),
 ]);

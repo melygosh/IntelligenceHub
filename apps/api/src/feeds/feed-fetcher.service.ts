@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import Parser from 'rss-parser';
 import { normaliseUrl } from '@intelligencehub/shared';
 import { contentHash } from './content-hash';
+import { fetchTextSafely } from '../common/security/safe-fetch';
+import { BlockedUrlError } from '../common/security/url-guard';
 
 export type FetchedItem = {
   url: string;
@@ -18,15 +20,15 @@ export type FetchedFeed = {
   items: FetchedItem[];
 };
 
-export type FetchErrorReason = 'unreachable' | 'not_a_feed' | 'malformed_url' | 'empty';
+export type FetchErrorReason = 'unreachable' | 'not_a_feed' | 'malformed_url' | 'empty' | 'blocked';
 
 @Injectable()
 export class FeedFetcher {
   // customFields surfaces Atom's top-level <icon> + <logo> elements; rss-parser
   // already exposes RSS 2.0 <image><url> as `parsed.image.url` by default.
+  // Network fetching (with the SSRF guard + time/size caps) is done by
+  // fetchTextSafely; this parser only turns the fetched text into a feed.
   private readonly parser = new Parser({
-    timeout: 10_000,
-    headers: { 'User-Agent': 'IntelligenceHub/0.1 (+https://intelligencehub.local)' },
     customFields: {
       feed: ['icon', 'logo'],
     },
@@ -37,18 +39,28 @@ export class FeedFetcher {
    * so callers can map to ValidateFeedResponse without leaking internals.
    */
   async fetch(url: string): Promise<FetchedFeed> {
+    // SSRF-guarded fetch: rejects private/reserved hosts (incl. cloud-metadata),
+    // re-validates every redirect hop, and caps time + body size.
+    let xml: string;
+    try {
+      xml = await fetchTextSafely(url);
+    } catch (err) {
+      if (err instanceof BlockedUrlError) {
+        throw this.makeError('blocked', err.message);
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      throw this.makeError('unreachable', msg);
+    }
+
     let parsed: Parser.Output<Record<string, unknown>>;
     try {
-      parsed = await this.parser.parseURL(url);
+      parsed = await this.parser.parseString(xml);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('Invalid URL') || msg.includes('Invalid character')) {
+      if (msg.includes('Invalid character')) {
         throw this.makeError('malformed_url', msg);
       }
-      if (msg.includes('Non-whitespace before first tag') || msg.includes('Unexpected close')) {
-        throw this.makeError('not_a_feed', 'URL responded but content is not RSS/Atom');
-      }
-      throw this.makeError('unreachable', msg);
+      throw this.makeError('not_a_feed', 'URL responded but content is not RSS/Atom');
     }
 
     const title = (parsed.title ?? '').trim();

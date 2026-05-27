@@ -10,6 +10,7 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import {
   ConfirmEmailRequest,
   LoginRequest,
@@ -34,6 +35,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ZodValidationPipe(RegisterRequest))
   async register(
@@ -50,6 +52,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginRequest))
   async login(
@@ -74,6 +77,7 @@ export class AuthController {
   }
 
   @Post('confirm')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async confirm(
     @Body(new ZodValidationPipe(ConfirmEmailRequest))
@@ -84,6 +88,7 @@ export class AuthController {
   }
 
   @Post('resend-confirmation')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async resend(
