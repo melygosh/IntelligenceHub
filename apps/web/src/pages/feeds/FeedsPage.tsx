@@ -489,20 +489,25 @@ export default function FeedsPage() {
   }, [data]);
 
   useFeedPullEvents({
-    onDone: ({ feedId, inserted, filtered, duplicates }) => {
+    onDone: ({ feedId, inserted, filtered, duplicates, llmErrors }) => {
       clearPending([feedId]);
       const label = labelById.get(feedId) ?? 'Feed';
-      const total = inserted + duplicates + filtered;
-      if (total === 0) {
+      const parts: string[] = [];
+      if (inserted > 0) parts.push(`${inserted} new`);
+      if (llmErrors > 0) parts.push(`${llmErrors} awaiting analysis`);
+      if (duplicates > 0) parts.push(`${duplicates} duplicate`);
+      if (filtered > 0) parts.push(`${filtered} filtered`);
+      if (parts.length === 0) {
         pushToast({ severity: 'info', title: 'Pull complete', subtitle: label, body: 'No new items.' });
         return;
       }
-      const parts = [`${inserted} new`];
-      if (duplicates > 0) parts.push(`${duplicates} duplicate`);
-      if (filtered > 0) parts.push(`${filtered} filtered`);
+      // Fetched OK but nothing could be analyzed yet (e.g. the LLM is down):
+      // those items are deferred to 'pending' and retried automatically, so
+      // surface a warning instead of a silent "success".
+      const deferredOnly = inserted === 0 && llmErrors > 0;
       pushToast({
-        severity: 'success',
-        title: 'Pull complete',
+        severity: deferredOnly ? 'warn' : 'success',
+        title: deferredOnly ? 'Pulled — analysis pending' : 'Pull complete',
         subtitle: label,
         body: parts.join(' · '),
       });
