@@ -618,34 +618,35 @@ export default function FeedsPage() {
           </p>
         </div>
       ) : (
-        <div className="border border-border bg-paper">
-          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-2.5">
-            <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-              All feeds
-            </span>
-            <div className="flex items-center gap-3">
+        <div className="space-y-2">
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={onPullAll}
+              disabled={isPullingAll || pendingPulls.size > 0}
+              className="inline-flex items-center justify-center gap-1.5 border border-accent bg-accent px-2.5 py-1 font-mono text-[12.5px] text-paper transition-colors hover:border-accent-deep hover:bg-accent-deep disabled:cursor-not-allowed disabled:border-border disabled:bg-paper2 disabled:text-mute2"
+            >
+              <span className="inline-flex h-3 w-3 items-center justify-center">
+                {isPullingAll || pendingPulls.size > 0 ? <SpinnerIcon /> : <RefreshIcon />}
+              </span>
+              <span>
+                {isPullingAll
+                  ? 'queuing…'
+                  : pendingPulls.size > 0
+                    ? `pulling ${pendingPulls.size}…`
+                    : 'pull all'}
+              </span>
+            </button>
+          </div>
+          <div className="border border-border bg-paper">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-2.5">
+              <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+                All feeds
+              </span>
               <span className="font-mono text-[12.5px] tnum text-mute2">
                 sorted by last pull · desc
               </span>
-              <button
-                type="button"
-                onClick={onPullAll}
-                disabled={isPullingAll || pendingPulls.size > 0}
-                className="inline-flex items-center justify-center gap-1.5 border border-accent bg-accent px-2.5 py-1 font-mono text-[12.5px] text-paper transition-colors hover:border-accent-deep hover:bg-accent-deep disabled:cursor-not-allowed disabled:border-border disabled:bg-paper2 disabled:text-mute2"
-              >
-                <span className="inline-flex h-3 w-3 items-center justify-center">
-                  {isPullingAll || pendingPulls.size > 0 ? <SpinnerIcon /> : <RefreshIcon />}
-                </span>
-                <span>
-                  {isPullingAll
-                    ? 'queuing…'
-                    : pendingPulls.size > 0
-                      ? `pulling ${pendingPulls.size}…`
-                      : 'pull all'}
-                </span>
-              </button>
             </div>
-          </div>
           {data.feeds.map((feed) => {
             const isPaused = feed.status === 'paused';
             const isError = feed.status === 'error';
@@ -749,6 +750,7 @@ export default function FeedsPage() {
               </article>
             );
           })}
+          </div>
         </div>
       )}
     </div>
