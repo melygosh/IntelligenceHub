@@ -12,6 +12,7 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articles, regenerationRun } from '../db/schema';
 import { UserConfigService } from '../articles/user-config.service';
+import { EventsService } from '../events/events.service';
 
 type StartResult = { run: RegenerationRun; eligibleArticles: number };
 
@@ -20,6 +21,7 @@ export class RegenerationService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly userConfig: UserConfigService,
+    private readonly events: EventsService,
     @InjectQueue(QUEUE_NAMES.REGENERATION) private readonly queue: Queue,
   ) {}
 
@@ -82,6 +84,11 @@ export class RegenerationService {
       { runId: inserted.id, userId },
       { removeOnComplete: true, removeOnFail: false },
     );
+
+    this.events.publish(userId, {
+      type: 'regeneration.started',
+      payload: { runId: inserted.id, articlesTotal: eligible },
+    });
 
     return { run: this.toResponse(inserted), eligibleArticles: eligible };
   }

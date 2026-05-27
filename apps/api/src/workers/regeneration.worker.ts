@@ -10,6 +10,8 @@ import { articles, regenerationRun } from '../db/schema';
 import { ArticleProcessor } from '../articles/article-processor.service';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
 import { UserConfigService } from '../articles/user-config.service';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- value import required for Nest DI metadata
+import { EventsService } from '../events/events.service';
 
 type JobData = { runId: string; userId: string };
 
@@ -23,6 +25,7 @@ export class RegenerationWorker extends WorkerHost {
     @Inject(DB) private readonly db: Db,
     private readonly userConfig: UserConfigService,
     private readonly processor: ArticleProcessor,
+    private readonly events: EventsService,
   ) {
     super();
   }
@@ -94,6 +97,15 @@ export class RegenerationWorker extends WorkerHost {
               articlesErrored: errors,
             })
             .where(eq(regenerationRun.id, runId));
+          this.events.publish(userId, {
+            type: 'regeneration.progress',
+            payload: {
+              runId,
+              articlesProcessed: processed,
+              articlesTotal: articleRows.length,
+              articlesCacheHit: cacheHits,
+            },
+          });
         }
       }
 
@@ -108,6 +120,17 @@ export class RegenerationWorker extends WorkerHost {
           articlesErrored: errors,
         })
         .where(eq(regenerationRun.id, runId));
+
+      this.events.publish(userId, {
+        type: 'regeneration.completed',
+        payload: {
+          runId,
+          articlesProcessed: processed,
+          articlesCacheHit: cacheHits,
+          articlesLlmCalled: llmCalls,
+          articlesErrored: errors,
+        },
+      });
 
       this.log.log(
         JSON.stringify({
@@ -132,6 +155,10 @@ export class RegenerationWorker extends WorkerHost {
           errorMessage: msg,
         })
         .where(eq(regenerationRun.id, runId));
+      this.events.publish(userId, {
+        type: 'regeneration.failed',
+        payload: { runId, errorMessage: msg },
+      });
       throw err;
     }
   }

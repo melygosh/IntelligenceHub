@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { ArticlesModule } from '../articles/articles.module';
+import { EventsModule } from '../events/events.module';
 import { RegenerationController } from './regeneration.controller';
 import { RegenerationService } from './regeneration.service';
 
@@ -9,6 +10,7 @@ import { RegenerationService } from './regeneration.service';
   imports: [
     BullModule.registerQueue({ name: QUEUE_NAMES.REGENERATION }),
     ArticlesModule,
+    EventsModule,
   ],
   controllers: [RegenerationController],
   providers: [RegenerationService],

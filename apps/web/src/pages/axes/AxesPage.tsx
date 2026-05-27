@@ -215,7 +215,7 @@ function RegenerateButton() {
         className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
       >
         {isRunning
-          ? `Regeneration in progress… ${run.articlesProcessed} / ${run.articlesTotal}`
+          ? 'Regeneration in progress…'
           : isLoading
             ? 'Starting…'
             : 'Regenerate articles'}

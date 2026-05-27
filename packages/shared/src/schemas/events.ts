@@ -31,6 +31,39 @@ export const ServerEvent = z.discriminatedUnion('type', [
       error: z.string(),
     }),
   }),
+  z.object({
+    type: z.literal('regeneration.started'),
+    payload: z.object({
+      runId: z.string().uuid(),
+      articlesTotal: z.number().int().nonnegative(),
+    }),
+  }),
+  z.object({
+    type: z.literal('regeneration.progress'),
+    payload: z.object({
+      runId: z.string().uuid(),
+      articlesProcessed: z.number().int().nonnegative(),
+      articlesTotal: z.number().int().nonnegative(),
+      articlesCacheHit: z.number().int().nonnegative(),
+    }),
+  }),
+  z.object({
+    type: z.literal('regeneration.completed'),
+    payload: z.object({
+      runId: z.string().uuid(),
+      articlesProcessed: z.number().int().nonnegative(),
+      articlesCacheHit: z.number().int().nonnegative(),
+      articlesLlmCalled: z.number().int().nonnegative(),
+      articlesErrored: z.number().int().nonnegative(),
+    }),
+  }),
+  z.object({
+    type: z.literal('regeneration.failed'),
+    payload: z.object({
+      runId: z.string().uuid(),
+      errorMessage: z.string(),
+    }),
+  }),
 ]);
 export type ServerEvent = z.infer<typeof ServerEvent>;
 
