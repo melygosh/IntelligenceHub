@@ -11,15 +11,22 @@ export class BullBoardModule {
     return {
       module: BullBoardModule,
       imports: [
-        BullModule.registerQueue({ name: QUEUE_NAMES.FEED_PULL }),
+        BullModule.registerQueue(
+          { name: QUEUE_NAMES.FEED_PULL },
+          { name: QUEUE_NAMES.REGENERATION },
+          { name: QUEUE_NAMES.DEMO_SEED },
+          { name: QUEUE_NAMES.DIGEST_BUILD },
+        ),
         NestBullBoard.forRoot({
           route: '/admin/queues',
           adapter: ExpressAdapter,
         }),
-        NestBullBoard.forFeature({
-          name: QUEUE_NAMES.FEED_PULL,
-          adapter: BullMQAdapter,
-        }),
+        NestBullBoard.forFeature(
+          { name: QUEUE_NAMES.FEED_PULL, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.REGENERATION, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.DEMO_SEED, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.DIGEST_BUILD, adapter: BullMQAdapter },
+        ),
       ],
     };
   }
