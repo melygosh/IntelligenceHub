@@ -76,9 +76,18 @@ export default function CategoriesPage() {
                 onClick={() => {
                   if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.id);
                 }}
-                className="font-mono text-[12.5px] uppercase tracking-[0.1em] text-muted hover:text-critical"
+                title="Delete category"
+                aria-label="Delete category"
+                className="inline-flex h-6 w-6 items-center justify-center text-mute2 hover:text-critical"
               >
-                Delete
+                <svg viewBox="0 0 12 12" className="h-3.5 w-3.5">
+                  <path
+                    d="M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
             </li>
           ))}
