@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { errorMessage } from '../../lib/auth';
+import { Brand } from '../brand/Brand';
+import { AuthBackdrop } from './AuthBackdrop';
 
 const fieldClass =
   'w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none';
@@ -20,22 +22,45 @@ export function AuthFormShell({
 }: {
   eyebrow: string;
   title: string;
-  onSubmit: React.FormEventHandler<HTMLFormElement>;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper p-4">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-[360px] border border-border bg-surface p-6"
-        noValidate
-      >
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          {eyebrow}
+    <div className="relative min-h-screen overflow-hidden bg-paper">
+      <AuthBackdrop />
+      {/* Vignette: clearest in the centre (behind the card), fading to paper at
+          the edges so the constellation reads as a soft backdrop. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(244,239,230,0) 0%, rgba(244,239,230,0.4) 50%, rgba(244,239,230,0.78) 100%)',
+        }}
+      />
+
+      <div className="relative z-20 flex items-center px-6 py-4">
+        <Brand />
+      </div>
+
+      <div className="absolute inset-0 z-10 flex items-center justify-center overflow-auto px-6">
+        <div className="w-full max-w-[420px] py-12">
+          <form
+            onSubmit={onSubmit}
+            noValidate
+            className="border border-border bg-paper p-8"
+            style={{ boxShadow: '0 1px 0 #d8cfbd, 0 8px 30px -12px rgba(28,26,22,0.18)' }}
+          >
+            <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+              {eyebrow}
+            </div>
+            <h1 className="pretty mb-5 font-serif text-[26px] leading-tight text-ink">{title}</h1>
+            {children}
+          </form>
+          <div className="mt-3 text-center font-mono text-[10.5px] text-mute2">
+            backdrop · sample week of an actual knowledge graph
+          </div>
         </div>
-        <h1 className="pretty mb-5 font-serif text-[24px] leading-tight text-ink">{title}</h1>
-        {children}
-      </form>
+      </div>
     </div>
   );
 }

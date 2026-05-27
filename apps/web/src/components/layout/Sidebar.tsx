@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { Brand } from '../brand/Brand';
 
 // Icon set from docs/IntelligenceHub_design/App Shell.html — keep currentColor + thin strokes
 // for the editorial-mono look.
@@ -92,24 +93,6 @@ const itemClass = ({ isActive }: { isActive: boolean }) =>
 
 const eyebrowClass =
   'px-3 pt-3 pb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-mute2';
-
-const Brand = () => (
-  <div className="flex items-center gap-2 text-ink">
-    <svg viewBox="0 0 16 16" className="h-4 w-4">
-      <circle cx="3" cy="3.5" r="2" fill="currentColor" />
-      <circle cx="13" cy="3.5" r="1.3" fill="currentColor" />
-      <circle cx="8" cy="12.5" r="1.5" fill="currentColor" />
-      <path
-        d="M3 3.5 L8 12.5 M13 3.5 L8 12.5 M3 3.5 L13 3.5"
-        stroke="currentColor"
-        strokeWidth="0.7"
-        fill="none"
-        opacity="0.6"
-      />
-    </svg>
-    <span className="font-mono text-[14px] tracking-[0.02em]">news intelligence</span>
-  </div>
-);
 
 export default function Sidebar() {
   return (

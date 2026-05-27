@@ -3,6 +3,7 @@ import Shell from './components/layout/Shell';
 import AuthGuard from './components/layout/AuthGuard';
 import { ToastProvider } from './components/toast/ToastHost';
 import { PageTitleProvider } from './components/layout/PageTitleContext';
+import { DocumentTitle } from './components/layout/DocumentTitle';
 import Register from './pages/auth/Register';
 import Login from './pages/auth/Login';
 import CheckEmail from './pages/auth/CheckEmail';
@@ -23,6 +24,7 @@ export default function App() {
   return (
     <ToastProvider>
       <PageTitleProvider>
+        <DocumentTitle />
         <AppRoutes />
       </PageTitleProvider>
     </ToastProvider>
