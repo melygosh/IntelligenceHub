@@ -7,7 +7,12 @@ import {
   useGetCategoriesQuery,
   useGetFeedsQuery,
 } from '../../store/api';
-import type { ArticleListItem, ArticleEntitySummary, Feed } from '@intelligencehub/shared';
+import type {
+  ArticleListItem,
+  ArticleEntitySummary,
+  AxisList,
+  Feed,
+} from '@intelligencehub/shared';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
@@ -128,15 +133,7 @@ function buildFilterSubtitle(opts: {
   q: string;
   feedsData: { feeds: Feed[] } | undefined;
   categoriesData: { categories: { id: string; name: string }[] } | undefined;
-  axesData:
-    | {
-        axes: {
-          id: string;
-          name: string;
-          values: { id: string; value: string }[];
-        }[];
-      }
-    | undefined;
+  axesData: AxisList | undefined;
 }): string {
   const parts: string[] = [];
   if (opts.categoryIds.length > 0) {
