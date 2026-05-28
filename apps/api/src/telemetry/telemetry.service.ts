@@ -4,7 +4,6 @@ import type { TelemetrySummary } from '@intelligencehub/shared';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { llmCalls } from '../db/schema';
-import { computeCost, lookupPricing } from '../llm/llm-pricing';
 
 @Injectable()
 export class TelemetryService {
@@ -40,38 +39,23 @@ export class TelemetryService {
       .from(llmCalls)
       .where(eq(llmCalls.userId, userId));
 
-    let totalCostUsd = 0;
-    let unknownModelCount = 0;
-    const enrichedRows = rows.map((r) => {
-      const pricing = lookupPricing(r.model);
-      let costUsd: number | null = null;
-      if (pricing) {
-        costUsd = computeCost(r, pricing);
-        totalCostUsd += costUsd;
-      } else {
-        unknownModelCount += r.callCount;
-      }
-      return {
-        operation: r.operation,
-        provider: r.provider,
-        model: r.model,
-        callCount: r.callCount,
-        inputTokens: r.inputTokens,
-        outputTokens: r.outputTokens,
-        cacheReadTokens: r.cacheReadTokens,
-        cacheCreationTokens: r.cacheCreationTokens,
-        costUsd,
-        avgLatencyMs: r.avgLatencyMs,
-        successRate: r.callCount === 0 ? 1 : r.successCount / r.callCount,
-        failoverCount: r.failoverCount,
-      };
-    });
+    const projectedRows = rows.map((r) => ({
+      operation: r.operation,
+      provider: r.provider,
+      model: r.model,
+      callCount: r.callCount,
+      inputTokens: r.inputTokens,
+      outputTokens: r.outputTokens,
+      cacheReadTokens: r.cacheReadTokens,
+      cacheCreationTokens: r.cacheCreationTokens,
+      avgLatencyMs: r.avgLatencyMs,
+      successRate: r.callCount === 0 ? 1 : r.successCount / r.callCount,
+      failoverCount: r.failoverCount,
+    }));
 
     return {
-      rows: enrichedRows,
-      totalCostUsd,
+      rows: projectedRows,
       totalCalls: rows.reduce((s, r) => s + r.callCount, 0),
-      unknownModelCount,
       dateRange: {
         from: dateRangeRow?.fromTs
           ? new Date(dateRangeRow.fromTs).toISOString()

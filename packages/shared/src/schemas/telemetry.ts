@@ -9,7 +9,6 @@ export const TelemetryRow = z.object({
   outputTokens: z.number().int().nonnegative(),
   cacheReadTokens: z.number().int().nonnegative(),
   cacheCreationTokens: z.number().int().nonnegative(),
-  costUsd: z.number().nullable(),
   avgLatencyMs: z.number().int().nonnegative(),
   successRate: z.number().min(0).max(1),
   failoverCount: z.number().int().nonnegative(),
@@ -18,9 +17,7 @@ export type TelemetryRow = z.infer<typeof TelemetryRow>;
 
 export const TelemetrySummary = z.object({
   rows: z.array(TelemetryRow),
-  totalCostUsd: z.number(),
   totalCalls: z.number().int().nonnegative(),
-  unknownModelCount: z.number().int().nonnegative(),
   dateRange: z.object({
     from: z.string().datetime().nullable(),
     to: z.string().datetime().nullable(),

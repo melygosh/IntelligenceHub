@@ -3,12 +3,6 @@ import { useGetTelemetrySummaryQuery } from '../../store/api';
 
 const Sep = () => <span className="text-border2">·</span>;
 
-function fmtCost(n: number | null): string {
-  if (n === null) return '—';
-  if (n < 0.01) return `$${n.toFixed(4)}`;
-  return `$${n.toFixed(3)}`;
-}
-
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -39,7 +33,6 @@ function TelemetryTableRow({ r }: { r: TelemetryRow }) {
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-mute2">
         {fmtTokens(r.cacheReadTokens)} / {fmtTokens(r.cacheCreationTokens)}
       </td>
-      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-ink">{fmtCost(r.costUsd)}</td>
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-mute2">{r.avgLatencyMs}</td>
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">{fmtPercent(r.successRate)}</td>
       <td className="py-2 pr-1 text-right font-mono text-[12.5px] tnum text-mute2">{r.failoverCount}</td>
@@ -71,7 +64,8 @@ export default function TelemetryPage() {
           LLM telemetry
         </h1>
         <p className="font-mono text-[12.5px] text-mute2">
-          Per-operation token use and cost. Lifetime totals scoped to your user.
+          Per-operation token use and latency. Lifetime totals scoped to your
+          user.
         </p>
       </header>
 
@@ -86,8 +80,6 @@ export default function TelemetryPage() {
         <>
           <div className="flex flex-wrap items-center gap-2 font-mono text-[12.5px] text-muted">
             <span className="tnum text-ink">{data.totalCalls} calls</span>
-            <Sep />
-            <span className="tnum text-ink">{fmtCost(data.totalCostUsd)} total</span>
             {data.dateRange.from && data.dateRange.to ? (
               <>
                 <Sep />
@@ -109,7 +101,6 @@ export default function TelemetryPage() {
                   <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Input</th>
                   <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Output</th>
                   <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Cache R/W</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Cost</th>
                   <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Avg ms</th>
                   <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Success</th>
                   <th className="py-2 pr-1 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">F/over</th>
@@ -123,11 +114,6 @@ export default function TelemetryPage() {
             </table>
           </div>
 
-          {data.unknownModelCount > 0 ? (
-            <p className="font-mono text-[12px] text-mute2">
-              Cost excludes {data.unknownModelCount} calls from models not in the pricing table.
-            </p>
-          ) : null}
         </>
       )}
     </div>
