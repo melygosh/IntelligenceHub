@@ -116,7 +116,8 @@ export class GraphService {
           label: a.title,
           ts: Math.floor(a.ts.getTime() / 1000),
           entityType: null,
-          importance: (a.importance as 'high' | 'normal' | 'junk' | null) ?? null,
+          importance:
+            (a.importance as 'high' | 'normal' | 'junk' | null) ?? null,
           mentionCount: null,
           dominantCategoryId: null,
         }),
@@ -273,7 +274,11 @@ export class GraphService {
       eq(articles.userId, userId),
       eq(articles.status, 'ready'),
       sql`${articles.id} IN (
-        SELECT article_id FROM article_entity WHERE entity_id = ANY(${entityIds})
+        SELECT article_id FROM article_entity
+        WHERE entity_id = ANY(ARRAY[${sql.join(
+          entityIds.map((id) => sql`${id}::uuid`),
+          sql`, `,
+        )}])
       )`,
     ];
     if (fromDate) baseConditions.push(gte(articles.ts, fromDate));
@@ -316,6 +321,13 @@ export class GraphService {
       : sql``;
     const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
     const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
+    // Built once + referenced twice below — pg rejects bare JS arrays on the
+    // right of ANY, so we materialise an `ARRAY[$1::uuid, $2::uuid, ...]`
+    // literal Drizzle can parameterise per element.
+    const entityArray = sql`ARRAY[${sql.join(
+      entityIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    )}]`;
 
     const result = await this.db.execute<{
       from_id: string;
@@ -332,8 +344,8 @@ export class GraphService {
         AND a.status = 'ready'
       ${categoryJoin}
       WHERE ae1.entity_id < ae2.entity_id
-        AND ae1.entity_id = ANY(${entityIds})
-        AND ae2.entity_id = ANY(${entityIds})
+        AND ae1.entity_id = ANY(${entityArray})
+        AND ae2.entity_id = ANY(${entityArray})
         ${fromFilter}
         ${toFilter}
       GROUP BY from_id, to_id
@@ -358,10 +370,7 @@ export class GraphService {
  * Period → "from" Date used as a SQL `ts >=` filter. `null` means "no lower
  * bound" (period === 'all' or 'custom' without `from`).
  */
-function periodToFromDate(
-  period: GraphPeriod,
-  customFrom?: Date,
-): Date | null {
+function periodToFromDate(period: GraphPeriod, customFrom?: Date): Date | null {
   if (period === 'all') return null;
   if (period === 'custom') return customFrom ?? null;
   const offsets: Record<string, number> = {

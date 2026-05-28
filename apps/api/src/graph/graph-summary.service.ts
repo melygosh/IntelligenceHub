@@ -116,8 +116,7 @@ export class GraphSummaryService {
         title: r.title,
         feedTitle: r.feedTitle ?? null,
         ts: r.ts.toISOString(),
-        importance:
-          (r.importance as 'high' | 'normal' | 'junk' | null) ?? null,
+        importance: (r.importance as 'high' | 'normal' | 'junk' | null) ?? null,
       }),
     );
   }
@@ -126,10 +125,7 @@ export class GraphSummaryService {
 // Duplicated identically from graph.service.ts (Task 14 includes a `diff`
 // check to confirm both copies stay in sync). Extraction to a shared util
 // module is a follow-up — for now, two services own the same helper.
-function periodToFromDate(
-  period: GraphPeriod,
-  customFrom?: Date,
-): Date | null {
+function periodToFromDate(period: GraphPeriod, customFrom?: Date): Date | null {
   if (period === 'all') return null;
   if (period === 'custom') return customFrom ?? null;
   const offsets: Record<string, number> = {
