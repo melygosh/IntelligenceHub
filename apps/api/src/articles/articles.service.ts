@@ -20,6 +20,7 @@ import type {
   EntityKind,
   SimilarArticleSummary,
 } from '@intelligencehub/shared';
+import { groupAxisValuesByAxis } from './group-axis-values';
 
 @Injectable()
 export class ArticlesService {
@@ -30,6 +31,7 @@ export class ArticlesService {
     opts: {
       categoryIds?: string[];
       importances?: ('high' | 'normal' | 'junk')[];
+      axisValueIds?: string[];
       windowFrom?: Date;
       windowTo?: Date;
       q?: string;
@@ -68,6 +70,39 @@ export class ArticlesService {
             .where(inArray(articleCategory.categoryId, categoryIds)),
         ),
       );
+    }
+
+    const axisValueIds = opts.axisValueIds ?? [];
+    if (axisValueIds.length > 0) {
+      // Pre-flight: verify ownership AND recover axis grouping in one round-trip.
+      // Any submitted value-UUID that does not belong to a user-owned axis is
+      // silently dropped (no 403) to match how unknown category IDs behave.
+      const ownedRows = await this.db
+        .select({ id: axisValue.id, axisId: axisValue.axisId })
+        .from(axisValue)
+        .innerJoin(axis, eq(axis.id, axisValue.axisId))
+        .where(
+          and(eq(axis.userId, userId), inArray(axisValue.id, axisValueIds)),
+        );
+
+      if (ownedRows.length === 0) {
+        // Caller supplied only invalid / not-owned UUIDs → empty result set,
+        // indistinguishable from any other empty filter.
+        return [];
+      }
+
+      const grouped = groupAxisValuesByAxis(ownedRows);
+      for (const valueIdsForAxis of grouped.values()) {
+        conditions.push(
+          inArray(
+            articles.id,
+            this.db
+              .select({ id: articleAxisValue.articleId })
+              .from(articleAxisValue)
+              .where(inArray(articleAxisValue.axisValueId, valueIdsForAxis)),
+          ),
+        );
+      }
     }
 
     const orderBy = opts.q
