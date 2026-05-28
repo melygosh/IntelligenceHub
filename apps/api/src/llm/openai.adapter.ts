@@ -60,7 +60,7 @@ export class OpenAiAdapter {
 
     const completion = await client.chat.completions.create({
       model: this.model,
-      max_tokens: this.maxTokens,
+      max_completion_tokens: this.maxTokens,
       messages: [
         // Static instructions first → OpenAI's automatic prefix caching fires for prefixes >=1024 tokens
         { role: 'system', content: ANALYZE_ARTICLE_SYSTEM_PROMPT },
