@@ -23,5 +23,4 @@ describe('groupAxisValuesByAxis', () => {
     ]);
     expect(out.get('a1')).toEqual(['v2', 'v1']);
   });
-
 });

@@ -75,7 +75,8 @@ export class ArticlesController {
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.format());
     }
-    const { category, importance, period, from, to, q } = parsed.data;
+    const { category, importance, axisValue, period, from, to, q } =
+      parsed.data;
 
     const categoryIds = csvToList(category);
     for (const id of categoryIds) {
@@ -91,10 +92,18 @@ export class ArticlesController {
       importances.push(v);
     }
 
+    const axisValueIds = csvToList(axisValue);
+    for (const id of axisValueIds) {
+      if (!UUID_RE.test(id)) {
+        throw new BadRequestException(`invalid axisValue UUID: ${id}`);
+      }
+    }
+
     const window = resolvePeriodWindow(period, from, to);
     const items = await this.articles.listMine(user.userId, {
       categoryIds,
       importances,
+      axisValueIds,
       windowFrom: window.from,
       windowTo: window.to,
       q,
