@@ -28,6 +28,8 @@ import type {
   Feed,
   FeedListResponse,
   GraphResponse,
+  GraphSummaryResponse,
+  GraphPeriod,
   LoginRequest,
   PullAllFeedsResponse,
   PullFeedResponse,
@@ -71,7 +73,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -165,14 +167,48 @@ export const api = createApi({
       },
       providesTags: ['Articles'],
     }),
-    getGraph: build.query<GraphResponse, { categoryId?: string } | void>({
+    getGraph: build.query<
+      GraphResponse,
+      {
+        categoryId?: string;
+        period?: GraphPeriod;
+        from?: string;
+        to?: string;
+        top?: number;
+      } | void
+    >({
       query: (arg) => {
         const params = new URLSearchParams();
-        if (arg && arg.categoryId) params.set('category', arg.categoryId);
+        if (arg?.categoryId) params.set('category', arg.categoryId);
+        if (arg?.period) params.set('period', arg.period);
+        if (arg?.from) params.set('from', arg.from);
+        if (arg?.to) params.set('to', arg.to);
+        if (arg?.top !== undefined) params.set('top', String(arg.top));
         const qs = params.toString();
         return `/graph${qs ? `?${qs}` : ''}`;
       },
-      providesTags: ['Articles'],
+      // Provide both: existing mutations + SSE handlers that invalidate
+      // 'Articles' (feed pull, regen, axis/category updates) still keep the
+      // graph in sync; future graph-only invalidations can target 'Graph'.
+      providesTags: ['Graph', 'Articles'],
+    }),
+    getGraphSummary: build.query<
+      GraphSummaryResponse,
+      { categoryId?: string; period?: GraphPeriod; from?: string; to?: string } | void
+    >({
+      query: (arg) => {
+        const params = new URLSearchParams();
+        if (arg?.categoryId) params.set('category', arg.categoryId);
+        if (arg?.period) params.set('period', arg.period);
+        if (arg?.from) params.set('from', arg.from);
+        if (arg?.to) params.set('to', arg.to);
+        const qs = params.toString();
+        return `/graph/summary${qs ? `?${qs}` : ''}`;
+      },
+      // Provide both: existing mutations + SSE handlers that invalidate
+      // 'Articles' (feed pull, regen, axis/category updates) still keep the
+      // graph in sync; future graph-only invalidations can target 'Graph'.
+      providesTags: ['Graph', 'Articles'],
     }),
     getArticle: build.query<ArticleDetail, string>({
       query: (id) => `/articles/${id}`,
@@ -278,6 +314,7 @@ export const {
   useGetRecentEntitiesQuery,
   useGetEntityListQuery,
   useGetGraphQuery,
+  useGetGraphSummaryQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
