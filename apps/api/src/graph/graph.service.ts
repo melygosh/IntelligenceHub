@@ -1,74 +1,112 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
-import {
-  articleCategory,
-  articleEntity,
-  articles,
-  entities,
-} from '../db/schema';
+import { articleEntity, articles } from '../db/schema';
 import type {
   EntityKind,
   GraphEdge,
   GraphNode,
+  GraphPeriod,
   GraphResponse,
 } from '@intelligencehub/shared';
+
+export type BuildGraphOpts = {
+  period: GraphPeriod; // '24h' | '7d' | '30d' | 'all' | 'custom'
+  from?: Date; // required when period === 'custom'
+  to?: Date; // optional upper bound when period === 'custom'
+  top: number; // entity cap
+  categoryId?: string;
+};
+
+export type TopEntityRow = {
+  id: string;
+  canonicalName: string;
+  type: string;
+  mentionCount: number;
+  dominantCategoryId: string | null;
+};
+
+const DEFAULT_TOP = 20;
 
 @Injectable()
 export class GraphService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  async buildMine(userId: string, categoryId?: string): Promise<GraphResponse> {
-    // Step 1 — figure out which article rows are in scope.
-    let articleRows: Array<{ id: string; title: string; ts: Date }>;
-    if (categoryId) {
-      articleRows = await this.db
-        .select({ id: articles.id, title: articles.title, ts: articles.ts })
-        .from(articles)
-        .innerJoin(articleCategory, eq(articleCategory.articleId, articles.id))
-        .where(
-          and(
-            eq(articles.userId, userId),
-            eq(articleCategory.categoryId, categoryId),
-          ),
-        );
-    } else {
-      articleRows = await this.db
-        .select({ id: articles.id, title: articles.title, ts: articles.ts })
-        .from(articles)
-        .where(eq(articles.userId, userId));
-    }
+  /**
+   * Build the graph response for one user, scoped to the given time window
+   * (period) and capped at `top` entities by mention count. Articles are
+   * included only when they mention at least one of those entities; their
+   * mention edges are emitted; co-mention edges are restricted to the same
+   * top-N entity set.
+   *
+   * Status filter: only 'ready' articles count toward mentions (pending /
+   * failed rows have no entity links anyway, but explicit is safer).
+   */
+  async buildMine(
+    userId: string,
+    opts: BuildGraphOpts,
+  ): Promise<GraphResponse> {
+    const fromDate = periodToFromDate(opts.period, opts.from);
+    const toDate = opts.period === 'custom' ? (opts.to ?? null) : null;
+
+    // 1. Top-N entities in window (with mentionCount + dominantCategoryId).
+    const topEntities = await this.selectTopEntities(
+      userId,
+      fromDate,
+      toDate,
+      opts.top,
+      opts.categoryId,
+    );
+    if (topEntities.length === 0) return { nodes: [], edges: [] };
+
+    const topEntityIds = topEntities.map((e) => e.id);
+
+    // 2. Articles in window that mention at least one of the top-N entities.
+    //    Use a sub-query rather than a join + DISTINCT — clearer intent.
+    const articleRows = await this.selectArticlesConnectedToEntities(
+      userId,
+      fromDate,
+      toDate,
+      topEntityIds,
+      opts.categoryId,
+    );
     const articleIds = articleRows.map((a) => a.id);
 
-    // Step 2 — mention edges = article_entity rows whose article is in scope.
-    let mentionEdgeRows: Array<{ from: string; to: string }> = [];
-    if (articleIds.length > 0) {
-      mentionEdgeRows = await this.db
-        .select({ from: articleEntity.articleId, to: articleEntity.entityId })
-        .from(articleEntity)
-        .where(inArray(articleEntity.articleId, articleIds));
-    }
+    // 3. Mention edges = article_entity rows from those articles to those entities.
+    const mentionEdges: GraphEdge[] =
+      articleIds.length === 0
+        ? []
+        : (
+            await this.db
+              .select({
+                from: articleEntity.articleId,
+                to: articleEntity.entityId,
+              })
+              .from(articleEntity)
+              .where(
+                and(
+                  inArray(articleEntity.articleId, articleIds),
+                  inArray(articleEntity.entityId, topEntityIds),
+                ),
+              )
+          ).map(
+            (e): GraphEdge => ({
+              from: e.from,
+              to: e.to,
+              kind: 'mentions',
+              weight: null,
+            }),
+          );
 
-    // Step 3 — entities referenced by the filtered article set.
-    let entityRows: Array<{ id: string; canonicalName: string; type: string }> =
-      [];
-    if (mentionEdgeRows.length > 0) {
-      const entityIds = Array.from(new Set(mentionEdgeRows.map((e) => e.to)));
-      entityRows = await this.db
-        .select({
-          id: entities.id,
-          canonicalName: entities.canonicalName,
-          type: entities.type,
-        })
-        .from(entities)
-        .where(
-          and(eq(entities.userId, userId), inArray(entities.id, entityIds)),
-        );
-    }
-
-    // Step 4 — co-mention edges (entity <-> entity, weighted by shared articles).
-    const coMentionEdges = await this.buildCoMentionEdges(userId, categoryId);
+    // 4. Co-mention edges between displayed entities, scoped to the same window.
+    const coMentionEdges = await this.buildCoMentionEdges(
+      userId,
+      fromDate,
+      toDate,
+      topEntityIds,
+      opts.categoryId,
+    );
 
     const nodes: GraphNode[] = [
       ...articleRows.map(
@@ -78,80 +116,228 @@ export class GraphService {
           label: a.title,
           ts: Math.floor(a.ts.getTime() / 1000),
           entityType: null,
+          importance: (a.importance as 'high' | 'normal' | 'junk' | null) ?? null,
+          mentionCount: null,
+          dominantCategoryId: null,
         }),
       ),
-      ...entityRows.map(
+      ...topEntities.map(
         (e): GraphNode => ({
           id: e.id,
           kind: 'entity',
           label: e.canonicalName,
           ts: null,
           entityType: e.type as EntityKind,
+          importance: null,
+          mentionCount: e.mentionCount,
+          dominantCategoryId: e.dominantCategoryId,
         }),
       ),
     ];
 
-    const edges: GraphEdge[] = [
-      ...mentionEdgeRows.map(
-        (e): GraphEdge => ({
-          from: e.from,
-          to: e.to,
-          kind: 'mentions',
-          weight: null,
-        }),
-      ),
-      ...coMentionEdges,
-    ];
-
-    return { nodes, edges };
+    return { nodes, edges: [...mentionEdges, ...coMentionEdges] };
   }
 
   /**
-   * Self-join article_entity on shared article_id. Each unordered entity pair
-   * {A,B} appears twice in the join (A,B and B,A); the `ae1.entity_id <
-   * ae2.entity_id` filter keeps one direction, and LEAST/GREATEST give stable
-   * from/to ordering for React keys. Scoped to the user via the articles join;
-   * when categoryId is passed, additionally restricted to articles in that
-   * category. Returns empty array when no co-mentions exist.
+   * Top-N entities by mention count in the window, scoped to the user (and
+   * optionally a category). Each row also carries the entity's dominant
+   * category in the same window. Exposed (public) so GraphSummaryService can
+   * reuse the same selection with top=5.
+   */
+  async selectTopEntities(
+    userId: string,
+    fromDate: Date | null,
+    toDate: Date | null,
+    top: number,
+    categoryId?: string,
+  ): Promise<TopEntityRow[]> {
+    // The top-N + dominant-category query is one round-trip via two CTEs:
+    //  - top_entities: entity_id + mention_count (ordered, LIMIT top)
+    //  - dom: for each top entity, the most-frequent category (tiebreak by
+    //         category.created_at ASC for stable colours across reloads)
+    // Then join entities for canonicalName + type.
+    //
+    // Why raw SQL instead of Drizzle's query builder: window functions +
+    // chained CTEs are clearer in SQL than in fluent .with(...) chains here,
+    // and this is one of the hottest queries on the page.
+    //
+    // Note: the category filter scopes `top_entities` (which entities qualify
+    // for top-N) but NOT `cat_counts` (which categories' articles are counted
+    // for dominant-category lookup). Spec phrasing in §3.4 is "most frequent
+    // category among the entity's mentioning articles in the current window"
+    // — window, not filter scope. This means with a category filter active,
+    // a top-N entity's colour can reflect a category outside the filter,
+    // surfacing the entity's overall dominant category rather than a trivially-
+    // matching filter-scoped one. Deliberate.
+    const categoryFilter = categoryId
+      ? sql`AND EXISTS (
+            SELECT 1 FROM article_category ac2
+            WHERE ac2.article_id = a.id AND ac2.category_id = ${categoryId}
+          )`
+      : sql``;
+    const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
+    const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
+
+    const result = await this.db.execute<{
+      id: string;
+      canonical_name: string;
+      type: string;
+      mention_count: number;
+      dominant_category_id: string | null;
+    }>(sql`
+      WITH top_entities AS (
+        SELECT ae.entity_id, COUNT(*)::int AS mention_count
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        WHERE a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+          ${categoryFilter}
+        GROUP BY ae.entity_id
+        ORDER BY COUNT(*) DESC
+        LIMIT ${top}
+      ),
+      cat_counts AS (
+        SELECT ae.entity_id, ac.category_id, c.created_at, COUNT(*) AS n
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        JOIN article_category ac ON ac.article_id = a.id
+        JOIN category c ON c.id = ac.category_id
+        WHERE ae.entity_id IN (SELECT entity_id FROM top_entities)
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+        GROUP BY ae.entity_id, ac.category_id, c.created_at
+      ),
+      dom AS (
+        SELECT entity_id, category_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY entity_id ORDER BY n DESC, created_at ASC
+          ) AS rn
+        FROM cat_counts
+      )
+      SELECT
+        e.id,
+        e.canonical_name,
+        e.type,
+        te.mention_count,
+        (SELECT category_id FROM dom WHERE dom.entity_id = te.entity_id AND rn = 1)
+          AS dominant_category_id
+      FROM top_entities te
+      JOIN entities e ON e.id = te.entity_id
+      WHERE e.user_id = ${userId}
+      ORDER BY te.mention_count DESC, e.canonical_name ASC
+    `);
+    const rows = (
+      result as unknown as {
+        rows: Array<{
+          id: string;
+          canonical_name: string;
+          type: string;
+          mention_count: number;
+          dominant_category_id: string | null;
+        }>;
+      }
+    ).rows;
+    return rows.map((r) => ({
+      id: r.id,
+      canonicalName: r.canonical_name,
+      type: r.type,
+      mentionCount: r.mention_count,
+      dominantCategoryId: r.dominant_category_id,
+    }));
+  }
+
+  /**
+   * Articles in the window that mention at least one of the given entity ids.
+   * Used both for canvas article nodes (top-N path) and as a natural source
+   * for "find articles in window" elsewhere if needed.
+   */
+  private async selectArticlesConnectedToEntities(
+    userId: string,
+    fromDate: Date | null,
+    toDate: Date | null,
+    entityIds: string[],
+    categoryId?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      title: string;
+      ts: Date;
+      importance: string | null;
+    }>
+  > {
+    const baseConditions = [
+      eq(articles.userId, userId),
+      eq(articles.status, 'ready'),
+      sql`${articles.id} IN (
+        SELECT article_id FROM article_entity WHERE entity_id = ANY(${entityIds})
+      )`,
+    ];
+    if (fromDate) baseConditions.push(gte(articles.ts, fromDate));
+    if (toDate) baseConditions.push(lte(articles.ts, toDate));
+    if (categoryId)
+      baseConditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM article_category ac
+          WHERE ac.article_id = ${articles.id} AND ac.category_id = ${categoryId}
+        )`,
+      );
+
+    return this.db
+      .select({
+        id: articles.id,
+        title: articles.title,
+        ts: articles.ts,
+        importance: articles.importance,
+      })
+      .from(articles)
+      .where(and(...baseConditions));
+  }
+
+  /**
+   * Co-mention edges between the given entity set, scoped to the user + window
+   * (+ optional category). Self-join article_entity on shared article_id; the
+   * `ae1.entity_id < ae2.entity_id` filter keeps one direction; LEAST/GREATEST
+   * give stable from/to ordering for React keys.
    */
   private async buildCoMentionEdges(
     userId: string,
+    fromDate: Date | null,
+    toDate: Date | null,
+    entityIds: string[],
     categoryId?: string,
   ): Promise<GraphEdge[]> {
-    const result = categoryId
-      ? await this.db.execute<{
-          from_id: string;
-          to_id: string;
-          weight: number;
-        }>(sql`
-          SELECT
-            LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
-            GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
-            COUNT(*)::int AS weight
-          FROM article_entity ae1
-          JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
-          JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
-          JOIN article_category ac ON ac.article_id = a.id AND ac.category_id = ${categoryId}
-          WHERE ae1.entity_id < ae2.entity_id
-          GROUP BY from_id, to_id
-        `)
-      : await this.db.execute<{
-          from_id: string;
-          to_id: string;
-          weight: number;
-        }>(sql`
-          SELECT
-            LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
-            GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
-            COUNT(*)::int AS weight
-          FROM article_entity ae1
-          JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
-          JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
-          WHERE ae1.entity_id < ae2.entity_id
-          GROUP BY from_id, to_id
-        `);
+    if (entityIds.length === 0) return [];
+    const categoryJoin = categoryId
+      ? sql`JOIN article_category ac ON ac.article_id = a.id AND ac.category_id = ${categoryId}`
+      : sql``;
+    const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
+    const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
 
-    // Drizzle's `execute` returns a result object with `.rows` for pg.
+    const result = await this.db.execute<{
+      from_id: string;
+      to_id: string;
+      weight: number;
+    }>(sql`
+      SELECT
+        LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
+        GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
+        COUNT(*)::int AS weight
+      FROM article_entity ae1
+      JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
+      JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
+        AND a.status = 'ready'
+      ${categoryJoin}
+      WHERE ae1.entity_id < ae2.entity_id
+        AND ae1.entity_id = ANY(${entityIds})
+        AND ae2.entity_id = ANY(${entityIds})
+        ${fromFilter}
+        ${toFilter}
+      GROUP BY from_id, to_id
+    `);
     const rows = (
       result as unknown as {
         rows: Array<{ from_id: string; to_id: string; weight: number }>;
@@ -167,3 +353,28 @@ export class GraphService {
     );
   }
 }
+
+/**
+ * Period → "from" Date used as a SQL `ts >=` filter. `null` means "no lower
+ * bound" (period === 'all' or 'custom' without `from`).
+ */
+function periodToFromDate(
+  period: GraphPeriod,
+  customFrom?: Date,
+): Date | null {
+  if (period === 'all') return null;
+  if (period === 'custom') return customFrom ?? null;
+  const offsets: Record<string, number> = {
+    '24h': 24 * 3600_000,
+    '7d': 7 * 24 * 3600_000,
+    '30d': 30 * 24 * 3600_000,
+  };
+  const ms = offsets[period];
+  if (ms === undefined) {
+    throw new Error(`Unhandled period: ${period}`);
+  }
+  return new Date(Date.now() - ms);
+}
+
+// Re-export for callers that don't need full BuildGraphOpts.
+export { DEFAULT_TOP };
