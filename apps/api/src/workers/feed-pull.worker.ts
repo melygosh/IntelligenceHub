@@ -165,7 +165,11 @@ export class FeedPullWorker extends WorkerHost {
     // re-inserting and re-enqueuing the same item (the article-analyze queue
     // owns the retry). Legacy 'filtered'/'duplicate' rows are ignored by design.
     const [existing] = await this.db
-      .select({ id: articles.id, status: articles.status })
+      .select({
+        id: articles.id,
+        status: articles.status,
+        feedId: articles.feedId,
+      })
       .from(articles)
       .where(
         and(
@@ -179,9 +183,12 @@ export class FeedPullWorker extends WorkerHost {
       )
       .limit(1);
     if (existing) {
-      // Only 'ready' originals get a duplicate row (the similar-articles
-      // anchor); for pending/failed we just skip so retries don't pile up.
-      if (existing.status === 'ready') {
+      // Only 'ready' originals from a *different* feed get a duplicate row
+      // (the cross-source similar-articles anchor). Same-feed re-pulls are
+      // just the next poll seeing the same item — inserting a duplicate row
+      // would inflate similarCount on every poll. Pending/failed siblings
+      // also skip; the article-analyze queue owns retry.
+      if (existing.status === 'ready' && existing.feedId !== feedId) {
         await this.db.insert(articles).values({
           userId,
           feedId,
