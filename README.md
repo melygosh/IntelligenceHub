@@ -27,8 +27,10 @@ cp .env.example .env
 #   POSTGRES_PASSWORD  (your choice; the DATABASE_URL below must use the same value)
 #   JWT_SECRET         (generate with: openssl rand -base64 32)
 #   BULL_BOARD_PASS    (your choice; protects /admin/queues)
-#   ANTHROPIC_API_KEY  (required when LLM_PROVIDER=anthropic — the default)
-#   OPENAI_API_KEY     (required when LLM_PROVIDER=openai)
+#   LLM_PROVIDER          (anthropic | openai; default anthropic)
+#   LLM_PROVIDER_API_KEY  (required — the API key for whichever provider you picked)
+#   LLM_PROVIDER_MODEL    (optional — defaults to claude-haiku-4-5 or gpt-4o-mini)
+#   LLM_FALLBACK_PROVIDER / _API_KEY / _MODEL  (optional failover trio — must differ from primary)
 # Important: update DATABASE_URL's embedded password to match POSTGRES_PASSWORD.
 
 docker compose up --build

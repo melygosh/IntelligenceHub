@@ -8,7 +8,7 @@ import {
   type BuildDigestLlmInput,
   type BuildDigestLlmResult as BuildDigestLlmResultType,
 } from '@intelligencehub/shared';
-import { loadEnv } from '../common/config/env';
+import { loadEnv, resolveProviderEnv } from '../common/config/env';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
@@ -55,15 +55,17 @@ const BUILD_DIGEST_OUTPUT_SCHEMA = {
 @Injectable()
 export class AnthropicAdapter {
   // Lazy: only constructed if/when this adapter is actually used, so a missing
-  // ANTHROPIC_API_KEY does not crash boot when LLM_PROVIDER=openai.
+  // API key does not crash boot when anthropic is neither primary nor fallback.
   private client: Anthropic | undefined;
   readonly model: string;
+  private readonly apiKey: string;
   private readonly maxTokens: number;
 
   constructor() {
-    const env = loadEnv();
-    this.model = env.LLM_MODEL_ANTHROPIC;
-    this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
+    const { apiKey, model } = resolveProviderEnv('anthropic');
+    this.apiKey = apiKey;
+    this.model = model;
+    this.maxTokens = loadEnv().LLM_TOKEN_LIMIT_PER_ARTICLE;
   }
 
   async analyzeArticle(
@@ -204,11 +206,14 @@ export class AnthropicAdapter {
 
   private getClient(): Anthropic {
     if (this.client) return this.client;
-    const env = loadEnv();
-    if (!env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY required when LLM_PROVIDER=anthropic');
+    if (!this.apiKey) {
+      throw new Error(
+        'Anthropic API key is required when anthropic is the active LLM provider — ' +
+          'set LLM_PROVIDER_API_KEY (if LLM_PROVIDER=anthropic) or ' +
+          'LLM_FALLBACK_PROVIDER_API_KEY (if LLM_FALLBACK_PROVIDER=anthropic).',
+      );
     }
-    this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    this.client = new Anthropic({ apiKey: this.apiKey });
     return this.client;
   }
 }
