@@ -142,6 +142,7 @@ export const api = createApi({
       {
         categoryIds?: string[];
         importances?: ('high' | 'normal' | 'junk')[];
+        axisValueIds?: string[];
         period?: 'all' | '24h' | '7d' | '30d' | 'custom';
         from?: string;
         to?: string;
@@ -156,6 +157,9 @@ export const api = createApi({
           }
           if (arg.importances && arg.importances.length > 0) {
             params.set('importance', arg.importances.join(','));
+          }
+          if (arg.axisValueIds && arg.axisValueIds.length > 0) {
+            params.set('axisValue', arg.axisValueIds.join(','));
           }
           if (arg.period && arg.period !== 'all') params.set('period', arg.period);
           if (arg.from) params.set('from', arg.from);
