@@ -16,7 +16,7 @@ export function AxisDropdown({
   selected: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const { data } = useGetAxesQuery();
+  const { data, isLoading } = useGetAxesQuery();
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   const valueLabel = useMemo(() => {
@@ -42,7 +42,11 @@ export function AxisDropdown({
     <FacetDropdown label="Axis" valueLabel={valueLabel} isActive={selected.length > 0}>
       {() => (
         <>
-          {!hasAxes ? (
+          {isLoading ? (
+            <div className="px-3 py-2 font-mono text-[12.5px] text-mute2">
+              Loading…
+            </div>
+          ) : !hasAxes ? (
             <div className="px-3 py-2 font-mono text-[12.5px] text-mute2">
               No axes defined yet ·{' '}
               <Link to="/settings/axes" className="text-accent hover:text-accent-deep">
