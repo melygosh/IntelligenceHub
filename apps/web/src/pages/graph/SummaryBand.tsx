@@ -1,4 +1,4 @@
-import type { GraphSummaryResponse } from '@intelligencehub/shared';
+import type { GraphPeriod, GraphSummaryResponse } from '@intelligencehub/shared';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { colourFor } from './graph-palette';
 import type { SelectedNode } from './GraphSidePanel';
@@ -14,14 +14,19 @@ export function SummaryBand({
   data,
   selected,
   onSelect,
+  period,
 }: {
   data: GraphSummaryResponse | undefined;
   selected: SelectedNode | null;
   onSelect: (node: SelectedNode) => void;
+  period: GraphPeriod;
 }) {
+  // Honest cell title — reflects the active filter, not a hard-coded "7d".
+  const entitiesTitle =
+    period === 'all' ? 'Top entities' : `Top entities · ${period}`;
   return (
     <div className="grid grid-cols-2 gap-px bg-border">
-      <Cell title="Top entities · 7d">
+      <Cell title={entitiesTitle}>
         {!data || data.topEntities.length === 0 ? (
           <Empty>No mentions in this window.</Empty>
         ) : (

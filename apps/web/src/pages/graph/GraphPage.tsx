@@ -246,10 +246,16 @@ export default function GraphPage() {
     [filtered],
   );
 
-  const focus = useMemo(
-    () => (filtered ? computeFocusSet(selected?.id ?? null, filtered.edges) : null),
-    [filtered, selected],
-  );
+  // Only apply focus when the selected node is actually on the canvas. A band
+  // click on a top-article with `show: entities` selects an article that
+  // isn't in `filtered.nodes` — without this guard, computeFocusSet would
+  // return a singleton set the canvas can't match, dimming everything.
+  const focus = useMemo(() => {
+    if (!filtered || !selected) return null;
+    const onCanvas = filtered.nodes.some((n) => n.id === selected.id);
+    if (!onCanvas) return null;
+    return computeFocusSet(selected.id, filtered.edges);
+  }, [filtered, selected]);
 
   const nodes = useMemo(
     () => (filtered ? toReactFlowNodes(filtered.nodes, positions, focus) : []),
@@ -314,7 +320,12 @@ export default function GraphPage() {
         <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
         <CategoryFilter selected={categoryId} onChange={updateCategory} />
       </div>
-      <SummaryBand data={summary} selected={selected} onSelect={setSelected} />
+      <SummaryBand
+        data={summary}
+        selected={selected}
+        onSelect={setSelected}
+        period={period}
+      />
       <div className="flex min-h-[440px] flex-1 gap-0">
         <div className="min-w-0 flex-1 border border-border bg-surface">
           {isLoading ? (
