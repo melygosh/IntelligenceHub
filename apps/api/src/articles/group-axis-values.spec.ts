@@ -24,11 +24,4 @@ describe('groupAxisValuesByAxis', () => {
     expect(out.get('a1')).toEqual(['v2', 'v1']);
   });
 
-  it('dedupes duplicate value ids under the same axis', () => {
-    const out = groupAxisValuesByAxis([
-      { id: 'v1', axisId: 'a1' },
-      { id: 'v1', axisId: 'a1' },
-    ]);
-    expect(out.get('a1')).toEqual(['v1']);
-  });
 });

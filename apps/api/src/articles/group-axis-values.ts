@@ -7,7 +7,7 @@ export function groupAxisValuesByAxis(
   const out = new Map<string, string[]>();
   for (const row of rows) {
     const list = out.get(row.axisId) ?? [];
-    if (!list.includes(row.id)) list.push(row.id);
+    list.push(row.id);
     out.set(row.axisId, list);
   }
   return out;
