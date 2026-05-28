@@ -203,15 +203,26 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   (claude-opus/sonnet/haiku 4.x, gpt-5/5-mini/4o/4o-mini); unknown
   models render `—` and are tallied separately. Multi-tenant via
   `WHERE user_id=$1`.
-- **Graph (`/graph`):** react-flow canvas with two node kinds (articles, entities)
-  connected by **mention edges** (article → entity) and **co-mention edges**
-  (entity ↔ entity, weighted by shared-article count, rendered with a thicker
-  stroke). Pan/zoom/mini-map. **dagre LR auto-layout** lays articles on one rank
-  and entities on the other. Three-way **node-type filter** (`both` / `articles
-  only` / `entities only`) + the existing **category filter**, both URL-backed
-  via `?nodeKind=` and `?category=` so reloads + share links preserve the view.
-  **Clicking a node** navigates to its detail page (`/articles/:id` or
-  `/entities/:id` based on node kind).
+- **Graph (`/graph`):** hybrid analytical view (Case 2 — *Аналітика зв'язків*).
+  Filter bar: **period chips** (`24h / 7d / 30d / all / custom`, default 7d —
+  Should bonus closed), node-type toggle (default `entities`), category filter
+  — all URL-backed via `?period=`, `?nodeKind=`, `?category=`. **Two-cell
+  summary band** above the canvas: top 5 entities (by mention count, with a
+  dominant-category dot) and top 5 articles (importance: high preferred,
+  normal as fill); each row is clickable and opens the side panel + focuses
+  the graph. **Canvas:** react-flow with top-20 entities by mentions; **size
+  encodes mention count**, **fill encodes dominant category** via a stable
+  6-colour palette (Could "visual category clustering" bonus). Article nodes
+  (when toggled on) carry `importance` (FR-7) as a coloured left border
+  reusing the article-list palette. **Clicking a node** opens a persistent
+  360 px right rail with that node's details (US-9) — entity: name + type +
+  mention count + aliases + co-mentioned chips; article: title + source +
+  importance pill + summary + entities + link to the full page. The clicked
+  node + its 1-hop neighbours stay at full opacity, everything else dims;
+  pane-click and filter changes clear selection. Category legend in the
+  canvas footer shows only colours present in view. New backend route
+  `GET /api/graph/summary` powers the band; `GET /api/graph` accepts
+  `period` + `top`.
 - **Bull Board:** queue dashboard at **http://localhost:3010/admin/queues** behind HTTP
   Basic auth — credentials via `BULL_BOARD_USER` / `BULL_BOARD_PASS` in `.env`.
 - **Editorial design system:** cream paper, Instrument Serif headlines, IBM Plex Mono
