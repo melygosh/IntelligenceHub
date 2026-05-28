@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   useGetArticleQuery,
   useGetArticlesQuery,
+  useGetAxesQuery,
   useGetCategoriesQuery,
   useGetFeedsQuery,
 } from '../../store/api';
@@ -12,6 +13,7 @@ import { IMP_STYLE } from '../../components/articles/importance';
 import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
 import { SearchInput } from '../../components/filters/SearchInput';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
+import { AxisDropdown } from '../../components/filters/AxisDropdown';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -119,12 +121,22 @@ const PERIOD_SUBTITLE: Record<Period, string> = {
 function buildFilterSubtitle(opts: {
   categoryIds: string[];
   importances: ('high' | 'normal' | 'junk')[];
+  axisValueIds: string[];
   period: Period;
   from: string;
   to: string;
   q: string;
   feedsData: { feeds: Feed[] } | undefined;
   categoriesData: { categories: { id: string; name: string }[] } | undefined;
+  axesData:
+    | {
+        axes: {
+          id: string;
+          name: string;
+          values: { id: string; value: string }[];
+        }[];
+      }
+    | undefined;
 }): string {
   const parts: string[] = [];
   if (opts.categoryIds.length > 0) {
@@ -139,6 +151,29 @@ function buildFilterSubtitle(opts: {
   }
   if (opts.importances.length > 0) {
     parts.push(`importance: ${opts.importances.join(', ')}`);
+  }
+  if (opts.axisValueIds.length > 0) {
+    const lookup = new Map<string, { axisName: string; value: string }>();
+    for (const ax of opts.axesData?.axes ?? []) {
+      for (const v of ax.values) {
+        lookup.set(v.id, { axisName: ax.name, value: v.value });
+      }
+    }
+    if (opts.axisValueIds.length <= 3) {
+      const labels = opts.axisValueIds
+        .map((id) => {
+          const hit = lookup.get(id);
+          return hit ? `${hit.axisName}=${hit.value}` : null;
+        })
+        .filter((s): s is string => s !== null);
+      if (labels.length > 0) {
+        parts.push(`axis: ${labels.join(', ')}`);
+      } else {
+        parts.push(`${opts.axisValueIds.length} axis values`);
+      }
+    } else {
+      parts.push(`${opts.axisValueIds.length} axis values`);
+    }
   }
   if (opts.period !== 'all') {
     if (opts.period === 'custom' && opts.from && opts.to) {
@@ -608,6 +643,10 @@ export default function ArticlesList() {
     () => parseCsvParam(searchParams.get('category')),
     [searchParams],
   );
+  const axisValueIds = useMemo(
+    () => parseCsvParam(searchParams.get('axisValue')),
+    [searchParams],
+  );
   const importances = useMemo(
     () =>
       parseCsvParam(searchParams.get('importance')).filter(
@@ -634,10 +673,11 @@ export default function ArticlesList() {
 
   const { data, isLoading, error } = useGetArticlesQuery(
     customInvalid || customIncomplete
-      ? { categoryIds, importances }
+      ? { categoryIds, importances, axisValueIds }
       : {
           categoryIds,
           importances,
+          axisValueIds,
           period,
           from: apiFrom,
           to: apiTo,
@@ -646,6 +686,7 @@ export default function ArticlesList() {
   );
   const { data: feedsData } = useGetFeedsQuery();
   const { data: categoriesData } = useGetCategoriesQuery();
+  const { data: axesData } = useGetAxesQuery();
   const [openSimilarId, setOpenSimilarId] = useState<string | null>(null);
 
   // feedId → Feed lookup for the per-row source pill (title + iconUrl).
@@ -670,14 +711,27 @@ export default function ArticlesList() {
       buildFilterSubtitle({
         categoryIds,
         importances,
+        axisValueIds,
         period,
         from,
         to,
         q,
         feedsData,
         categoriesData,
+        axesData,
       }),
-    [categoryIds, importances, period, from, to, q, feedsData, categoriesData],
+    [
+      categoryIds,
+      importances,
+      axisValueIds,
+      period,
+      from,
+      to,
+      q,
+      feedsData,
+      categoriesData,
+      axesData,
+    ],
   );
 
   return (
@@ -704,6 +758,12 @@ export default function ArticlesList() {
             selected={categoryIds}
             onChange={(ids) =>
               updateParams({ category: ids.length > 0 ? ids.join(',') : undefined })
+            }
+          />
+          <AxisDropdown
+            selected={axisValueIds}
+            onChange={(ids) =>
+              updateParams({ axisValue: ids.length > 0 ? ids.join(',') : undefined })
             }
           />
           <DateDropdown
