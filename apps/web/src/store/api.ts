@@ -170,7 +170,7 @@ export const api = createApi({
     getGraph: build.query<
       GraphResponse,
       {
-        categoryId?: string;
+        categoryIds?: string[];
         period?: GraphPeriod;
         from?: string;
         to?: string;
@@ -180,7 +180,8 @@ export const api = createApi({
     >({
       query: (arg) => {
         const params = new URLSearchParams();
-        if (arg?.categoryId) params.set('category', arg.categoryId);
+        if (arg?.categoryIds && arg.categoryIds.length > 0)
+          params.set('category', arg.categoryIds.join(','));
         if (arg?.period) params.set('period', arg.period);
         if (arg?.from) params.set('from', arg.from);
         if (arg?.to) params.set('to', arg.to);
@@ -196,11 +197,17 @@ export const api = createApi({
     }),
     getGraphSummary: build.query<
       GraphSummaryResponse,
-      { categoryId?: string; period?: GraphPeriod; from?: string; to?: string } | void
+      {
+        categoryIds?: string[];
+        period?: GraphPeriod;
+        from?: string;
+        to?: string;
+      } | void
     >({
       query: (arg) => {
         const params = new URLSearchParams();
-        if (arg?.categoryId) params.set('category', arg.categoryId);
+        if (arg?.categoryIds && arg.categoryIds.length > 0)
+          params.set('category', arg.categoryIds.join(','));
         if (arg?.period) params.set('period', arg.period);
         if (arg?.from) params.set('from', arg.from);
         if (arg?.to) params.set('to', arg.to);

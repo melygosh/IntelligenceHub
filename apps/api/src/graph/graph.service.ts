@@ -16,7 +16,10 @@ export type BuildGraphOpts = {
   from?: Date; // required when period === 'custom'
   to?: Date; // optional upper bound when period === 'custom'
   top: number; // entity cap
-  categoryId?: string;
+  // Empty array (default) = no category filter. Multi-select: an article
+  // passes the filter when it has at least one of these categories
+  // (OR semantics). Matches the articles list's `?category=a,b` convention.
+  categoryIds: string[];
   // When set, canvas is anchored on this entity: shows [anchor + top-N
   // co-mentioned neighbours in scope] instead of the global top-N. The
   // anchor entity must belong to the user (silently empty if not).
@@ -64,7 +67,7 @@ export class GraphService {
           fromDate,
           toDate,
           opts.top,
-          opts.categoryId,
+          opts.categoryIds,
           opts.anchorEntityId,
         )
       : await this.selectTopEntities(
@@ -72,7 +75,7 @@ export class GraphService {
           fromDate,
           toDate,
           opts.top,
-          opts.categoryId,
+          opts.categoryIds,
         );
     if (topEntities.length === 0) return { nodes: [], edges: [] };
 
@@ -85,7 +88,7 @@ export class GraphService {
       fromDate,
       toDate,
       topEntityIds,
-      opts.categoryId,
+      opts.categoryIds,
     );
     const articleIds = articleRows.map((a) => a.id);
 
@@ -121,7 +124,7 @@ export class GraphService {
       fromDate,
       toDate,
       topEntityIds,
-      opts.categoryId,
+      opts.categoryIds,
     );
 
     const nodes: GraphNode[] = [
@@ -166,7 +169,7 @@ export class GraphService {
     fromDate: Date | null,
     toDate: Date | null,
     top: number,
-    categoryId?: string,
+    categoryIds: string[],
   ): Promise<TopEntityRow[]> {
     // The top-N + dominant-category query is one round-trip via two CTEs:
     //  - top_entities: entity_id + mention_count (ordered, LIMIT top)
@@ -186,12 +189,7 @@ export class GraphService {
     // a top-N entity's colour can reflect a category outside the filter,
     // surfacing the entity's overall dominant category rather than a trivially-
     // matching filter-scoped one. Deliberate.
-    const categoryFilter = categoryId
-      ? sql`AND EXISTS (
-            SELECT 1 FROM article_category ac2
-            WHERE ac2.article_id = a.id AND ac2.category_id = ${categoryId}
-          )`
-      : sql``;
+    const categoryFilter = buildCategoryExists('a.id', categoryIds);
     const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
     const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
 
@@ -282,15 +280,10 @@ export class GraphService {
     fromDate: Date | null,
     toDate: Date | null,
     top: number,
-    categoryId: string | undefined,
+    categoryIds: string[],
     anchorId: string,
   ): Promise<TopEntityRow[]> {
-    const categoryFilter = categoryId
-      ? sql`AND EXISTS (
-            SELECT 1 FROM article_category ac2
-            WHERE ac2.article_id = a.id AND ac2.category_id = ${categoryId}
-          )`
-      : sql``;
+    const categoryFilter = buildCategoryExists('a.id', categoryIds);
     const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
     const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
 
@@ -408,7 +401,7 @@ export class GraphService {
     fromDate: Date | null,
     toDate: Date | null,
     entityIds: string[],
-    categoryId?: string,
+    categoryIds: string[],
   ): Promise<
     Array<{
       id: string;
@@ -430,13 +423,15 @@ export class GraphService {
     ];
     if (fromDate) baseConditions.push(gte(articles.ts, fromDate));
     if (toDate) baseConditions.push(lte(articles.ts, toDate));
-    if (categoryId)
+    if (categoryIds.length > 0) {
       baseConditions.push(
         sql`EXISTS (
           SELECT 1 FROM article_category ac
-          WHERE ac.article_id = ${articles.id} AND ac.category_id = ${categoryId}
+          WHERE ac.article_id = ${articles.id}
+            AND ac.category_id = ${categoryAnyArray(categoryIds)}
         )`,
       );
+    }
 
     return this.db
       .select({
@@ -460,12 +455,14 @@ export class GraphService {
     fromDate: Date | null,
     toDate: Date | null,
     entityIds: string[],
-    categoryId?: string,
+    categoryIds: string[],
   ): Promise<GraphEdge[]> {
     if (entityIds.length === 0) return [];
-    const categoryJoin = categoryId
-      ? sql`JOIN article_category ac ON ac.article_id = a.id AND ac.category_id = ${categoryId}`
-      : sql``;
+    const categoryJoin =
+      categoryIds.length > 0
+        ? sql`JOIN article_category ac ON ac.article_id = a.id
+              AND ac.category_id = ${categoryAnyArray(categoryIds)}`
+        : sql``;
     const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
     const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
     // Built once + referenced twice below — pg rejects bare JS arrays on the
@@ -517,6 +514,37 @@ export class GraphService {
  * Period → "from" Date used as a SQL `ts >=` filter. `null` means "no lower
  * bound" (period === 'all' or 'custom' without `from`).
  */
+/**
+ * SQL fragment: `ANY(ARRAY[$1::uuid, $2::uuid, ...])`. Materialises the JS
+ * array as a typed Postgres array literal — Drizzle's `sql` template can
+ * parameterise each element, and `pg` rejects a bare non-array on the right
+ * of ANY/ALL.
+ */
+function categoryAnyArray(categoryIds: string[]) {
+  return sql`ANY(ARRAY[${sql.join(
+    categoryIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  )}])`;
+}
+
+/**
+ * SQL fragment: `AND EXISTS (SELECT 1 FROM article_category ac2 WHERE
+ * ac2.article_id = <articleColumn> AND ac2.category_id = ANY(ARRAY[...]))`
+ * for the given article column reference (e.g. 'a.id'). Returns empty
+ * fragment when no categories selected (no filter).
+ *
+ * Multi-select semantics: an article passes if it has AT LEAST ONE of the
+ * given categories (OR across categories), matching the articles list.
+ */
+function buildCategoryExists(articleColumnSql: string, categoryIds: string[]) {
+  if (categoryIds.length === 0) return sql``;
+  return sql`AND EXISTS (
+        SELECT 1 FROM article_category ac2
+        WHERE ac2.article_id = ${sql.raw(articleColumnSql)}
+          AND ac2.category_id = ${categoryAnyArray(categoryIds)}
+      )`;
+}
+
 function periodToFromDate(period: GraphPeriod, customFrom?: Date): Date | null {
   if (period === 'all') return null;
   if (period === 'custom') return customFrom ?? null;

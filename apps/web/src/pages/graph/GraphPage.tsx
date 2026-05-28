@@ -15,6 +15,7 @@ import {
   useGetGraphQuery,
   useGetGraphSummaryQuery,
 } from '../../store/api';
+import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
 import type {
   GraphEdge,
   GraphNode,
@@ -49,33 +50,6 @@ function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
 }
 
-function CategoryFilter({
-  selected,
-  onChange,
-}: {
-  selected: string | undefined;
-  onChange: (id: string | undefined) => void;
-}) {
-  const { data } = useGetCategoriesQuery();
-  return (
-    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
-      <label htmlFor="graph-cat-filter">category:</label>
-      <select
-        id="graph-cat-filter"
-        value={selected ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-        className="border border-border bg-paper px-1.5 py-0.5 text-[12.5px] text-ink focus:border-ink focus:outline-none"
-      >
-        <option value="">All categories</option>
-        {data?.categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function NodeKindToggle({
   selected,
@@ -85,7 +59,7 @@ function NodeKindToggle({
   onChange: (kind: NodeKindFilter) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
+    <div className="flex items-center gap-2 font-mono text-[13.5px] text-muted">
       <span>show:</span>
       <div className="flex border border-border">
         {NODE_KIND_FILTERS.map((kind) => {
@@ -96,7 +70,7 @@ function NodeKindToggle({
               type="button"
               onClick={() => onChange(kind)}
               className={
-                'px-2 py-0.5 text-[12.5px] ' +
+                'px-2 py-1 text-[13.5px] ' +
                 (active
                   ? 'bg-ink text-paper'
                   : 'bg-paper text-ink hover:bg-paper2')
@@ -210,7 +184,17 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
 
 export default function GraphPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const categoryId = searchParams.get('category') ?? undefined;
+  const categoryParam = searchParams.get('category') ?? '';
+  // CSV → string[]. Empty string + filter out blanks so trailing commas
+  // don't surface as empty UUID values.
+  const categoryIds = useMemo(
+    () =>
+      categoryParam
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    [categoryParam],
+  );
   const nodeKindParam = searchParams.get('nodeKind');
   const nodeKind: NodeKindFilter = isNodeKindFilter(nodeKindParam)
     ? nodeKindParam
@@ -222,14 +206,14 @@ export default function GraphPage() {
   const anchorEntityId = searchParams.get('anchor') ?? undefined;
 
   const { data, isLoading } = useGetGraphQuery({
-    categoryId,
+    categoryIds,
     period,
     from,
     to,
     anchorEntityId,
   });
   const { data: summary } = useGetGraphSummaryQuery({
-    categoryId,
+    categoryIds,
     period,
     from,
     to,
@@ -276,8 +260,8 @@ export default function GraphPage() {
     setSearchParams(next, { replace: true });
   }
 
-  function updateCategory(id: string | undefined): void {
-    updateParam('category', id);
+  function updateCategoryIds(ids: string[]): void {
+    updateParam('category', ids.length > 0 ? ids.join(',') : undefined);
     setSelected(null);
   }
   function updateAnchor(id: string | null): void {
@@ -325,7 +309,9 @@ export default function GraphPage() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <PeriodChips value={period} onChange={updatePeriod} />
         <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
-        <CategoryFilter selected={categoryId} onChange={updateCategory} />
+        <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
+      </div>
+      <div className="flex">
         <EntitySearchInput
           value={anchorEntityId ?? null}
           onChange={updateAnchor}

@@ -52,7 +52,9 @@ export type GraphResponse = z.infer<typeof GraphResponse>;
 // scope] instead of the top-`top` global entities; `top` still caps the
 // neighbour count.
 export const GetGraphQuery = z.object({
-  category: z.string().uuid().optional(),
+  // CSV of category UUIDs. Backend matches any (OR). Single value remains
+  // valid. Matches GetArticlesQuery.category for cross-page parity.
+  category: z.string().optional(),
   period: GraphPeriod.optional(), // default '7d' applied server-side
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),

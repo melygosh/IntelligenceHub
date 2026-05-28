@@ -34,7 +34,7 @@ export class GraphController {
       from: q.from,
       to: q.to,
       top: q.top ?? DEFAULT_TOP,
-      categoryId: q.category,
+      categoryIds: q.categoryIds,
       anchorEntityId: q.anchor,
     });
   }
@@ -49,7 +49,7 @@ export class GraphController {
       period: q.period,
       from: q.from,
       to: q.to,
-      categoryId: q.category,
+      categoryIds: q.categoryIds,
     });
   }
 }
@@ -59,7 +59,7 @@ type ParsedGraphQuery = {
   from?: Date;
   to?: Date;
   top?: number;
-  category?: string;
+  categoryIds: string[];
   anchor?: string;
 };
 
@@ -84,12 +84,18 @@ function parseGraphQuery(
   if (period === 'custom' && !q.from) {
     throw new BadRequestException('period=custom requires `from`');
   }
+  // CSV → string[]. Empty string + filter out blanks so trailing commas
+  // ('a,b,') don't produce empty UUID values.
+  const categoryIds = (q.category ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
   return {
     period,
     from: q.from ? new Date(q.from) : undefined,
     to: q.to ? new Date(q.to) : undefined,
     top: q.top,
-    category: q.category,
+    categoryIds,
     anchor: q.anchor,
   };
 }

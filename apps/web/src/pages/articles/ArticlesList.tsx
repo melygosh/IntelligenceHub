@@ -11,66 +11,9 @@ import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
 import { SearchInput } from '../../components/filters/SearchInput';
+import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
 
 const Sep = () => <span className="text-border2">·</span>;
-
-function CategoryDropdown({
-  selected,
-  onChange,
-}: {
-  selected: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  const { data } = useGetCategoriesQuery();
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const valueLabel =
-    selected.length === 0
-      ? null
-      : selected.length === 1
-        ? (data?.categories.find((c) => c.id === selected[0])?.name ?? '1 selected')
-        : `${selected.length} selected`;
-  const toggle = (id: string) => {
-    if (selectedSet.has(id)) onChange(selected.filter((s) => s !== id));
-    else onChange([...selected, id]);
-  };
-  return (
-    <FacetDropdown label="Category" valueLabel={valueLabel} isActive={selected.length > 0}>
-      {() => (
-        <>
-          {data?.categories.map((c) => {
-            const on = selectedSet.has(c.id);
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => toggle(c.id)}
-                className={
-                  'flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[12.5px] transition-colors hover:bg-paper2 ' +
-                  (on ? 'text-ink' : 'text-muted')
-                }
-              >
-                <CheckboxIcon on={on} />
-                <span>{c.name}</span>
-              </button>
-            );
-          })}
-          {selected.length > 0 ? (
-            <>
-              <div className="my-1 border-t border-border" />
-              <button
-                type="button"
-                onClick={() => onChange([])}
-                className="block w-full px-3 py-1.5 text-left font-mono text-[12.5px] text-mute2 hover:bg-paper2 hover:text-ink"
-              >
-                Clear selection
-              </button>
-            </>
-          ) : null}
-        </>
-      )}
-    </FacetDropdown>
-  );
-}
 
 const IMPORTANCE_OPTIONS: { value: 'high' | 'normal' | 'junk'; label: string }[] = [
   { value: 'high', label: 'High' },

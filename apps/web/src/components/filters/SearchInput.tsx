@@ -8,10 +8,12 @@ export function SearchInput({
   value,
   onChange,
   placeholder = 'search…',
+  widthClass = 'md:w-[300px]',
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  widthClass?: string;
 }) {
   const [local, setLocal] = useState(value);
   // Adjust state during render when the prop changes from outside (React's
@@ -31,7 +33,9 @@ export function SearchInput({
   useSlashToFocus(inputRef);
 
   return (
-    <div className="flex w-full items-center gap-2 border border-border bg-paper2 px-2.5 py-1.5 md:w-[300px]">
+    <div
+      className={`flex w-full items-center gap-2 border border-border bg-paper2 px-2.5 py-1.5 ${widthClass}`}
+    >
       <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 shrink-0 text-muted">
         <circle cx="5" cy="5" r="3.2" stroke="currentColor" strokeWidth="1.1" fill="none" />
         <path d="M7.5 7.5 L10 10" stroke="currentColor" strokeWidth="1.1" />

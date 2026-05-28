@@ -15,7 +15,8 @@ export type SummaryOpts = {
   period: GraphPeriod;
   from?: Date;
   to?: Date;
-  categoryId?: string;
+  // Multi-select OR semantics, matching BuildGraphOpts and the articles list.
+  categoryIds: string[];
 };
 
 const TOP_ENTITIES = 5;
@@ -41,7 +42,7 @@ export class GraphSummaryService {
       fromDate,
       toDate,
       TOP_ENTITIES,
-      opts.categoryId,
+      opts.categoryIds,
     );
     const topEntities: GraphSummaryEntity[] = topEntityRows.map((r) => ({
       id: r.id,
@@ -55,7 +56,7 @@ export class GraphSummaryService {
       userId,
       fromDate,
       toDate,
-      opts.categoryId,
+      opts.categoryIds,
     );
 
     return { topEntities, topArticles };
@@ -65,7 +66,7 @@ export class GraphSummaryService {
     userId: string,
     fromDate: Date | null,
     toDate: Date | null,
-    categoryId?: string,
+    categoryIds: string[],
   ): Promise<GraphSummaryArticle[]> {
     const baseConditions = [
       eq(articles.userId, userId),
@@ -73,13 +74,18 @@ export class GraphSummaryService {
     ];
     if (fromDate) baseConditions.push(gte(articles.ts, fromDate));
     if (toDate) baseConditions.push(lte(articles.ts, toDate));
-    if (categoryId)
+    if (categoryIds.length > 0) {
       baseConditions.push(
         sql`EXISTS (
           SELECT 1 FROM article_category ac
-          WHERE ac.article_id = ${articles.id} AND ac.category_id = ${categoryId}
+          WHERE ac.article_id = ${articles.id}
+            AND ac.category_id = ANY(ARRAY[${sql.join(
+              categoryIds.map((id) => sql`${id}::uuid`),
+              sql`, `,
+            )}])
         )`,
       );
+    }
 
     // Pull high + normal in one query (junk excluded), then sort in JS so high
     // always precedes normal. Cheaper than two queries; the row volume is

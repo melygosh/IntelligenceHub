@@ -3,17 +3,21 @@ import {
   useGetEntityListQuery,
   useGetEntityQuery,
 } from '../../store/api';
+import { SearchInput } from '../../components/filters/SearchInput';
 
 /**
- * Compact autocomplete for anchoring the graph on a specific entity.
+ * Anchor-the-graph-on-an-entity affordance for the filter bar.
  *
- * - `value` null  → renders a search input + dropdown of up to 8 matches.
+ * - `value` null  → renders the shared `SearchInput` (same magnifying-glass +
+ *   `/` focus shortcut + 250 ms debounce as the articles-list search) with a
+ *   dropdown of up to 8 matches below it.
  * - `value` set   → renders an "anchored on: {name} ×" chip; × clears.
  *
- * Owns no URL state — parent passes value + onChange and decides how to
- * persist (URL param, local state, etc.). Reuses the existing
- * useGetEntityListQuery (limit hardcoded to 500 server-side; we slice
- * client-side to 8) and useGetEntityQuery (anchor name lookup).
+ * Owns no URL state — parent passes `value` + `onChange` and decides how to
+ * persist. Reuses the existing `useGetEntityListQuery` (limit hardcoded
+ * server-side; we slice to 8 client-side — a typical `q` returns few enough
+ * that the over-fetch doesn't matter at MVP scale) and `useGetEntityQuery`
+ * for the anchored-chip name lookup.
  */
 export function EntitySearchInput({
   value,
@@ -22,22 +26,23 @@ export function EntitySearchInput({
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
-  // Anchor name lookup — only fires when value is set.
   const { data: anchorEntity } = useGetEntityQuery(value ?? '', {
     skip: !value,
   });
 
   if (value) {
     return (
-      <div className="flex items-center gap-1 border border-ink px-2 py-0.5 font-mono text-[12.5px]">
-        <span className="text-muted">anchored on:</span>
-        <span className="text-ink">{anchorEntity?.canonicalName ?? '…'}</span>
+      <div className="flex items-center gap-2 border border-ink bg-paper2 px-2.5 py-1.5 font-mono text-[13.5px] md:w-[400px]">
+        <span className="text-mute2">anchored on:</span>
+        <span className="flex-1 truncate text-ink">
+          {anchorEntity?.canonicalName ?? '…'}
+        </span>
         <button
           type="button"
           onClick={() => onChange(null)}
           aria-label="Clear anchor"
           title="Clear anchor"
-          className="ml-1 px-1 text-muted hover:text-ink"
+          className="px-1 text-muted hover:text-ink"
         >
           ×
         </button>
@@ -49,18 +54,13 @@ export function EntitySearchInput({
 }
 
 function SearchBox({ onSelect }: { onSelect: (id: string) => void }) {
-  const [input, setInput] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
+  // `q` is the debounced value emitted by SearchInput's `onChange` (250 ms).
+  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // 200ms debounce: avoid a query per keystroke.
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedQ(input.trim()), 200);
-    return () => clearTimeout(id);
-  }, [input]);
-
-  // Outside-click closes the dropdown.
+  // Outside-click closer. Re-open is handled inline by handleQChange when a
+  // new non-empty query arrives (don't sync via effect — cascading renders).
   useEffect(() => {
     if (!open) return;
     function onClick(e: MouseEvent) {
@@ -72,13 +72,15 @@ function SearchBox({ onSelect }: { onSelect: (id: string) => void }) {
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
-  const { data: results, isFetching } = useGetEntityListQuery(
-    { q: debouncedQ, sort: 'mentions' },
-    { skip: debouncedQ.length === 0 },
-  );
+  function handleQChange(next: string): void {
+    setQ(next);
+    if (next.length > 0) setOpen(true);
+  }
 
-  // Cap to 8 client-side. Server's hard limit (500) is wasteful but a query
-  // with `q=Anth` typically returns <20 matches anyway.
+  const { data: results, isFetching } = useGetEntityListQuery(
+    { q, sort: 'mentions' },
+    { skip: q.length === 0 },
+  );
   const matches = useMemo(
     () => (results?.entities ?? []).slice(0, 8),
     [results],
@@ -86,43 +88,26 @@ function SearchBox({ onSelect }: { onSelect: (id: string) => void }) {
 
   function pick(id: string): void {
     onSelect(id);
-    setInput('');
-    setDebouncedQ('');
+    setQ('');
     setOpen(false);
   }
 
   return (
     <div className="relative" ref={wrapRef}>
-      <div className="flex items-center gap-2 border border-border bg-paper px-2 py-0.5 font-mono text-[12.5px]">
-        <span className="text-muted">find:</span>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              setInput('');
-              setDebouncedQ('');
-              setOpen(false);
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder="entity name or alias…"
-          className="w-44 bg-transparent text-ink placeholder:text-muted focus:outline-none"
-        />
-      </div>
-      {open && debouncedQ.length > 0 ? (
-        <div className="absolute left-0 top-full z-10 mt-1 w-72 border border-border bg-paper shadow-[0_4px_16px_-4px_rgba(28,26,22,0.15)]">
+      <SearchInput
+        value={q}
+        onChange={handleQChange}
+        placeholder="anchor on entity name or alias…"
+        widthClass="md:w-[400px]"
+      />
+      {open && q.length > 0 ? (
+        <div className="absolute left-0 top-full z-10 mt-1 w-full border border-border bg-paper shadow-[0_4px_16px_-4px_rgba(28,26,22,0.15)] md:w-[400px]">
           {isFetching && matches.length === 0 ? (
-            <div className="px-3 py-2 font-mono text-[11.5px] text-muted">
+            <div className="px-3 py-2 font-mono text-[12px] text-muted">
               Searching…
             </div>
           ) : matches.length === 0 ? (
-            <div className="px-3 py-2 font-mono text-[11.5px] text-muted">
+            <div className="px-3 py-2 font-mono text-[12px] text-muted">
               No matches.
             </div>
           ) : (
@@ -132,7 +117,7 @@ function SearchBox({ onSelect }: { onSelect: (id: string) => void }) {
                   <button
                     type="button"
                     onClick={() => pick(e.id)}
-                    className="flex w-full items-baseline justify-between gap-3 px-3 py-1.5 text-left font-mono text-[12px] text-ink hover:bg-paper2"
+                    className="flex w-full items-baseline justify-between gap-3 px-3 py-1.5 text-left font-mono text-[12.5px] text-ink hover:bg-paper2"
                   >
                     <span className="flex items-baseline gap-2">
                       <span className="text-ink">{e.canonicalName}</span>

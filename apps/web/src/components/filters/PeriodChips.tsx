@@ -23,7 +23,7 @@ export function PeriodChips({
   onChange: (next: GraphPeriod) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 font-mono text-[12.5px] text-muted">
+    <div className="flex items-center gap-2 font-mono text-[13.5px] text-muted">
       <span>period:</span>
       <div className="flex border border-border">
         {PERIODS.map((p) => {
@@ -34,7 +34,7 @@ export function PeriodChips({
               type="button"
               onClick={() => onChange(p)}
               className={
-                'px-2 py-0.5 text-[12.5px] ' +
+                'px-2 py-1 text-[13.5px] ' +
                 (active
                   ? 'bg-ink text-paper'
                   : 'bg-paper text-ink hover:bg-paper2')
