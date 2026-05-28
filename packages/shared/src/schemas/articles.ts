@@ -64,6 +64,9 @@ export const GetArticlesQuery = z.object({
   category: z.string().optional(),
   // CSV of importance values. Backend matches any (OR).
   importance: z.string().optional(),
+  // CSV of axis_value UUIDs. AND across axes (the value's parent axis groups them),
+  // OR within an axis.
+  axisValue: z.string().optional(),
   period: ArticlesPeriod.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
