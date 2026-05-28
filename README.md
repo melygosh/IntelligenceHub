@@ -207,14 +207,19 @@ reaches Postgres at `postgres:5432` per `DATABASE_URL`).
   `WHERE user_id=$1`.
 - **Graph (`/graph`):** hybrid analytical view (Case 2 — *Аналітика зв'язків*).
   Filter bar: **period chips** (`24h / 7d / 30d / all / custom`, default 7d —
-  Should bonus closed), node-type toggle (default `entities`), category filter
-  — all URL-backed via `?period=`, `?nodeKind=`, `?category=`. **Two-cell
+  Should bonus closed), node-type toggle (default `entities`), category filter,
+  and an **entity search** that anchors the canvas on any of your entities
+  (typeahead → click → URL `?anchor=<id>`; closes the other Should "extended
+  graph filter: text search" bonus). Filters URL-backed via `?period=`,
+  `?nodeKind=`, `?category=`, `?anchor=`. **Two-cell
   summary band** above the canvas: top 5 entities (by mention count, with a
   dominant-category dot) and top 5 articles (importance: high preferred,
   normal as fill); each row is clickable and opens the side panel + focuses
-  the graph. **Canvas:** react-flow with top-20 entities by mentions; **size
-  encodes mention count**, **fill encodes dominant category** via a stable
-  6-colour palette (Could "visual category clustering" bonus). Article nodes
+  the graph. **Canvas:** react-flow with top-20 entities by mentions (or, when
+  anchored via the search box, the anchor + its top-20 co-mentioned neighbours
+  in scope); **size encodes mention count**, **fill encodes dominant category**
+  via a stable 6-colour palette (Could "visual category clustering" bonus).
+  Article nodes
   (when toggled on) carry `importance` (FR-7) as a coloured left border
   reusing the article-list palette. **Clicking a node** opens a persistent
   360 px right rail with that node's details (US-9) — entity: name + type +
@@ -242,9 +247,11 @@ Honest snapshot of the optional tiers. Musts are covered in "What works" above.
 - ✅ **Period digests** — `/digests`, day/week/month, category/entity scoped (also a Must).
 - ✅ **LLM-telemetry aggregate view** — `/telemetry`, per (operation, provider, model)
   with computed USD cost.
-- ◐ **Extended graph filters** — time-window + full-text search are implemented on the
-  **article list**, not the graph canvas; the graph itself has node-type + category
-  filters. Counted partial against the literal "graph filters" wording.
+- ✅ **Extended graph filters** — the graph canvas has a **time-window filter**
+  (period chips, default 7d) AND an **entity name/alias search** that anchors
+  the canvas on any entity (`?anchor=<id>`) → the anchor + its top-N
+  co-mentioned neighbours in scope. Both Should-tier extensions to the
+  mandatory node-type + category filters.
 - ◐ **Meaningful unit tests on critical parts** — entity dedup, pre-filter, and the SSRF
   URL-guard have unit tests; **article dedup (content-hash + URL) is not yet unit-tested**
   (known gap).

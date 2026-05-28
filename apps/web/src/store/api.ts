@@ -175,6 +175,7 @@ export const api = createApi({
         from?: string;
         to?: string;
         top?: number;
+        anchorEntityId?: string;
       } | void
     >({
       query: (arg) => {
@@ -184,6 +185,7 @@ export const api = createApi({
         if (arg?.from) params.set('from', arg.from);
         if (arg?.to) params.set('to', arg.to);
         if (arg?.top !== undefined) params.set('top', String(arg.top));
+        if (arg?.anchorEntityId) params.set('anchor', arg.anchorEntityId);
         const qs = params.toString();
         return `/graph${qs ? `?${qs}` : ''}`;
       },

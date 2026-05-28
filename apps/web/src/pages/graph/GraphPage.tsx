@@ -34,6 +34,7 @@ import { computeFocusSet } from './focus';
 import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
+import { EntitySearchInput } from './EntitySearchInput';
 import { colourFor } from './graph-palette';
 
 const nodeTypes = {
@@ -218,12 +219,14 @@ export default function GraphPage() {
   const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
+  const anchorEntityId = searchParams.get('anchor') ?? undefined;
 
   const { data, isLoading } = useGetGraphQuery({
     categoryId,
     period,
     from,
     to,
+    anchorEntityId,
   });
   const { data: summary } = useGetGraphSummaryQuery({
     categoryId,
@@ -277,6 +280,10 @@ export default function GraphPage() {
     updateParam('category', id);
     setSelected(null);
   }
+  function updateAnchor(id: string | null): void {
+    updateParam('anchor', id ?? undefined);
+    setSelected(null);
+  }
   function updateNodeKind(kind: NodeKindFilter): void {
     updateParam('nodeKind', kind === DEFAULT_NODE_KIND ? undefined : kind);
     setSelected(null);
@@ -319,6 +326,10 @@ export default function GraphPage() {
         <PeriodChips value={period} onChange={updatePeriod} />
         <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
         <CategoryFilter selected={categoryId} onChange={updateCategory} />
+        <EntitySearchInput
+          value={anchorEntityId ?? null}
+          onChange={updateAnchor}
+        />
       </div>
       <SummaryBand
         data={summary}
