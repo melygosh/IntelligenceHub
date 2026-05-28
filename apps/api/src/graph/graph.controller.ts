@@ -35,6 +35,7 @@ export class GraphController {
       to: q.to,
       top: q.top ?? DEFAULT_TOP,
       categoryId: q.category,
+      anchorEntityId: q.anchor,
     });
   }
 
@@ -59,6 +60,7 @@ type ParsedGraphQuery = {
   to?: Date;
   top?: number;
   category?: string;
+  anchor?: string;
 };
 
 /**
@@ -88,5 +90,6 @@ function parseGraphQuery(
     to: q.to ? new Date(q.to) : undefined,
     top: q.top,
     category: q.category,
+    anchor: q.anchor,
   };
 }

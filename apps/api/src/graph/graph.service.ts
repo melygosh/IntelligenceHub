@@ -17,6 +17,10 @@ export type BuildGraphOpts = {
   to?: Date; // optional upper bound when period === 'custom'
   top: number; // entity cap
   categoryId?: string;
+  // When set, canvas is anchored on this entity: shows [anchor + top-N
+  // co-mentioned neighbours in scope] instead of the global top-N. The
+  // anchor entity must belong to the user (silently empty if not).
+  anchorEntityId?: string;
 };
 
 export type TopEntityRow = {
@@ -50,14 +54,26 @@ export class GraphService {
     const fromDate = periodToFromDate(opts.period, opts.from);
     const toDate = opts.period === 'custom' ? (opts.to ?? null) : null;
 
-    // 1. Top-N entities in window (with mentionCount + dominantCategoryId).
-    const topEntities = await this.selectTopEntities(
-      userId,
-      fromDate,
-      toDate,
-      opts.top,
-      opts.categoryId,
-    );
+    // 1. Entity selection.
+    //    - Default mode: top-N entities by mention count in window.
+    //    - Anchor mode (opts.anchorEntityId): the anchor + its top-N
+    //      co-mentioned neighbours in window (anchor wins over global ranking).
+    const topEntities = opts.anchorEntityId
+      ? await this.selectAnchorNeighbors(
+          userId,
+          fromDate,
+          toDate,
+          opts.top,
+          opts.categoryId,
+          opts.anchorEntityId,
+        )
+      : await this.selectTopEntities(
+          userId,
+          fromDate,
+          toDate,
+          opts.top,
+          opts.categoryId,
+        );
     if (topEntities.length === 0) return { nodes: [], edges: [] };
 
     const topEntityIds = topEntities.map((e) => e.id);
@@ -230,6 +246,137 @@ export class GraphService {
       JOIN entities e ON e.id = te.entity_id
       WHERE e.user_id = ${userId}
       ORDER BY te.mention_count DESC, e.canonical_name ASC
+    `);
+    const rows = (
+      result as unknown as {
+        rows: Array<{
+          id: string;
+          canonical_name: string;
+          type: string;
+          mention_count: number;
+          dominant_category_id: string | null;
+        }>;
+      }
+    ).rows;
+    return rows.map((r) => ({
+      id: r.id,
+      canonicalName: r.canonical_name,
+      type: r.type,
+      mentionCount: r.mention_count,
+      dominantCategoryId: r.dominant_category_id,
+    }));
+  }
+
+  /**
+   * Anchored-graph selection: returns `[anchor entity + its top-N co-mentioned
+   * neighbours in scope]` with the same `TopEntityRow` shape `selectTopEntities`
+   * produces (mentionCount + dominantCategoryId in scope for each). Anchor is
+   * always first (even with 0 in-scope mentions); neighbours are ranked by
+   * co-mention weight (distinct articles shared with the anchor in scope).
+   *
+   * Silently returns `[]` if the anchor doesn't belong to the user — the same
+   * "graceful empty" behaviour as the top-N path for unknown filters.
+   */
+  async selectAnchorNeighbors(
+    userId: string,
+    fromDate: Date | null,
+    toDate: Date | null,
+    top: number,
+    categoryId: string | undefined,
+    anchorId: string,
+  ): Promise<TopEntityRow[]> {
+    const categoryFilter = categoryId
+      ? sql`AND EXISTS (
+            SELECT 1 FROM article_category ac2
+            WHERE ac2.article_id = a.id AND ac2.category_id = ${categoryId}
+          )`
+      : sql``;
+    const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
+    const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
+
+    // One round-trip via four CTEs:
+    //   - partners: top-N entities ranked by co-mention weight with the anchor
+    //   - display_set: anchor (first) UNION partners
+    //   - mentions: per-displayed-entity mention count in scope
+    //   - dom + cat_counts: per-displayed-entity dominant category (with the
+    //     same tiebreak rule as selectTopEntities — category.created_at ASC)
+    // Final SELECT joins entities for canonicalName + type and sorts anchor
+    // to the top, then partners by co-mention weight.
+    const result = await this.db.execute<{
+      id: string;
+      canonical_name: string;
+      type: string;
+      mention_count: number;
+      dominant_category_id: string | null;
+    }>(sql`
+      WITH partners AS (
+        SELECT ae2.entity_id AS partner_id,
+               COUNT(DISTINCT ae1.article_id)::int AS weight
+        FROM article_entity ae1
+        JOIN article_entity ae2
+          ON ae1.article_id = ae2.article_id
+        JOIN articles a ON a.id = ae1.article_id
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+          ${categoryFilter}
+        WHERE ae1.entity_id = ${anchorId}::uuid
+          AND ae2.entity_id <> ${anchorId}::uuid
+        GROUP BY ae2.entity_id
+        ORDER BY weight DESC
+        LIMIT ${top}
+      ),
+      display_set AS (
+        SELECT ${anchorId}::uuid AS entity_id, 0::int AS is_partner
+        UNION
+        SELECT partner_id, 1 FROM partners
+      ),
+      mentions AS (
+        SELECT ae.entity_id, COUNT(*)::int AS mention_count
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        WHERE ae.entity_id IN (SELECT entity_id FROM display_set)
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+          ${categoryFilter}
+        GROUP BY ae.entity_id
+      ),
+      cat_counts AS (
+        SELECT ae.entity_id, ac.category_id, c.created_at, COUNT(*) AS n
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        JOIN article_category ac ON ac.article_id = a.id
+        JOIN category c ON c.id = ac.category_id
+        WHERE ae.entity_id IN (SELECT entity_id FROM display_set)
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+        GROUP BY ae.entity_id, ac.category_id, c.created_at
+      ),
+      dom AS (
+        SELECT entity_id, category_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY entity_id ORDER BY n DESC, created_at ASC
+          ) AS rn
+        FROM cat_counts
+      )
+      SELECT
+        e.id,
+        e.canonical_name,
+        e.type,
+        COALESCE(m.mention_count, 0)::int AS mention_count,
+        (SELECT category_id FROM dom WHERE dom.entity_id = e.id AND rn = 1)
+          AS dominant_category_id
+      FROM display_set ds
+      JOIN entities e ON e.id = ds.entity_id
+      LEFT JOIN mentions m ON m.entity_id = ds.entity_id
+      WHERE e.user_id = ${userId}
+      ORDER BY ds.is_partner ASC, m.mention_count DESC NULLS LAST,
+               e.canonical_name ASC
     `);
     const rows = (
       result as unknown as {

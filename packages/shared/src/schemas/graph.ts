@@ -47,13 +47,17 @@ export const GraphResponse = z.object({
 export type GraphResponse = z.infer<typeof GraphResponse>;
 
 // Request shape for `GET /api/graph`. `from`/`to` are required only when
-// `period === 'custom'` (enforced server-side).
+// `period === 'custom'` (enforced server-side). When `anchor` is set, the
+// canvas shows [that entity + its top-`top` co-mentioned neighbours in
+// scope] instead of the top-`top` global entities; `top` still caps the
+// neighbour count.
 export const GetGraphQuery = z.object({
   category: z.string().uuid().optional(),
   period: GraphPeriod.optional(), // default '7d' applied server-side
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   top: z.coerce.number().int().positive().max(200).optional(), // default 20
+  anchor: z.string().uuid().optional(),
 });
 export type GetGraphQuery = z.infer<typeof GetGraphQuery>;
 
