@@ -215,12 +215,16 @@ export class FeedPullWorker extends WorkerHost {
 
     const verdict = runPreFilter({ title: item.title, body: item.body });
     if (verdict.filtered) {
+      // Persist body even for filtered rows so a later threshold tweak can
+      // re-analyse without re-fetching from source (which may 404 or paywall).
+      // The LLM never sees this body unless status is bumped back to 'pending'.
       await this.db.insert(articles).values({
         userId,
         feedId,
         url: item.normalisedUrl,
         title: item.title || 'Untitled',
         contentHash: item.contentHash,
+        body: item.body,
         status: 'filtered',
         filterReason: verdict.reason,
         ts: item.ts,
