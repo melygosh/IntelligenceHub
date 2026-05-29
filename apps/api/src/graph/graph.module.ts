@@ -5,5 +5,6 @@ import { GraphService } from './graph.service';
 @Module({
   controllers: [GraphController],
   providers: [GraphService],
+  exports: [GraphService],
 })
 export class GraphModule {}

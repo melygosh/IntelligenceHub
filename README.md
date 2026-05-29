@@ -202,6 +202,17 @@ server-sent events channel (`GET /api/events`, single per-user
 `EventsService` subject). Identical inputs share the LLM response cache, so
 re-requesting an unchanged digest costs zero tokens.
 
+### Dashboard
+
+`/dashboard` is a deterministic, zero-LLM snapshot of what the corpus
+looks like right now in the chosen window (`24h / 7d / 30d / all /
+custom`). Three cards: **top entities** (top-10 by mention count, with a
+dominant-category dot), **top categories** (top-5 with article share %
+bars), **top feeds** (top-5 with a status pip). Every row links to the
+existing list / detail page with the right filter pre-applied. The
+period control is URL-backed via `?period=`. Computation is parallel SQL
+aggregations gated by `WHERE user_id`.
+
 ### Cost control and telemetry
 
 Every LLM call is recorded in `llm_calls` (provider, model, operation,
@@ -389,9 +400,10 @@ under "What the app does" above and verified against §4.1 / §9.4.
   ordering.
 - ✅ **Visual graph clustering by category** — entity-node fill via a
   stable per-category palette; legend in the canvas footer.
-- ◐ **Top entities / top categories for a period** — surfaced via digests
-  (top-20 entities + top-10 categories per window), not as a standalone
-  dashboard.
+- ✅ **Top entities / top categories for a period** — standalone
+  `/dashboard` page with top-10 entities + top-5 categories + top-5
+  feeds, scoped to the selected window. Zero LLM calls — pure SQL
+  aggregations.
 - ✅ **Graph export** — PNG / SVG snapshot (via `html-to-image`) and JSON
   dump (`GraphResponse` plus the active filter context as `meta`) from a
   filter-row Export menu on `/graph`.

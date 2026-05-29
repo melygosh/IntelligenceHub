@@ -65,6 +65,14 @@ const ICONS = {
       <path d="M8 1 L3 8 H6 L5 13 L11 6 H8 Z" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
     </svg>
   ),
+  dashboard: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
+      <rect x="2" y="2" width="4.2" height="5" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect x="2" y="8" width="4.2" height="4" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect x="7.8" y="2" width="4.2" height="4" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect x="7.8" y="7" width="4.2" height="5" stroke="currentColor" strokeWidth="1" fill="none" />
+    </svg>
+  ),
 } as const;
 
 type IconKey = keyof typeof ICONS;
@@ -73,6 +81,7 @@ type Item = { to: string; label: string; icon: IconKey };
 const NAV: Item[] = [
   { to: '/articles', label: 'Articles', icon: 'articles' },
   { to: '/graph', label: 'Graph', icon: 'graph' },
+  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/digests', label: 'Digests', icon: 'digests' },
   { to: '/feeds', label: 'Feeds', icon: 'feed' },
 ];

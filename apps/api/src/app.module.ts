@@ -18,6 +18,7 @@ import { SeedModule } from './seed/seed.module';
 import { EventsModule } from './events/events.module';
 import { DigestModule } from './digests/digest.module';
 import { TelemetryModule } from './telemetry/telemetry.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { ConfigModule } from './common/config/config.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { ConfigModule } from './common/config/config.module';
     EventsModule,
     DigestModule,
     TelemetryModule,
+    DashboardModule,
     ConfigModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

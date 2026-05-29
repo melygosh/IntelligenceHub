@@ -13,3 +13,4 @@ export * from './schemas/digests.js';
 export * from './schemas/events.js';
 export * from './schemas/telemetry.js';
 export * from './schemas/config.js';
+export * from './schemas/dashboard.js';

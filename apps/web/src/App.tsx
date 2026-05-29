@@ -19,6 +19,7 @@ import AxesPage from './pages/axes/AxesPage';
 import DigestsPage from './pages/digests/DigestsPage';
 import DigestDetailPage from './pages/digests/DigestDetailPage';
 import TelemetryPage from './pages/telemetry/TelemetryPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 
 export default function App() {
   return (
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="/digests" element={<DigestsPage />} />
         <Route path="/digests/:id" element={<DigestDetailPage />} />
         <Route path="/telemetry" element={<TelemetryPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

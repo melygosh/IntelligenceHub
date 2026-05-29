@@ -38,6 +38,8 @@ import type {
   ResendConfirmationResponse,
   StartRegenerationResponse,
   TelemetrySummary,
+  DashboardResponse,
+  DashboardPeriod,
   UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
@@ -73,7 +75,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph', 'Dashboard'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -319,6 +321,15 @@ export const api = createApi({
     getPublicConfig: build.query<PublicConfig, void>({
       query: () => '/config',
     }),
+    getDashboard: build.query<DashboardResponse, { period: DashboardPeriod; from?: string; to?: string }>({
+      query: ({ period, from, to }) => {
+        const params = new URLSearchParams({ period });
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        return `/dashboard?${params.toString()}`;
+      },
+      providesTags: ['Dashboard'],
+    }),
   }),
 });
 
@@ -356,4 +367,5 @@ export const {
   useStartDigestMutation,
   useGetTelemetrySummaryQuery,
   useGetPublicConfigQuery,
+  useGetDashboardQuery,
 } = api;
