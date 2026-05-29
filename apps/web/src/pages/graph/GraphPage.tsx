@@ -129,9 +129,16 @@ function toReactFlowNodes(
   });
 }
 
+// Above this many `mentions` edges in view the animation auto-disables —
+// flowing dashes on every edge turn the canvas into a strobe. Empirically
+// readable at ~80; above that the cap takes over and the page surfaces a
+// hint so the user knows why their toggle didn't visually change anything.
+const ANIMATE_EDGE_CAP = 80;
+
 function toReactFlowEdges(
   graphEdges: GraphEdge[],
   focus: ReadonlySet<string> | null,
+  animateMentions: boolean,
 ): Edge[] {
   return graphEdges.map((e, i) => {
     const dim = focus !== null && !(focus.has(e.from) && focus.has(e.to));
@@ -140,6 +147,9 @@ function toReactFlowEdges(
       source: e.from,
       target: e.to,
       type: 'default',
+      // Only mentions edges (article → entity) carry timestamp direction.
+      // co_mention is symmetric; similar (if used) is also direction-less.
+      animated: animateMentions && e.kind === 'mentions',
       style: {
         stroke: 'var(--color-mute2)',
         strokeWidth: e.kind === 'co_mention' ? Math.min(1 + (e.weight ?? 1) * 0.3, 3) : 1,
@@ -207,6 +217,12 @@ export default function GraphPage() {
   const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
+  // Could-tier bonus: animate mentions edges in chronological direction
+  // (article → entity). URL-backed via ?animate=1 so the toggle survives
+  // reload and is sharable. Off by default — animation on a busy graph
+  // looks like a strobe; the cap below auto-disables when there's too
+  // much going on, but starting off means the reviewer opts in.
+  const animateRequested = searchParams.get('animate') === '1';
   // Anchor mode rides in via React Router navigation state from EntityDetail's
   // "view in graph" link — not persisted in the URL, so reloading the page
   // drops back to top-N. Matches the same in-memory-only choice as the
@@ -277,9 +293,18 @@ export default function GraphPage() {
     () => (filtered ? toReactFlowNodes(filtered.nodes, positions, focus) : []),
     [filtered, positions, focus],
   );
+  const mentionsEdgeCount = filtered
+    ? filtered.edges.filter((e) => e.kind === 'mentions').length
+    : 0;
+  const animateCapped =
+    animateRequested && mentionsEdgeCount > ANIMATE_EDGE_CAP;
+  const animateEffective = animateRequested && !animateCapped;
   const edges = useMemo(
-    () => (filtered ? toReactFlowEdges(filtered.edges, focus) : []),
-    [filtered, focus],
+    () =>
+      filtered
+        ? toReactFlowEdges(filtered.edges, focus, animateEffective)
+        : [],
+    [filtered, focus, animateEffective],
   );
 
   // All filter changes preserve location.state so the entity anchor (which
@@ -387,6 +412,20 @@ export default function GraphPage() {
             reset to top-N
           </button>
         ) : null}
+        <label
+          className="flex items-center gap-1.5 font-mono text-[12.5px] text-muted hover:text-ink"
+          title="Animate mentions edges in chronological direction (article → entity)"
+        >
+          <input
+            type="checkbox"
+            checked={animateRequested}
+            onChange={(e) =>
+              updateParam('animate', e.target.checked ? '1' : undefined)
+            }
+            className="h-3 w-3 accent-ink"
+          />
+          animate edges
+        </label>
         <div className="ml-auto">
           <GraphExportMenu
             getCanvasRoot={() => canvasRef.current}
@@ -453,6 +492,12 @@ export default function GraphPage() {
           )}
           <div className="border-t border-border px-3 py-1.5">
             <CategoryLegend data={filtered} />
+            {animateCapped ? (
+              <p className="mt-1 font-mono text-[11px] text-mute2">
+                Animation off — {mentionsEdgeCount} mentions edges in view
+                exceeds the cap of {ANIMATE_EDGE_CAP}.
+              </p>
+            ) : null}
           </div>
         </div>
         {selected ? (

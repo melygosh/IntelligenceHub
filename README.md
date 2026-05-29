@@ -407,8 +407,12 @@ under "What the app does" above and verified against §4.1 / §9.4.
 - ✅ **Graph export** — PNG / SVG snapshot (via `html-to-image`) and JSON
   dump (`GraphResponse` plus the active filter context as `meta`) from a
   filter-row Export menu on `/graph`.
-- ❌ Edge animation along timestamps · timeline scrubber · semantic article
-  similarity. Not built.
+- ✅ **Edge animation along timestamps** — opt-in `animate edges` checkbox in
+  the `/graph` filter row sets `?animate=1` and turns on flowing dashes on
+  `mentions` edges (article → entity, so the dash direction follows the
+  article's `ts`). Co-mention edges stay static (symmetric). Auto-disables
+  with a hint when more than 80 mentions edges are in view.
+- ❌ Timeline scrubber · semantic article similarity. Not built.
 
 ## Local development outside Docker
 
