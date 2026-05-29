@@ -67,4 +67,3 @@ export const GetGraphQuery = z.object({
   articleIds: z.string().optional(),
 });
 export type GetGraphQuery = z.infer<typeof GetGraphQuery>;
-
