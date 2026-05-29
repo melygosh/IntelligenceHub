@@ -110,18 +110,36 @@ export class ArticleProcessor {
 
     // Best-effort embed (ADR-7). The article is already 'ready' — a missing
     // embedding only hides the semantic-similarity section in the UI, the
-    // rest of the analysis is fully persisted. No-op when the feature is
-    // off; logs on its own when the API fails.
+    // rest of the analysis is fully persisted. CRITICAL: every error path
+    // here MUST stay swallowed — letting an exception escape would propagate
+    // out of analyzePending, BullMQ would retry the whole job, and the LLM
+    // call would re-run (breaking FR-10's ≤1-LLM-call-per-article guarantee).
+    // The lazy backfill path (on next /related-semantic open) picks up
+    // articles that landed here with embedding=NULL.
     if (this.embeddings.isEnabled()) {
-      const vec = await this.embeddings.embed(
-        article.contentHash,
-        article.body ?? '',
-      );
-      if (vec) {
-        await this.db
-          .update(articles)
-          .set({ embedding: vec })
-          .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
+      try {
+        const vec = await this.embeddings.embed(
+          article.contentHash,
+          article.body ?? '',
+        );
+        if (vec) {
+          await this.db
+            .update(articles)
+            .set({ embedding: vec })
+            .where(
+              and(eq(articles.id, articleId), eq(articles.userId, userId)),
+            );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.log.warn(
+          JSON.stringify({
+            event: 'embed.inline.failed',
+            articleId,
+            userId,
+            error: msg,
+          }),
+        );
       }
     }
 

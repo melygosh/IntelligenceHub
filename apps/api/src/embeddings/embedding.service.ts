@@ -8,6 +8,26 @@ import { loadEnv } from '../common/config/env';
 
 const EMBEDDING_DIM = 1536;
 
+/**
+ * Classify an OpenAI embeddings error as transient (worth retrying) or
+ * permanent (won't help).
+ *
+ *   transient → network failure, timeout, 5xx, 429 rate-limit
+ *   permanent → 4xx (except 429), malformed input, auth — retry pointless
+ *
+ * The OpenAI SDK exposes `.status` on API errors. Plain network errors
+ * (DNS, connection-refused, socket hangup) have no status — we treat
+ * those as transient by default.
+ */
+function isTransientEmbeddingError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return true;
+  const status = (err as { status?: number }).status;
+  if (typeof status !== 'number') return true; // network / unknown → retry
+  if (status === 429) return true; // rate limit
+  if (status >= 500 && status < 600) return true; // server error
+  return false; // 4xx (auth, bad request, ...) — permanent
+}
+
 @Injectable()
 export class EmbeddingService {
   private readonly log = new Logger(EmbeddingService.name);
@@ -85,14 +105,22 @@ export class EmbeddingService {
       return vec;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      const transient = isTransientEmbeddingError(err);
       this.log.warn(
         JSON.stringify({
           event: 'embed.api.failed',
           contentHash,
           latencyMs: Date.now() - start,
+          transient,
           error: msg,
         }),
       );
+      // Throw on transient errors so the backfill worker's BullMQ retry
+      // (attempts:3, 30s backoff) actually kicks in. Return null on
+      // permanent errors (bad key, malformed request) — retrying won't
+      // help. Inline callers (analyzePending) wrap this in their own
+      // best-effort try/catch and treat both the same: skip + move on.
+      if (transient) throw err;
       return null;
     }
   }
