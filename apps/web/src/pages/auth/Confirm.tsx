@@ -22,7 +22,7 @@ export default function Confirm() {
         await confirmEmail({ token }).unwrap();
         if (!cancelled) {
           setState('success');
-          setTimeout(() => navigate('/articles', { replace: true }), 800);
+          setTimeout(() => navigate('/dashboard', { replace: true }), 800);
         }
       } catch {
         if (!cancelled) setState('error');

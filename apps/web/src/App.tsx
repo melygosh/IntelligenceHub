@@ -46,7 +46,7 @@ function AppRoutes() {
           </AuthGuard>
         }
       >
-        <Route path="/" element={<Navigate to="/articles" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/articles" element={<ArticlesList />} />
         <Route path="/articles/:id" element={<ArticleDetail />} />
         <Route path="/entities" element={<EntitiesList />} />

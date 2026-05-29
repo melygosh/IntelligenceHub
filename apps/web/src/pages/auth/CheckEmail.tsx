@@ -115,7 +115,7 @@ export default function CheckEmail() {
 
         <div className="mt-4 font-mono text-[12.5px] text-mute2">
           Already confirmed?{' '}
-          <Link to="/articles" className="underline text-muted">
+          <Link to="/dashboard" className="underline text-muted">
             Continue →
           </Link>
         </div>

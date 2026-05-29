@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   GetDashboardQuery,
   type DashboardResponse,
@@ -18,10 +18,10 @@ export class DashboardController {
   constructor(private readonly dashboard: DashboardService) {}
 
   @Get()
-  @UsePipes(new ZodValidationPipe(GetDashboardQuery))
   async get(
     @CurrentUser() user: AuthUserContext,
-    @Query() query: typeof GetDashboardQuery._type,
+    @Query(new ZodValidationPipe(GetDashboardQuery))
+    query: typeof GetDashboardQuery._type,
   ): Promise<DashboardResponse> {
     return this.dashboard.buildMine(user.userId, {
       period: query.period ?? '7d',

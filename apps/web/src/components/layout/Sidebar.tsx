@@ -79,9 +79,9 @@ type IconKey = keyof typeof ICONS;
 type Item = { to: string; label: string; icon: IconKey };
 
 const NAV: Item[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/articles', label: 'Articles', icon: 'articles' },
   { to: '/graph', label: 'Graph', icon: 'graph' },
-  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/digests', label: 'Digests', icon: 'digests' },
   { to: '/feeds', label: 'Feeds', icon: 'feed' },
 ];
