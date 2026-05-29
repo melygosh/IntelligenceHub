@@ -10,6 +10,7 @@ import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Sep } from '../../components/ui/Sep';
 
 const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
   day: 'Last 24 hours',
@@ -17,7 +18,6 @@ const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
   month: 'Last month',
 };
 
-const Sep = () => <span className="text-border2">·</span>;
 
 function fmt(d: string): string {
   return new Date(d).toLocaleDateString(undefined, {

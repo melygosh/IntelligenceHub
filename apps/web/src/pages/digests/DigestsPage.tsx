@@ -19,6 +19,8 @@ import { useSlashToFocus } from '../../components/filters/useSlashToFocus';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Sep } from '../../components/ui/Sep';
+import { fmtRelative } from '../../lib/fmtRelative';
 
 function EntitySearchInput({
   value,
@@ -110,7 +112,6 @@ function EntityPicker({
   );
 }
 
-const Sep = () => <span className="text-border2">·</span>;
 
 const STATUS_STYLE: Record<
   DigestStatus,
@@ -179,19 +180,6 @@ function StatusLeading({ status }: { status: DigestStatus }) {
       </svg>
     </span>
   );
-}
-
-function fmtRelative(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 0) return 'now';
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  return `${day}d ago`;
 }
 
 function fmtWindow(fromIso: string, toIso: string): string {

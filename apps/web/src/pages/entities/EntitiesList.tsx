@@ -9,8 +9,9 @@ import { Pager } from '../../components/filters/Pager';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Sep } from '../../components/ui/Sep';
+import { fmtRelative } from '../../lib/fmtRelative';
 
-const Sep = () => <span className="text-border2">·</span>;
 
 const TYPE_OPTIONS: { value: EntityKind | ''; label: string }[] = [
   { value: '', label: 'All types' },
@@ -101,21 +102,6 @@ function FilterMenu<T extends string>({
   );
 }
 
-function fmtRelative(unixSeconds: number | null): string {
-  if (unixSeconds === null) return '—';
-  const ms = Date.now() - unixSeconds * 1000;
-  if (ms < 0) return 'now';
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 30) return `${day}d ago`;
-  const mon = Math.floor(day / 30);
-  return `${mon}mo ago`;
-}
 
 export default function EntitiesList() {
   const [searchParams, setSearchParams] = useSearchParams();

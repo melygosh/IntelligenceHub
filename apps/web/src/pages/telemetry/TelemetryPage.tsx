@@ -3,8 +3,8 @@ import { useGetTelemetrySummaryQuery } from '../../store/api';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Sep } from '../../components/ui/Sep';
 
-const Sep = () => <span className="text-border2">·</span>;
 
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;

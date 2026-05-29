@@ -8,6 +8,7 @@ import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Sep } from '../../components/ui/Sep';
 
 type EntityType = ArticleEntitySummary['type'];
 
@@ -25,8 +26,6 @@ const IMPORTANCE_COLOR: Record<string, string> = {
   normal: 'bg-muted',
   junk: 'bg-mute2',
 };
-
-const Sep = () => <span className="text-border2">·</span>;
 
 function looksLikeHtml(s: string): boolean {
   // A "<" immediately followed by a tag-name letter or "/" is a strong HTML signal.

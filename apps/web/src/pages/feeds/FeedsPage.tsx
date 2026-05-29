@@ -14,8 +14,10 @@ import { useToasts } from '../../components/toast/useToasts';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Sep } from '../../components/ui/Sep';
+import { ExternalIcon } from '../../components/ui/ExternalIcon';
+import { fmtRelative } from '../../lib/fmtRelative';
 
-const Sep = () => <span className="text-border2">·</span>;
 
 // Icon set from docs/IntelligenceHub_design/Sources.html — currentColor + thin strokes.
 const PlayIcon = () => (
@@ -58,11 +60,6 @@ const WarnTriIcon = () => (
     <path d="M6 1 L11 10 H1 Z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
     <path d="M6 5 V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     <circle cx="6" cy="9" r="0.5" fill="currentColor" />
-  </svg>
-);
-const ExternalIcon = () => (
-  <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
-    <path d="M4 2 H10 V8 M10 2 L3 9" stroke="currentColor" strokeWidth="1.1" fill="none" />
   </svg>
 );
 const SpinnerIcon = () => (
@@ -152,20 +149,6 @@ function StatusLeading({ status }: { status: Feed['status'] }) {
       <WarnTriIcon />
     </span>
   );
-}
-
-function fmtRelative(iso: string | null): string {
-  if (!iso) return '—';
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 0) return 'now';
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  return `${day}d ago`;
 }
 
 function StatsLine({ feeds }: { feeds: Feed[] }) {
