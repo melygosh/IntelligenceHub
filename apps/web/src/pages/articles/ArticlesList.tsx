@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useArticleAnalyzedEvents } from '../../events/useArticleAnalyzedEvents';
 import {
   useGetArticleQuery,
   useGetArticlesQuery,
@@ -642,6 +643,9 @@ function ArticleRow({
 
 export default function ArticlesList() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // SSE: invalidate the list as each pending article completes its analyze
+  // job, so newly-ready rows surface here without a manual refresh.
+  useArticleAnalyzedEvents();
   const categoryIds = useMemo(
     () => parseCsvParam(searchParams.get('category')),
     [searchParams],
