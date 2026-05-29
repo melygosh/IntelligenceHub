@@ -774,18 +774,14 @@ export default function ArticlesList() {
       </header>
 
       <div className="border border-border bg-paper">
-        {/* Toolbar row: filters + search, all left-grouped */}
+        {/* Toolbar row: content filters + search, all left-grouped. Status
+            sits on its own row below — it controls processing-state
+            visibility (ready / filtered / pending / failed), not topic. */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2.5">
           <ImportanceDropdown
             selected={importances}
             onChange={(imps) =>
               updateParams({ importance: imps.length > 0 ? imps.join(',') : undefined })
-            }
-          />
-          <StatusDropdown
-            selected={statuses}
-            onChange={(ss) =>
-              updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
             }
           />
           <CategoryDropdown
@@ -826,6 +822,19 @@ export default function ArticlesList() {
             value={q}
             onChange={(v) => updateParams({ q: v || undefined })}
             placeholder="search title, entity, summary…"
+          />
+        </div>
+
+        {/* Processing-state row: structurally distinct from the topic filters
+            above (it controls which DB statuses are visible, not what topic
+            they cover). */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2 text-[12.5px] text-mute2">
+          <span className="font-mono">show:</span>
+          <StatusDropdown
+            selected={statuses}
+            onChange={(ss) =>
+              updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
+            }
           />
         </div>
 
