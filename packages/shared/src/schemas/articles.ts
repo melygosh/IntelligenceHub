@@ -10,13 +10,7 @@ export const ArticleEntitySummary = z.object({
 });
 export type ArticleEntitySummary = z.infer<typeof ArticleEntitySummary>;
 
-export const ArticleStatus = z.enum([
-  'ready',
-  'pending',
-  'filtered',
-  'failed',
-  'duplicate',
-]);
+export const ArticleStatus = z.enum(['ready', 'pending', 'filtered', 'failed', 'duplicate']);
 export type ArticleStatus = z.infer<typeof ArticleStatus>;
 
 export const ArticleListItem = z.object({
