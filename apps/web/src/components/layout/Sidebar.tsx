@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Brand } from '../brand/Brand';
 
@@ -83,6 +84,8 @@ const SETTINGS: Item[] = [
   { to: '/telemetry', label: 'Telemetry', icon: 'bolt' },
 ];
 
+const STORAGE_KEY = 'ih.sidebar.compact';
+
 const itemClass = ({ isActive }: { isActive: boolean }) =>
   [
     'group flex items-center gap-2.5 px-3 py-2 text-[14.5px] transition-colors border-l-2',
@@ -95,10 +98,36 @@ const eyebrowClass =
   'px-3 pt-3 pb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-mute2';
 
 export default function Sidebar() {
+  const [compact, setCompact] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, compact ? '1' : '0');
+    } catch {
+      /* private mode etc */
+    }
+  }, [compact]);
+
   return (
-    <aside className="flex w-[280px] shrink-0 flex-col border-r border-border bg-paper2/40">
-      <div className="flex h-11 items-center border-b border-border px-3">
+    <aside className="flex w-[280px] shrink-0 flex-col border-r border-border bg-paper2/40 transition-[width] duration-150">
+      <div className="flex h-11 items-center justify-between border-b border-border px-3">
         <Brand />
+        <button
+          type="button"
+          onClick={() => setCompact(true)}
+          aria-label="Collapse sidebar"
+          className="-mr-1 p-1 text-mute2 hover:text-ink"
+        >
+          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
+            <path d="M9 2 L4 6 L9 10" stroke="currentColor" strokeWidth="1.2" fill="none" />
+          </svg>
+        </button>
       </div>
 
       <nav>
