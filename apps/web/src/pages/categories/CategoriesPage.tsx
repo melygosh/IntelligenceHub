@@ -36,23 +36,27 @@ export default function CategoriesPage() {
       title="Categories"
       description="User-curated tags. The LLM picks from your list during article analysis."
     >
-      <form onSubmit={onAdd} className="flex gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="New category name"
-          className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={isCreating || name.trim() === ''}
-          className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
-        >
-          Add
-        </button>
+      <form onSubmit={onAdd} className="space-y-2 border border-border bg-surface p-3">
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+          Add category
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="New category name"
+            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={isCreating || name.trim() === ''}
+            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+        {error ? <p className="font-mono text-[12.5px] text-critical">{error}</p> : null}
       </form>
-
-      {error ? <p className="font-mono text-[12.5px] text-critical">{error}</p> : null}
 
       {isLoading ? (
         <LoadingHint />
@@ -61,10 +65,13 @@ export default function CategoriesPage() {
           No categories yet. Add one above to start tagging articles.
         </p>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="space-y-3">
           {data?.categories.map((c) => (
-            <li key={c.id} className="flex items-center justify-between py-2.5">
-              <span className="text-[15px] text-ink">{c.name}</span>
+            <li
+              key={c.id}
+              className="flex items-center justify-between border border-border bg-surface p-3"
+            >
+              <span className="font-serif text-[18px] text-ink">{c.name}</span>
               <DeleteIconButton
                 label="Delete category"
                 onClick={() => {
@@ -75,8 +82,6 @@ export default function CategoriesPage() {
           ))}
         </ul>
       )}
-
-      <hr className="border-border" />
     </SettingsScaffold>
   );
 }
