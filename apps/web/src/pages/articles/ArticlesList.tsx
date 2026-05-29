@@ -828,8 +828,7 @@ export default function ArticlesList() {
         {/* Processing-state row: structurally distinct from the topic filters
             above (it controls which DB statuses are visible, not what topic
             they cover). */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2 text-[12.5px] text-mute2">
-          <span className="font-mono">show:</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2">
           <StatusDropdown
             selected={statuses}
             onChange={(ss) =>
