@@ -218,7 +218,7 @@ export class ArticlesController {
       await this.embedBackfillQueue.add(
         'embed-backfill',
         { articleId: id, userId: user.userId },
-        { jobId: `backfill:${id}`, ...EMBED_BACKFILL_JOB_OPTS },
+        { jobId: `backfill-${id}`, ...EMBED_BACKFILL_JOB_OPTS },
       );
     }
     return result;
@@ -248,7 +248,7 @@ export class ArticlesController {
       await this.embedBackfillQueue.add(
         'embed-backfill',
         { articleId: r.id, userId: user.userId },
-        { jobId: `backfill:${r.id}`, ...EMBED_BACKFILL_JOB_OPTS },
+        { jobId: `backfill-${r.id}`, ...EMBED_BACKFILL_JOB_OPTS },
       );
     }
     return { enqueued: ids.length };
