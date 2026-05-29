@@ -32,11 +32,16 @@ export class EntitiesService {
       type?: EntityKind;
       q?: string;
       sort?: EntitySort;
+      offset?: number;
       limit?: number;
     } = {},
-  ): Promise<EntityListItem[]> {
+  ): Promise<{ items: EntityListItem[]; total: number }> {
     const sort: EntitySort = opts.sort ?? 'recent';
+    // Limit is the page size when paginating; default 40 preserves the
+    // pre-pagination cap for unspecified callers. The hard ceiling of 500
+    // mirrors MAX_PAGE_SIZE in @intelligencehub/shared.
     const limit = Math.min(Math.max(opts.limit ?? 40, 1), 500);
+    const offset = Math.max(opts.offset ?? 0, 0);
 
     const conds = [
       sql`e.user_id = ${userId}`,
@@ -63,6 +68,22 @@ export class EntitiesService {
           ? sql`COUNT(*) DESC, MAX(a.ts) DESC`
           : sql`MAX(a.ts) DESC, COUNT(*) DESC`;
 
+    // Count of distinct entities under the same filter — feeds the pagination
+    // envelope. Cheaper than COUNT(DISTINCT e.id) on the joined set because
+    // the existing JOIN + WHERE doesn't carry duplicates of e.id past the
+    // GROUP BY, so DISTINCT on the join lets the planner skip hashing every
+    // mention row.
+    const countResult = await this.db.execute<{ total: number }>(sql`
+      SELECT COUNT(DISTINCT e.id)::int AS total
+      FROM article_entity ae
+      JOIN entities e ON e.id = ae.entity_id
+      JOIN articles a ON a.id = ae.article_id
+      WHERE ${sql.join(conds, sql` AND `)}
+    `);
+    const total =
+      (countResult as unknown as { rows: Array<{ total: number }> }).rows[0]
+        ?.total ?? 0;
+
     const result = await this.db.execute<{
       id: string;
       canonical_name: string;
@@ -84,6 +105,7 @@ export class EntitiesService {
       GROUP BY e.id, e.canonical_name, e.type
       ORDER BY ${orderBy}
       LIMIT ${limit}
+      OFFSET ${offset}
     `);
     const rows = (
       result as unknown as {
@@ -97,7 +119,7 @@ export class EntitiesService {
         }>;
       }
     ).rows;
-    return rows.map((r) => ({
+    const items: EntityListItem[] = rows.map((r) => ({
       id: r.id,
       canonicalName: r.canonical_name,
       type: r.type as EntityKind,
@@ -109,6 +131,7 @@ export class EntitiesService {
         ? new Date(r.last_seen_ts).toISOString()
         : null,
     }));
+    return { items, total };
   }
 
   async getById(id: string, userId: string): Promise<EntityDetail | null> {

@@ -38,6 +38,11 @@ export type ArticleListItem = z.infer<typeof ArticleListItem>;
 
 export const ArticleListResponse = z.object({
   articles: z.array(ArticleListItem),
+  // Pagination envelope. `total` is the unpaginated count under the active
+  // filters; the page indicator divides by `pageSize` to compute totalPages.
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
 });
 export type ArticleListResponse = z.infer<typeof ArticleListResponse>;
 
@@ -90,5 +95,11 @@ export const GetArticlesQuery = z.object({
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   q: z.string().trim().min(1).max(200).optional(),
+  // Pagination. 1-based page index. Server defaults to page=1 and the
+  // shared DEFAULT_PAGE_SIZE (50) when omitted, clamps pageSize to
+  // MAX_PAGE_SIZE (500). Callers that need everything in one shot (e.g.
+  // the graph customize panel) opt into pageSize=500.
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().optional(),
 });
 export type GetArticlesQuery = z.infer<typeof GetArticlesQuery>;

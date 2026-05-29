@@ -54,6 +54,10 @@ export type EntityListItem = z.infer<typeof EntityListItem>;
 
 export const EntityListResponse = z.object({
   entities: z.array(EntityListItem),
+  // Pagination envelope; mirrors ArticleListResponse.
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
 });
 export type EntityListResponse = z.infer<typeof EntityListResponse>;
 

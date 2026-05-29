@@ -55,8 +55,10 @@ export class ArticlesService {
       windowFrom?: Date;
       windowTo?: Date;
       q?: string;
+      offset?: number;
+      limit?: number;
     } = {},
-  ): Promise<ArticleListItem[]> {
+  ): Promise<{ items: ArticleListItem[]; total: number }> {
     // US-7 processing-state filter. Default is `['ready']` (today's behaviour);
     // users opt into 'filtered' / 'pending' / 'failed' via the new dropdown.
     // 'duplicate' rows back the N-similar counter and stay hidden by default.
@@ -115,7 +117,7 @@ export class ArticlesService {
       if (ownedRows.length === 0) {
         // Caller supplied only invalid / not-owned UUIDs → empty result set,
         // indistinguishable from any other empty filter.
-        return [];
+        return { items: [], total: 0 };
       }
 
       const grouped = groupAxisValuesByAxis(ownedRows);
@@ -149,13 +151,25 @@ export class ArticlesService {
       filterReason: articles.filterReason,
     };
 
-    const articleRows = await this.db
+    // Total under the active filters first — used for the pagination
+    // envelope (totalPages = ceil(total/pageSize)). Same WHERE as the page
+    // query, just COUNT(*); no ORDER BY / LIMIT / OFFSET.
+    const [{ total: totalNum }] = await this.db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(articles)
+      .where(and(...conditions));
+    const total = Number(totalNum);
+
+    const pageQuery = this.db
       .select(projection)
       .from(articles)
       .where(and(...conditions))
       .orderBy(orderBy);
+    if (opts.limit !== undefined) pageQuery.limit(opts.limit);
+    if (opts.offset !== undefined) pageQuery.offset(opts.offset);
+    const articleRows = await pageQuery;
 
-    if (articleRows.length === 0) return [];
+    if (articleRows.length === 0) return { items: [], total };
     const articleIds = articleRows.map((a) => a.id);
 
     const entityRows = await this.db
@@ -203,7 +217,7 @@ export class ArticlesService {
 
     const similarCounts = await this.findSiblingsForMany(userId, articleRows);
 
-    return articleRows.map((a) => ({
+    const items: ArticleListItem[] = articleRows.map((a) => ({
       id: a.id,
       title: a.title,
       url: a.url,
@@ -217,6 +231,7 @@ export class ArticlesService {
       categoryNames: categoriesByArticle.get(a.id) ?? [],
       similarCount: similarCounts.get(a.id) ?? 0,
     }));
+    return { items, total };
   }
 
   async getById(id: string, userId: string): Promise<ArticleDetail | null> {

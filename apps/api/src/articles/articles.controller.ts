@@ -13,7 +13,11 @@ import type {
   ArticleListResponse,
   ArticleStatus,
 } from '@intelligencehub/shared';
-import { GetArticlesQuery } from '@intelligencehub/shared';
+import {
+  DEFAULT_PAGE_SIZE,
+  GetArticlesQuery,
+  MAX_PAGE_SIZE,
+} from '@intelligencehub/shared';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
@@ -94,6 +98,8 @@ export class ArticlesController {
       from,
       to,
       q,
+      page,
+      pageSize,
     } = parsed.data;
 
     const categoryIds = csvToList(category);
@@ -131,8 +137,17 @@ export class ArticlesController {
       statuses.push(v as ArticleStatus);
     }
 
+    // Pagination. Clamp pageSize to [1, MAX_PAGE_SIZE]; default page=1 so
+    // callers don't have to send it. The shared DEFAULT_PAGE_SIZE keeps web
+    // + api consistent on what "one page" means without coordinating envs.
+    const effectivePage = Math.max(page ?? 1, 1);
+    const effectivePageSize = Math.min(
+      Math.max(pageSize ?? DEFAULT_PAGE_SIZE, 1),
+      MAX_PAGE_SIZE,
+    );
+
     const window = resolvePeriodWindow(period, from, to);
-    const items = await this.articles.listMine(user.userId, {
+    const { items, total } = await this.articles.listMine(user.userId, {
       categoryIds,
       feedIds,
       importances,
@@ -141,8 +156,15 @@ export class ArticlesController {
       windowFrom: window.from,
       windowTo: window.to,
       q,
+      offset: (effectivePage - 1) * effectivePageSize,
+      limit: effectivePageSize,
     });
-    return { articles: items };
+    return {
+      articles: items,
+      total,
+      page: effectivePage,
+      pageSize: effectivePageSize,
+    };
   }
 
   @Get(':id')
