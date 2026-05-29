@@ -15,8 +15,10 @@ export class BullBoardModule {
           { name: QUEUE_NAMES.FEED_PULL },
           { name: QUEUE_NAMES.ARTICLE_ANALYZE },
           { name: QUEUE_NAMES.REGENERATION },
+          { name: QUEUE_NAMES.RETAG_ARTICLE },
           { name: QUEUE_NAMES.DEMO_SEED },
           { name: QUEUE_NAMES.DIGEST_BUILD },
+          { name: QUEUE_NAMES.EMBED_BACKFILL },
         ),
         NestBullBoard.forRoot({
           route: '/admin/queues',
@@ -26,8 +28,10 @@ export class BullBoardModule {
           { name: QUEUE_NAMES.FEED_PULL, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.ARTICLE_ANALYZE, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.REGENERATION, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.RETAG_ARTICLE, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.DEMO_SEED, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.DIGEST_BUILD, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.EMBED_BACKFILL, adapter: BullMQAdapter },
         ),
       ],
     };
