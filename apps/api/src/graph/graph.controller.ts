@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { GetGraphQuery, type GraphPeriod } from '@intelligencehub/shared';
 import { DEFAULT_TOP, GraphService } from './graph.service';
-import { GraphSummaryService } from './graph-summary.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
 import {
@@ -19,10 +18,7 @@ import { loadEnv } from '../common/config/env';
 @Controller('graph')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
 export class GraphController {
-  constructor(
-    private readonly graph: GraphService,
-    private readonly summary: GraphSummaryService,
-  ) {}
+  constructor(private readonly graph: GraphService) {}
 
   @Get()
   async get(
@@ -39,20 +35,6 @@ export class GraphController {
       anchorEntityId: q.anchor,
       selectedEntityIds: q.selectedEntityIds,
       selectedArticleIds: q.selectedArticleIds,
-    });
-  }
-
-  @Get('summary')
-  async getSummary(
-    @CurrentUser() user: AuthUserContext,
-    @Query() raw: Record<string, string | undefined>,
-  ) {
-    const q = parseGraphQuery(raw);
-    return this.summary.buildMine(user.userId, {
-      period: q.period,
-      from: q.from,
-      to: q.to,
-      categoryIds: q.categoryIds,
     });
   }
 }
@@ -103,10 +85,9 @@ function csvToUuidList(
 }
 
 /**
- * Shared parse + validate for the two /graph routes. Mirrors ZodValidationPipe's
- * error-body shape ({message: 'Validation failed', errors}) so the frontend
- * handles both endpoints uniformly. Also enforces the cross-field rule that
- * Zod can't express on its own: period=custom requires `from`.
+ * Parse + validate /graph query params. Mirrors ZodValidationPipe's error-body
+ * shape ({message: 'Validation failed', errors}). Also enforces the cross-field
+ * rule that Zod can't express on its own: period=custom requires `from`.
  */
 function parseGraphQuery(
   raw: Record<string, string | undefined>,

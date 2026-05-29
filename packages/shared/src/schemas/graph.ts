@@ -68,27 +68,3 @@ export const GetGraphQuery = z.object({
 });
 export type GetGraphQuery = z.infer<typeof GetGraphQuery>;
 
-// Response for `GET /api/graph/summary` — drives the 2-cell band.
-export const GraphSummaryEntity = z.object({
-  id: z.string().uuid(),
-  canonicalName: z.string(),
-  mentionCount: z.number().int().nonnegative(),
-  dominantCategoryId: z.string().uuid().nullable(),
-});
-export type GraphSummaryEntity = z.infer<typeof GraphSummaryEntity>;
-
-export const GraphSummaryArticle = z.object({
-  id: z.string().uuid(),
-  title: z.string(),
-  // null after a feed was deleted (US-3 detach made articles.feedId nullable).
-  feedTitle: z.string().nullable(),
-  ts: z.string().datetime(),
-  importance: ArticleImportance.nullable(),
-});
-export type GraphSummaryArticle = z.infer<typeof GraphSummaryArticle>;
-
-export const GraphSummaryResponse = z.object({
-  topEntities: z.array(GraphSummaryEntity), // up to 5
-  topArticles: z.array(GraphSummaryArticle), // up to 5
-});
-export type GraphSummaryResponse = z.infer<typeof GraphSummaryResponse>;

@@ -28,7 +28,6 @@ import type {
   Feed,
   FeedListResponse,
   GraphResponse,
-  GraphSummaryResponse,
   GraphPeriod,
   LoginRequest,
   PublicConfig,
@@ -208,30 +207,6 @@ export const api = createApi({
       // graph in sync; future graph-only invalidations can target 'Graph'.
       providesTags: ['Graph', 'Articles'],
     }),
-    getGraphSummary: build.query<
-      GraphSummaryResponse,
-      {
-        categoryIds?: string[];
-        period?: GraphPeriod;
-        from?: string;
-        to?: string;
-      } | void
-    >({
-      query: (arg) => {
-        const params = new URLSearchParams();
-        if (arg?.categoryIds && arg.categoryIds.length > 0)
-          params.set('category', arg.categoryIds.join(','));
-        if (arg?.period) params.set('period', arg.period);
-        if (arg?.from) params.set('from', arg.from);
-        if (arg?.to) params.set('to', arg.to);
-        const qs = params.toString();
-        return `/graph/summary${qs ? `?${qs}` : ''}`;
-      },
-      // Provide both: existing mutations + SSE handlers that invalidate
-      // 'Articles' (feed pull, regen, axis/category updates) still keep the
-      // graph in sync; future graph-only invalidations can target 'Graph'.
-      providesTags: ['Graph', 'Articles'],
-    }),
     getArticle: build.query<ArticleDetail, string>({
       query: (id) => `/articles/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Article', id }],
@@ -339,7 +314,6 @@ export const {
   useGetRecentEntitiesQuery,
   useGetEntityListQuery,
   useGetGraphQuery,
-  useGetGraphSummaryQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
   useDeleteCategoryMutation,

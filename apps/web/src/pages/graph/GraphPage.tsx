@@ -13,7 +13,6 @@ import '@xyflow/react/dist/style.css';
 import {
   useGetCategoriesQuery,
   useGetGraphQuery,
-  useGetGraphSummaryQuery,
   useGetPublicConfigQuery,
 } from '../../store/api';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
@@ -235,12 +234,6 @@ export default function GraphPage() {
       ? Array.from(pickedArticleIds)
       : undefined,
   });
-  const { data: summary } = useGetGraphSummaryQuery({
-    categoryIds,
-    period,
-    from,
-    to,
-  });
 
   const [selected, setSelected] = useState<SelectedNode | null>(null);
 
@@ -394,10 +387,9 @@ export default function GraphPage() {
         />
       </div>
       <SummaryBand
-        data={summary}
+        data={filtered}
         selected={selected}
         onSelect={setSelected}
-        period={period}
       />
       <div className="flex min-h-[440px] flex-1 gap-0">
         <div className="min-w-0 flex-1 border border-border bg-surface">
