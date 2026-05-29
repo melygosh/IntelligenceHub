@@ -141,8 +141,16 @@ export const api = createApi({
       ArticleListResponse,
       {
         categoryIds?: string[];
+        feedIds?: string[];
         importances?: ('high' | 'normal' | 'junk')[];
         axisValueIds?: string[];
+        statuses?: (
+          | 'ready'
+          | 'pending'
+          | 'filtered'
+          | 'failed'
+          | 'duplicate'
+        )[];
         period?: 'all' | '24h' | '7d' | '30d' | 'custom';
         from?: string;
         to?: string;
@@ -155,11 +163,17 @@ export const api = createApi({
           if (arg.categoryIds && arg.categoryIds.length > 0) {
             params.set('category', arg.categoryIds.join(','));
           }
+          if (arg.feedIds && arg.feedIds.length > 0) {
+            params.set('feed', arg.feedIds.join(','));
+          }
           if (arg.importances && arg.importances.length > 0) {
             params.set('importance', arg.importances.join(','));
           }
           if (arg.axisValueIds && arg.axisValueIds.length > 0) {
             params.set('axisValue', arg.axisValueIds.join(','));
+          }
+          if (arg.statuses && arg.statuses.length > 0) {
+            params.set('status', arg.statuses.join(','));
           }
           if (arg.period && arg.period !== 'all') params.set('period', arg.period);
           if (arg.from) params.set('from', arg.from);
