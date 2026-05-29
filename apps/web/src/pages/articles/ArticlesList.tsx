@@ -10,6 +10,7 @@ import {
 import type {
   ArticleListItem,
   ArticleEntitySummary,
+  ArticleStatus,
   AxisList,
   Feed,
 } from '@intelligencehub/shared';
@@ -19,6 +20,9 @@ import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropd
 import { SearchInput } from '../../components/filters/SearchInput';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
 import { AxisDropdown } from '../../components/filters/AxisDropdown';
+import { FeedDropdown } from './FeedDropdown';
+import { StatusDropdown } from './StatusDropdown';
+import { StatusChip } from './StatusChip';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -589,6 +593,15 @@ function ArticleRow({
               <ImportanceBadge level={article.importance} />
             </>
           ) : null}
+          {article.status !== 'ready' ? (
+            <>
+              <Sep />
+              <StatusChip
+                status={article.status}
+                filterReason={article.filterReason}
+              />
+            </>
+          ) : null}
           {article.similarCount > 0 ? (
             <>
               <Sep />
@@ -640,6 +653,10 @@ export default function ArticlesList() {
     () => parseCsvParam(searchParams.get('category')),
     [searchParams],
   );
+  const feedIds = useMemo(
+    () => parseCsvParam(searchParams.get('feed')),
+    [searchParams],
+  );
   const axisValueIds = useMemo(
     () => parseCsvParam(searchParams.get('axisValue')),
     [searchParams],
@@ -649,6 +666,18 @@ export default function ArticlesList() {
       parseCsvParam(searchParams.get('importance')).filter(
         (v): v is 'high' | 'normal' | 'junk' =>
           v === 'high' || v === 'normal' || v === 'junk',
+      ),
+    [searchParams],
+  );
+  const statuses = useMemo(
+    () =>
+      parseCsvParam(searchParams.get('status')).filter(
+        (v): v is ArticleStatus =>
+          v === 'ready' ||
+          v === 'pending' ||
+          v === 'filtered' ||
+          v === 'failed' ||
+          v === 'duplicate',
       ),
     [searchParams],
   );
@@ -670,11 +699,13 @@ export default function ArticlesList() {
 
   const { data, isLoading, error } = useGetArticlesQuery(
     customInvalid || customIncomplete
-      ? { categoryIds, importances, axisValueIds }
+      ? { categoryIds, feedIds, importances, axisValueIds, statuses }
       : {
           categoryIds,
+          feedIds,
           importances,
           axisValueIds,
+          statuses,
           period,
           from: apiFrom,
           to: apiTo,
@@ -751,10 +782,22 @@ export default function ArticlesList() {
               updateParams({ importance: imps.length > 0 ? imps.join(',') : undefined })
             }
           />
+          <StatusDropdown
+            selected={statuses}
+            onChange={(ss) =>
+              updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
+            }
+          />
           <CategoryDropdown
             selected={categoryIds}
             onChange={(ids) =>
               updateParams({ category: ids.length > 0 ? ids.join(',') : undefined })
+            }
+          />
+          <FeedDropdown
+            selected={feedIds}
+            onChange={(ids) =>
+              updateParams({ feed: ids.length > 0 ? ids.join(',') : undefined })
             }
           />
           <AxisDropdown
