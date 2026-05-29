@@ -42,3 +42,8 @@ drizzle/
 # Local design/planning docs (per user preference, not part of the deliverable repo)
 docs/
 .superpowers/
+
+# Playwright walkthrough artifacts (manual smoke tests; not for the repo).
+.playwright-mcp/
+walk-*.png
+
