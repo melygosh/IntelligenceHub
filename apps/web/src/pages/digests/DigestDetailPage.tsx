@@ -142,7 +142,7 @@ export default function DigestDetailPage() {
               Summary
             </div>
             {data.summary.map((p, i) => (
-              <p key={i} className="pretty font-serif text-[18px] leading-relaxed text-ink">
+              <p key={i} className="pretty font-serif text-[18px] leading-relaxed text-ink text-justify">
                 {p}
               </p>
             ))}
