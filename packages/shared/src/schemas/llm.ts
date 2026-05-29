@@ -9,6 +9,10 @@ export const ExtractedEntity = z.object({
   canonicalName: z.string().min(1).max(120),
   type: EntityKind,
   aliases: z.array(z.string().min(1).max(120)).max(10).default([]),
+  // FR-6: optional 1-sentence description (max 200 chars). `.optional()` so
+  // LLM responses cached under the pre-FR-6 prompt (which never emitted this
+  // key) still parse; `.nullable()` so the LLM can say "no context for one".
+  description: z.string().min(1).max(200).nullable().optional(),
 });
 export type ExtractedEntity = z.infer<typeof ExtractedEntity>;
 

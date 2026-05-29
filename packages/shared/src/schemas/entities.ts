@@ -28,7 +28,8 @@ export const RecentEntity = z.object({
   canonicalName: z.string(),
   type: EntityKind,
   mentionCount: z.number().int().nonnegative(),
-  lastSeenTs: z.string().datetime(),
+  // FR-6: Unix seconds (integer). Null when the entity has no ready mentions.
+  lastSeen: z.number().int().nullable(),
 });
 export type RecentEntity = z.infer<typeof RecentEntity>;
 
@@ -47,8 +48,9 @@ export const EntityListItem = z.object({
   canonicalName: z.string(),
   type: EntityKind,
   mentionCount: z.number().int().nonnegative(),
-  firstSeenTs: z.string().datetime().nullable(),
-  lastSeenTs: z.string().datetime().nullable(),
+  // FR-6: Unix seconds (integer). Null until the entity has a ready mention.
+  firstSeen: z.number().int().nullable(),
+  lastSeen: z.number().int().nullable(),
 });
 export type EntityListItem = z.infer<typeof EntityListItem>;
 
@@ -66,9 +68,18 @@ export const EntityDetail = z.object({
   canonicalName: z.string(),
   type: EntityKind,
   aliases: z.array(z.string()),
+  // FR-6 / US-10: short LLM-generated description when available. Null when
+  // the LLM didn't produce one, or when the entity was first-seen before
+  // this field existed (no retroactive backfill).
+  description: z.string().nullable(),
   mentionCount: z.number().int().nonnegative(),
-  firstSeenTs: z.string().datetime().nullable(),
-  lastSeenTs: z.string().datetime().nullable(),
+  // FR-6: Unix seconds.
+  firstSeen: z.number().int().nullable(),
+  lastSeen: z.number().int().nullable(),
+  // FR-6: flat array of mentioning article IDs. The richer
+  // `mentioningArticles` is kept for UI rendering (title + ts + importance);
+  // both surface the same set in the same order.
+  mentionArticleIds: z.array(z.string().uuid()),
   mentioningArticles: z.array(MentioningArticleSummary),
   relatedEntities: z.array(RelatedEntitySummary),
   timelineBuckets: z.array(TimelineBucket),
