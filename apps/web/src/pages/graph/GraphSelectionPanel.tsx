@@ -30,13 +30,17 @@ export function GraphSelectionPanel({
   const [entityQ, setEntityQ] = useState('');
   const [articleQ, setArticleQ] = useState('');
 
+  // Panel opts into the "whole set in one shot" path (pageSize=500) instead
+  // of the default 50/page — the user needs every candidate to multi-pick.
   const { data: entityList } = useGetEntityListQuery({
     sort: 'mentions',
     q: entityQ || undefined,
+    pageSize: 500,
   });
   const { data: articleList } = useGetArticlesQuery({
     period: 'all',
     q: articleQ || undefined,
+    pageSize: 500,
   });
 
   // Snapshot the "pinned to top" set when the list refreshes (panel open or

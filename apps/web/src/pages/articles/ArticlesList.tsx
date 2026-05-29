@@ -23,6 +23,7 @@ import { AxisDropdown } from '../../components/filters/AxisDropdown';
 import { FeedDropdown } from './FeedDropdown';
 import { StatusDropdown } from './StatusDropdown';
 import { StatusChip } from './StatusChip';
+import { Pager } from '../../components/filters/Pager';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -697,9 +698,14 @@ export default function ArticlesList() {
   const apiFrom = period === 'custom' && from ? `${from}T00:00:00.000Z` : undefined;
   const apiTo = period === 'custom' && to ? `${to}T23:59:59.999Z` : undefined;
 
+  // 1-based; reset whenever a non-page param changes (see updateParams).
+  const parsedPage = Number(searchParams.get('page'));
+  const page =
+    Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+
   const { data, isLoading, error } = useGetArticlesQuery(
     customInvalid || customIncomplete
-      ? { categoryIds, feedIds, importances, axisValueIds, statuses }
+      ? { categoryIds, feedIds, importances, axisValueIds, statuses, page }
       : {
           categoryIds,
           feedIds,
@@ -710,6 +716,7 @@ export default function ArticlesList() {
           from: apiFrom,
           to: apiTo,
           q: q || undefined,
+          page,
         },
   );
   const { data: feedsData } = useGetFeedsQuery();
@@ -725,13 +732,25 @@ export default function ArticlesList() {
     return m;
   }, [feedsData]);
 
-  const updateParams = (changes: Record<string, string | undefined>) => {
+  // Every filter change resets pagination — staying on page 5 when the
+  // active filter just yielded 30 rows would leave the user staring at
+  // 'no results'. Only the Pager's onChange (which calls setPage) skips
+  // the reset.
+  const updateParams = (
+    changes: Record<string, string | undefined>,
+    opts: { keepPage?: boolean } = {},
+  ) => {
     const next = new URLSearchParams(searchParams);
     for (const [k, v] of Object.entries(changes)) {
       if (v === undefined || v === '') next.delete(k);
       else next.set(k, v);
     }
+    if (!opts.keepPage) next.delete('page');
     setSearchParams(next, { replace: true });
+  };
+
+  const setPage = (next: number) => {
+    updateParams({ page: next > 1 ? String(next) : undefined }, { keepPage: true });
   };
 
   const filterSubtitle = useMemo(
@@ -844,7 +863,7 @@ export default function ArticlesList() {
             {q ? 'sort relevance' : 'sort newest first'}
             {data ? (
               <>
-                {' '}· <span className="text-ink">{data.articles.length}</span> articles
+                {' '}· <span className="text-ink">{data.total}</span> articles
               </>
             ) : null}
           </span>
@@ -875,14 +894,22 @@ export default function ArticlesList() {
             </p>
           </div>
         ) : (
-          data.articles.map((a) => (
-            <ArticleRow
-              key={a.id}
-              article={a}
-              feed={a.feedId ? feedById.get(a.feedId) : undefined}
-              onOpenSimilar={setOpenSimilarId}
+          <>
+            {data.articles.map((a) => (
+              <ArticleRow
+                key={a.id}
+                article={a}
+                feed={a.feedId ? feedById.get(a.feedId) : undefined}
+                onOpenSimilar={setOpenSimilarId}
+              />
+            ))}
+            <Pager
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              onChange={setPage}
             />
-          ))
+          </>
         )}
       </div>
 

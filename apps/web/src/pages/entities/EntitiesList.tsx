@@ -5,6 +5,7 @@ import type { EntityKind, EntitySort } from '@intelligencehub/shared';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { FacetDropdown } from '../../components/filters/FacetDropdown';
 import { SearchInput } from '../../components/filters/SearchInput';
+import { Pager } from '../../components/filters/Pager';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -121,19 +122,33 @@ export default function EntitiesList() {
   const sort: EntitySort = isSort(rawSort) ? rawSort : 'mentions';
   const q = searchParams.get('q') ?? '';
 
+  const parsedPage = Number(searchParams.get('page'));
+  const page =
+    Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+
   const { data, isLoading, error } = useGetEntityListQuery({
     type: type || undefined,
     sort,
     q: q || undefined,
+    page,
   });
 
-  const updateParams = (changes: Record<string, string | undefined>) => {
+  // keepPage opt-in matches ArticlesList: every filter change clears ?page
+  // so the user doesn't end up on an empty page after narrowing results.
+  const updateParams = (
+    changes: Record<string, string | undefined>,
+    opts: { keepPage?: boolean } = {},
+  ) => {
     const next = new URLSearchParams(searchParams);
     for (const [k, v] of Object.entries(changes)) {
       if (v === undefined || v === '') next.delete(k);
       else next.set(k, v);
     }
+    if (!opts.keepPage) next.delete('page');
     setSearchParams(next, { replace: true });
+  };
+  const setPage = (next: number) => {
+    updateParams({ page: next > 1 ? String(next) : undefined }, { keepPage: true });
   };
 
   const sortLabel = (SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Most mentioned').toLowerCase();
@@ -189,8 +204,8 @@ export default function EntitiesList() {
             sorted by {sortLabel}
             {data ? (
               <>
-                {' '}· <span className="text-ink">{data.entities.length}</span> entit
-                {data.entities.length === 1 ? 'y' : 'ies'}
+                {' '}· <span className="text-ink">{data.total}</span> entit
+                {data.total === 1 ? 'y' : 'ies'}
               </>
             ) : null}
           </span>
@@ -219,39 +234,47 @@ export default function EntitiesList() {
             </p>
           </div>
         ) : (
-          data.entities.map((e) => (
-            <Link
-              key={e.id}
-              to={`/entities/${e.id}`}
-              className="group block border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/60"
-            >
-              {/* glyph, name and meta share one items-center line so the icon
-                  sits on the bold name's optical centre; the type label sits
-                  below, indented to line up under the name. */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-mute2">
-                    <EntityGlyph type={e.type} className="h-3 w-3" />
-                  </span>
-                  <span className="pretty truncate text-[15.5px] font-medium leading-snug text-ink group-hover:text-accent">
-                    {e.canonicalName}
-                  </span>
+          <>
+            {data.entities.map((e) => (
+              <Link
+                key={e.id}
+                to={`/entities/${e.id}`}
+                className="group block border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/60"
+              >
+                {/* glyph, name and meta share one items-center line so the icon
+                    sits on the bold name's optical centre; the type label sits
+                    below, indented to line up under the name. */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-mute2">
+                      <EntityGlyph type={e.type} className="h-3 w-3" />
+                    </span>
+                    <span className="pretty truncate text-[15.5px] font-medium leading-snug text-ink group-hover:text-accent">
+                      {e.canonicalName}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-baseline gap-2 whitespace-nowrap font-mono text-[12.5px] text-mute2">
+                    <span className="tnum text-muted">
+                      {e.mentionCount} mention{e.mentionCount === 1 ? '' : 's'}
+                    </span>
+                    <Sep />
+                    <span className="tnum" title={e.lastSeenTs ?? undefined}>
+                      {fmtRelative(e.lastSeenTs)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-baseline gap-2 whitespace-nowrap font-mono text-[12.5px] text-mute2">
-                  <span className="tnum text-muted">
-                    {e.mentionCount} mention{e.mentionCount === 1 ? '' : 's'}
-                  </span>
-                  <Sep />
-                  <span className="tnum" title={e.lastSeenTs ?? undefined}>
-                    {fmtRelative(e.lastSeenTs)}
-                  </span>
+                <div className="mt-0.5 pl-6 font-mono text-[12px] uppercase tracking-[0.06em] text-mute2">
+                  {e.type}
                 </div>
-              </div>
-              <div className="mt-0.5 pl-6 font-mono text-[12px] uppercase tracking-[0.06em] text-mute2">
-                {e.type}
-              </div>
-            </Link>
-          ))
+              </Link>
+            ))}
+            <Pager
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              onChange={setPage}
+            />
+          </>
         )}
       </div>
     </div>

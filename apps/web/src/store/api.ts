@@ -155,6 +155,8 @@ export const api = createApi({
         from?: string;
         to?: string;
         q?: string;
+        page?: number;
+        pageSize?: number;
       } | void
     >({
       query: (arg) => {
@@ -179,6 +181,9 @@ export const api = createApi({
           if (arg.from) params.set('from', arg.from);
           if (arg.to) params.set('to', arg.to);
           if (arg.q) params.set('q', arg.q);
+          if (arg.page !== undefined) params.set('page', String(arg.page));
+          if (arg.pageSize !== undefined)
+            params.set('pageSize', String(arg.pageSize));
         }
         const qs = params.toString();
         return `/articles${qs ? `?${qs}` : ''}`;
@@ -235,15 +240,22 @@ export const api = createApi({
     }),
     getEntityList: build.query<
       EntityListResponse,
-      { type?: EntityKind; q?: string; sort?: EntitySort } | void
+      {
+        type?: EntityKind;
+        q?: string;
+        sort?: EntitySort;
+        page?: number;
+        pageSize?: number;
+      } | void
     >({
       query: (args) => {
-        const { type, q, sort } = args ?? {};
+        const { type, q, sort, page, pageSize } = args ?? {};
         const params = new URLSearchParams();
         if (type) params.set('type', type);
         if (q) params.set('q', q);
         params.set('sort', sort ?? 'mentions');
-        params.set('limit', '500');
+        if (page !== undefined) params.set('page', String(page));
+        if (pageSize !== undefined) params.set('pageSize', String(pageSize));
         return `/entities?${params.toString()}`;
       },
       providesTags: ['Entity'],
