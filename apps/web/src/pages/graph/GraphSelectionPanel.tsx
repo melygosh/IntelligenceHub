@@ -39,14 +39,26 @@ export function GraphSelectionPanel({
     q: articleQ || undefined,
   });
 
-  const entityItems = useMemo(
-    () => entityList?.entities ?? [],
-    [entityList],
-  );
-  const articleItems = useMemo(
-    () => articleList?.articles ?? [],
-    [articleList],
-  );
+  // Sort checked items to the top so the user immediately sees what's
+  // already picked when the panel opens or the search refreshes. Re-sorts
+  // on every toggle as well (so an unchecked item drops to the unchecked
+  // section) — acceptable tradeoff for the always-checked-on-top invariant.
+  const entityItems = useMemo(() => {
+    const items = entityList?.entities ?? [];
+    return [...items].sort((a, b) => {
+      const ac = selectedEntityIds.has(a.id) ? 0 : 1;
+      const bc = selectedEntityIds.has(b.id) ? 0 : 1;
+      return ac - bc;
+    });
+  }, [entityList, selectedEntityIds]);
+  const articleItems = useMemo(() => {
+    const items = articleList?.articles ?? [];
+    return [...items].sort((a, b) => {
+      const ac = selectedArticleIds.has(a.id) ? 0 : 1;
+      const bc = selectedArticleIds.has(b.id) ? 0 : 1;
+      return ac - bc;
+    });
+  }, [articleList, selectedArticleIds]);
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
