@@ -274,11 +274,15 @@ export default function GraphPage() {
     [filtered, focus],
   );
 
+  // All filter changes preserve location.state so the entity anchor (which
+  // rides in via state from EntityDetail) survives every chip click. Without
+  // this, React Router defaults the new entry's state to undefined and the
+  // anchor gets dropped on the first filter interaction.
   function updateParam(key: string, value: string | undefined): void {
     const next = new URLSearchParams(searchParams);
     if (value === undefined || value === '') next.delete(key);
     else next.set(key, value);
-    setSearchParams(next, { replace: true });
+    setSearchParams(next, { replace: true, state: location.state });
   }
 
   function updateCategoryIds(ids: string[]): void {
@@ -300,7 +304,7 @@ export default function GraphPage() {
       params.delete('from');
       params.delete('to');
     }
-    setSearchParams(params, { replace: true });
+    setSearchParams(params, { replace: true, state: location.state });
     setSelected(null);
   }
 
