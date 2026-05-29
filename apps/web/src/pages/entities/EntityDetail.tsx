@@ -69,6 +69,12 @@ export default function EntityDetail() {
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
           <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
           <TypeBadge type={data.type} />
+          <Link
+            to={`/graph?anchor=${data.id}&period=all`}
+            className="font-mono text-[12.5px] text-accent hover:text-accent-deep"
+          >
+            view in graph →
+          </Link>
         </div>
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 font-mono text-[11.5px]">
           <StatPair label="mentions" value={String(data.mentionCount)} />
