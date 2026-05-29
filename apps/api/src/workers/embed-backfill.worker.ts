@@ -29,9 +29,27 @@ export class EmbedBackfillWorker extends WorkerHost {
     super();
   }
 
-  async process(job: Job<EmbedBackfillJobData>): Promise<void> {
+  async process(job: Job<EmbedBackfillJobData>): Promise<{
+    wrote: boolean;
+    totalMs: number;
+  }> {
     const { articleId, userId } = job.data;
-    const wrote = await this.processor.backfillEmbedding(articleId, userId);
+    const start = Date.now();
+    // Bull Board surfaces job.log() lines per-job under the Logs tab,
+    // which is much more useful for debugging a single article than
+    // grepping the api stdout. Mirror the most operationally-useful
+    // signals here (article identity, cache hit/miss, api latency,
+    // outcome) — the processor + embed-service forward into this same
+    // logger via the onLog callback.
+    await job.log(
+      `start: articleId=${articleId} userId=${userId.slice(0, 8)}… ` +
+        `attempt=${job.attemptsMade + 1}/${job.opts.attempts ?? 1}`,
+    );
+
+    const wrote = await this.processor.backfillEmbedding(articleId, userId, {
+      onLog: (m) => job.log(m),
+    });
+
     if (wrote) {
       // Article transitioned NULL → embedded. Fire SSE so the detail page
       // (if open) flips its "computing embedding…" placeholder to the real
@@ -40,7 +58,11 @@ export class EmbedBackfillWorker extends WorkerHost {
         type: 'article.embedded',
         payload: { articleId },
       });
+      await job.log('emit: article.embedded SSE event');
     }
+
+    const totalMs = Date.now() - start;
+    await job.log(`done: wrote=${wrote} totalMs=${totalMs}`);
     this.log.log(
       JSON.stringify({
         event: 'embed.backfill.done',
@@ -48,7 +70,11 @@ export class EmbedBackfillWorker extends WorkerHost {
         userId,
         jobId: job.id,
         wrote,
+        totalMs,
+        attempts: job.attemptsMade + 1,
       }),
     );
+    // The return value also shows in Bull Board's "Return Value" tab.
+    return { wrote, totalMs };
   }
 }

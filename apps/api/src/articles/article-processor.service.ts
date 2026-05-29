@@ -121,6 +121,10 @@ export class ArticleProcessor {
         const vec = await this.embeddings.embed(
           article.contentHash,
           article.body ?? '',
+          // Inline path has no per-job Bull Board surface — forward
+          // through the analyze worker's logger so the api stdout still
+          // captures every step.
+          { onLog: (m) => this.log.log(`embed.inline: ${m}`) },
         );
         if (vec) {
           await this.db
@@ -161,11 +165,20 @@ export class ArticleProcessor {
    * Note: this re-throws transient embedding errors so the BullMQ retry
    * policy on the embed.backfill worker actually retries.
    */
-  async backfillEmbedding(articleId: string, userId: string): Promise<boolean> {
-    if (!this.embeddings.isEnabled()) return false;
+  async backfillEmbedding(
+    articleId: string,
+    userId: string,
+    opts: { onLog?: (msg: string) => unknown } = {},
+  ): Promise<boolean> {
+    const log = opts.onLog ?? (() => undefined);
+    if (!this.embeddings.isEnabled()) {
+      await log('feature disabled — skipping');
+      return false;
+    }
     const [article] = await this.db
       .select({
         id: articles.id,
+        title: articles.title,
         body: articles.body,
         contentHash: articles.contentHash,
         hasEmbedding: sql<boolean>`embedding IS NOT NULL`,
@@ -173,16 +186,39 @@ export class ArticleProcessor {
       .from(articles)
       .where(and(eq(articles.id, articleId), eq(articles.userId, userId)))
       .limit(1);
-    if (!article || article.hasEmbedding || !article.contentHash) return false;
+    if (!article) {
+      await log(`article ${articleId} not found for this user — skipping`);
+      return false;
+    }
+    if (article.hasEmbedding) {
+      await log(
+        `article already has embedding (race with another worker?) — skipping`,
+      );
+      return false;
+    }
+    if (!article.contentHash) {
+      await log('article has no content_hash — skipping');
+      return false;
+    }
+    await log(
+      `target: "${article.title.slice(0, 60)}${
+        article.title.length > 60 ? '…' : ''
+      }"`,
+    );
     const vec = await this.embeddings.embed(
       article.contentHash,
       article.body ?? '',
+      { onLog: opts.onLog },
     );
-    if (!vec) return false;
+    if (!vec) {
+      await log('no vector returned — skipping persist');
+      return false;
+    }
     await this.db
       .update(articles)
       .set({ embedding: vec })
       .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
+    await log('articles.embedding column updated');
     return true;
   }
 

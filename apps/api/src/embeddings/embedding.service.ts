@@ -54,10 +54,26 @@ export class EmbeddingService {
    * Returns null when the feature is disabled OR the call fails — never
    * throws into the worker. A null return means "skip the persist step";
    * the lazy backfill path will retry on next view.
+   *
+   * `onLog`, when provided, receives narrative progress lines — e.g. from
+   * a BullMQ worker passing `job.log` so each line is visible per-job in
+   * Bull Board. Falls through to a no-op when absent.
    */
-  async embed(contentHash: string, body: string): Promise<number[] | null> {
-    if (!this.isEnabled()) return null;
+  async embed(
+    contentHash: string,
+    body: string,
+    opts: { onLog?: (msg: string) => unknown } = {},
+  ): Promise<number[] | null> {
+    const log = opts.onLog ?? (() => undefined);
+    if (!this.isEnabled()) {
+      await log('skip: SEMANTIC_SIMILARITY_ENABLED=false or missing API key');
+      return null;
+    }
 
+    const hashTag = contentHash.slice(0, 10);
+    await log(`embed start: hash=${hashTag}… body_len=${body.length} chars`);
+
+    const cacheStart = Date.now();
     const [cached] = await this.db
       .select({ embedding: embeddingCache.embedding })
       .from(embeddingCache)
@@ -65,20 +81,32 @@ export class EmbeddingService {
       .limit(1);
     if (cached) {
       this.log.log(JSON.stringify({ event: 'embed.cache.hit', contentHash }));
+      await log(
+        `cache hit (lookup ${Date.now() - cacheStart}ms) — skipping API`,
+      );
       return cached.embedding;
     }
+    await log(`cache miss (lookup ${Date.now() - cacheStart}ms)`);
 
     const client = this.getClient();
-    if (!client) return null;
+    if (!client) {
+      await log('skip: no OpenAI client (key missing)');
+      return null;
+    }
 
     const env = loadEnv();
-    const start = Date.now();
+    const apiStart = Date.now();
+    await log(
+      `calling ${env.SEMANTIC_SIMILARITY_PROVIDER}:${env.SEMANTIC_SIMILARITY_MODEL}…`,
+    );
     try {
       const res = await client.embeddings.create({
         model: env.SEMANTIC_SIMILARITY_MODEL,
         input: body,
       });
       const vec = res.data[0]?.embedding;
+      const tokens = res.usage?.total_tokens;
+      const apiMs = Date.now() - apiStart;
       if (!vec || vec.length !== EMBEDDING_DIM) {
         this.log.warn(
           JSON.stringify({
@@ -87,10 +115,17 @@ export class EmbeddingService {
             got: vec?.length,
           }),
         );
+        await log(
+          `INVALID response: got ${vec?.length ?? 'no'} dims (need ${EMBEDDING_DIM})`,
+        );
         return null;
       }
+      await log(
+        `api ok: ${vec.length} dims, ${tokens ?? '?'} tokens, ${apiMs}ms`,
+      );
       // Cache. ON CONFLICT DO NOTHING — concurrent embeds of the same body
       // would otherwise raise; one of them wins, both return the same data.
+      const cacheWriteStart = Date.now();
       await this.db
         .insert(embeddingCache)
         .values({ contentHash, embedding: vec })
@@ -99,21 +134,30 @@ export class EmbeddingService {
         JSON.stringify({
           event: 'embed.api.ok',
           contentHash,
-          latencyMs: Date.now() - start,
+          latencyMs: apiMs,
+          tokens,
         }),
       );
+      await log(`cache write ${Date.now() - cacheWriteStart}ms`);
       return vec;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      const status = (err as { status?: number }).status;
       const transient = isTransientEmbeddingError(err);
       this.log.warn(
         JSON.stringify({
           event: 'embed.api.failed',
           contentHash,
-          latencyMs: Date.now() - start,
+          latencyMs: Date.now() - apiStart,
           transient,
+          status,
           error: msg,
         }),
+      );
+      await log(
+        `api FAILED: status=${status ?? 'network'} transient=${transient} after ${
+          Date.now() - apiStart
+        }ms — ${msg}`,
       );
       // Throw on transient errors so the backfill worker's BullMQ retry
       // (attempts:3, 30s backoff) actually kicks in. Return null on
