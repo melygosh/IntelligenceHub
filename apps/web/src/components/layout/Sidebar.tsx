@@ -118,30 +118,6 @@ function CompactNavItem({ item }: { item: Item }) {
   );
 }
 
-function CompactExternalLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="group relative mx-auto flex h-9 w-10 items-center justify-center text-mute2 hover:bg-paper hover:text-ink"
-    >
-      {children}
-      <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap bg-ink px-1.5 py-0.5 font-mono text-[10.5px] text-paper opacity-0 transition-opacity group-hover:opacity-100">
-        {label}
-      </span>
-    </a>
-  );
-}
-
 export default function Sidebar() {
   const [compact, setCompact] = useState<boolean>(() => {
     try {
@@ -179,13 +155,6 @@ export default function Sidebar() {
         </div>
 
         <div className="mt-auto flex flex-col gap-px border-t border-border py-2">
-          <CompactExternalLink href="/admin/queues" label="Bull Board">
-            <svg viewBox="0 0 12 12" className="h-3.5 w-3.5">
-              <rect x="3" y="5.5" width="6" height="5" stroke="currentColor" strokeWidth="1" fill="none" />
-              <path d="M4.5 5.5 V4 a1.5 1.5 0 0 1 3 0 V5.5" stroke="currentColor" strokeWidth="1" fill="none" />
-            </svg>
-          </CompactExternalLink>
-
           <button
             type="button"
             onClick={() => setCompact(false)}
@@ -241,24 +210,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="mt-auto border-t border-border py-2">
-        <a
-          href="/admin/queues"
-          target="_blank"
-          rel="noreferrer"
-          className="group flex items-center gap-2 px-3 py-1.5 text-[14px] text-mute2 hover:bg-paper hover:text-ink"
-        >
-          <span className="flex-1">Bull Board</span>
-          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
-            <path
-              d="M4 2 H10 V8 M10 2 L3 9"
-              stroke="currentColor"
-              strokeWidth="1.1"
-              fill="none"
-            />
-          </svg>
-        </a>
-      </div>
     </aside>
   );
 }

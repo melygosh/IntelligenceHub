@@ -54,8 +54,12 @@ first boot. Once all four services are healthy:
    axis configuration under `/settings`, then click **Regenerate articles**
    to re-tag against the new config; progress streams via SSE without
    blocking the UI.
-6. **http://localhost:3010/admin/queues** opens Bull Board behind HTTP basic
-   auth (the `BULL_BOARD_USER` / `BULL_BOARD_PASS` you set in `.env`).
+6. **Bull Board** lives at **http://localhost:3010/admin/queues** behind HTTP
+   basic auth (the `BULL_BOARD_USER` / `BULL_BOARD_PASS` you set in `.env`).
+   It is not linked from the UI — the credentials are the gate, so opening
+   `/admin/queues` directly is the documented entry point. Use it to inspect
+   queue state (`active` / `delayed` / `failed`) for any of the five
+   pipelines: feed-pull, article-analyze, regeneration, digest, demo-seed.
 
 ### Ports
 
