@@ -10,6 +10,7 @@ import type { FeedPullJobData } from '../feeds/feeds.service';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 import { runPreFilter } from '../articles/pre-filter';
+import { decideDedupAction } from '../articles/dedup-decision';
 // value import required for Nest DI metadata
 import { ArticleProcessor } from '../articles/article-processor.service';
 // value import required for Nest DI metadata
@@ -182,36 +183,31 @@ export class FeedPullWorker extends WorkerHost {
         ),
       )
       .limit(1);
-    if (existing) {
-      // Only 'ready' originals from a *different* feed get a duplicate row
-      // (the cross-source similar-articles anchor). Same-feed re-pulls are
-      // just the next poll seeing the same item — inserting a duplicate row
-      // would inflate similarCount on every poll. Pending/failed siblings
-      // also skip; the article-analyze queue owns retry.
-      if (existing.status === 'ready' && existing.feedId !== feedId) {
-        await this.db.insert(articles).values({
-          userId,
+    const decision = decideDedupAction(existing, feedId);
+    if (decision.kind === 'insert-duplicate-row') {
+      await this.db.insert(articles).values({
+        userId,
+        feedId,
+        url: item.normalisedUrl,
+        title: item.title || 'Untitled',
+        contentHash: item.contentHash,
+        body: item.body,
+        status: 'duplicate',
+        duplicateOf: decision.originalId,
+        ts: item.ts,
+      });
+      this.log.log(
+        JSON.stringify({
+          event: 'feed.pull.duplicate',
           feedId,
+          userId,
+          originalId: decision.originalId,
           url: item.normalisedUrl,
-          title: item.title || 'Untitled',
-          contentHash: item.contentHash,
-          body: item.body,
-          status: 'duplicate',
-          duplicateOf: existing.id,
-          ts: item.ts,
-        });
-        this.log.log(
-          JSON.stringify({
-            event: 'feed.pull.duplicate',
-            feedId,
-            userId,
-            originalId: existing.id,
-            url: item.normalisedUrl,
-          }),
-        );
-      }
+        }),
+      );
       return 'duplicate';
     }
+    if (decision.kind === 'mark-duplicate') return 'duplicate';
 
     const verdict = runPreFilter({ title: item.title, body: item.body });
     if (verdict.filtered) {
