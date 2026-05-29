@@ -39,26 +39,45 @@ export function GraphSelectionPanel({
     q: articleQ || undefined,
   });
 
-  // Sort checked items to the top so the user immediately sees what's
-  // already picked when the panel opens or the search refreshes. Re-sorts
-  // on every toggle as well (so an unchecked item drops to the unchecked
-  // section) — acceptable tradeoff for the always-checked-on-top invariant.
+  // Snapshot the "pinned to top" set when the list refreshes (panel open or
+  // new search results) — NOT on every toggle. This keeps items in place
+  // when the user unchecks one, so they don't jump away mid-click.
+  // Uses React's "adjust state during render" pattern (compare prev vs new
+  // in render, sync via setState) — avoids the useEffect cascading-render
+  // warning and re-pins synchronously on data change.
+  const [pinnedEntities, setPinnedEntities] = useState<ReadonlySet<string>>(
+    () => new Set(selectedEntityIds),
+  );
+  const [prevEntityList, setPrevEntityList] = useState(entityList);
+  if (prevEntityList !== entityList) {
+    setPrevEntityList(entityList);
+    setPinnedEntities(new Set(selectedEntityIds));
+  }
+  const [pinnedArticles, setPinnedArticles] = useState<ReadonlySet<string>>(
+    () => new Set(selectedArticleIds),
+  );
+  const [prevArticleList, setPrevArticleList] = useState(articleList);
+  if (prevArticleList !== articleList) {
+    setPrevArticleList(articleList);
+    setPinnedArticles(new Set(selectedArticleIds));
+  }
+
   const entityItems = useMemo(() => {
     const items = entityList?.entities ?? [];
     return [...items].sort((a, b) => {
-      const ac = selectedEntityIds.has(a.id) ? 0 : 1;
-      const bc = selectedEntityIds.has(b.id) ? 0 : 1;
+      const ac = pinnedEntities.has(a.id) ? 0 : 1;
+      const bc = pinnedEntities.has(b.id) ? 0 : 1;
       return ac - bc;
     });
-  }, [entityList, selectedEntityIds]);
+  }, [entityList, pinnedEntities]);
   const articleItems = useMemo(() => {
     const items = articleList?.articles ?? [];
     return [...items].sort((a, b) => {
-      const ac = selectedArticleIds.has(a.id) ? 0 : 1;
-      const bc = selectedArticleIds.has(b.id) ? 0 : 1;
+      const ac = pinnedArticles.has(a.id) ? 0 : 1;
+      const bc = pinnedArticles.has(b.id) ? 0 : 1;
       return ac - bc;
     });
-  }, [articleList, selectedArticleIds]);
+  }, [articleList, pinnedArticles]);
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
