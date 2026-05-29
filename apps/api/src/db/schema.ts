@@ -47,9 +47,6 @@ export const feeds = pgTable(
     status: text('status').notNull().default('active'),
     lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
     lastPullError: text('last_pull_error'),
-    pullIntervalSeconds: integer('pull_interval_seconds')
-      .notNull()
-      .default(900),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
