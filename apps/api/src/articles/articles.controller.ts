@@ -11,6 +11,7 @@ import {
 import type {
   ArticleDetail,
   ArticleListResponse,
+  ArticleStatus,
 } from '@intelligencehub/shared';
 import { GetArticlesQuery } from '@intelligencehub/shared';
 import { ArticlesService } from './articles.service';
@@ -24,6 +25,14 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const STATUS_VALUES = new Set<ArticleStatus>([
+  'ready',
+  'pending',
+  'filtered',
+  'failed',
+  'duplicate',
+]);
 
 /** Parse a CSV query-string value into a deduped, non-empty array of trimmed
  * tokens. Returns [] for undefined / empty / whitespace-only input. */
@@ -75,13 +84,28 @@ export class ArticlesController {
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.format());
     }
-    const { category, importance, axisValue, period, from, to, q } =
-      parsed.data;
+    const {
+      category,
+      feed,
+      importance,
+      axisValue,
+      status,
+      period,
+      from,
+      to,
+      q,
+    } = parsed.data;
 
     const categoryIds = csvToList(category);
     for (const id of categoryIds) {
       if (!UUID_RE.test(id)) {
         throw new BadRequestException(`invalid category UUID: ${id}`);
+      }
+    }
+    const feedIds = csvToList(feed);
+    for (const id of feedIds) {
+      if (!UUID_RE.test(id)) {
+        throw new BadRequestException(`invalid feed UUID: ${id}`);
       }
     }
     const importances: ('high' | 'normal' | 'junk')[] = [];
@@ -99,11 +123,21 @@ export class ArticlesController {
       }
     }
 
+    const statuses: ArticleStatus[] = [];
+    for (const v of csvToList(status)) {
+      if (!STATUS_VALUES.has(v as ArticleStatus)) {
+        throw new BadRequestException(`invalid status: ${v}`);
+      }
+      statuses.push(v as ArticleStatus);
+    }
+
     const window = resolvePeriodWindow(period, from, to);
     const items = await this.articles.listMine(user.userId, {
       categoryIds,
+      feedIds,
       importances,
       axisValueIds,
+      statuses,
       windowFrom: window.from,
       windowTo: window.to,
       q,
