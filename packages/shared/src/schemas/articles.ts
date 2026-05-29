@@ -10,6 +10,15 @@ export const ArticleEntitySummary = z.object({
 });
 export type ArticleEntitySummary = z.infer<typeof ArticleEntitySummary>;
 
+export const ArticleStatus = z.enum([
+  'ready',
+  'pending',
+  'filtered',
+  'failed',
+  'duplicate',
+]);
+export type ArticleStatus = z.infer<typeof ArticleStatus>;
+
 export const ArticleListItem = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -19,6 +28,8 @@ export const ArticleListItem = z.object({
   ts: z.string().datetime(),
   // Null once the source feed has been deleted (US-3 detach).
   feedId: z.string().uuid().nullable(),
+  status: ArticleStatus,
+  filterReason: z.string().nullable(),
   entities: z.array(ArticleEntitySummary),
   categoryNames: z.array(z.string()).default([]),
   similarCount: z.number().int().nonnegative().default(0),
@@ -62,11 +73,19 @@ export type ArticleImportance = z.infer<typeof ArticleImportance>;
 export const GetArticlesQuery = z.object({
   // CSV of category UUIDs. Backend matches any (OR). Single value remains valid.
   category: z.string().optional(),
+  // CSV of feed UUIDs. Backend matches any (OR).
+  feed: z.string().optional(),
   // CSV of importance values. Backend matches any (OR).
   importance: z.string().optional(),
   // CSV of axis_value UUIDs. AND across axes (the value's parent axis groups them),
   // OR within an axis.
   axisValue: z.string().optional(),
+  // CSV of processing-state values (US-7 processing-state filter). When omitted,
+  // backend defaults to ['ready'] (analyzed articles only). Users opt into
+  // 'filtered' to see what the pre-filter cut and why, plus 'pending' / 'failed'
+  // for transient states. 'duplicate' is intentionally hidden (back-row for the
+  // N-similar counter).
+  status: z.string().optional(),
   period: ArticlesPeriod.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
