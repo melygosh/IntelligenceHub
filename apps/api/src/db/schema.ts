@@ -21,6 +21,20 @@ const tsvector = customType<{ data: string; driverData: string }>({
   },
 });
 
+// pgvector vector(1536) — semantic similarity embeddings (ADR-7).
+// JS side is number[]; driver wire format is '[0.123,0.456,...]' text.
+const vector1536 = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return '[' + value.join(',') + ']';
+  },
+  fromDriver(value: string): number[] {
+    return JSON.parse(value) as number[];
+  },
+});
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
@@ -86,6 +100,10 @@ export const articles = pgTable(
     searchVector: tsvector('search_vector').generatedAlwaysAs(
       sql`to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))`,
     ),
+    // Semantic-similarity embedding (ADR-7). Null when the feature is
+    // disabled (no OpenAI key) or when the article hasn't been backfilled
+    // yet — kNN queries skip null rows; UI section hides on null.
+    embedding: vector1536('embedding'),
     duplicateOf: uuid('duplicate_of').references(
       (): AnyPgColumn => articles.id,
       {
@@ -426,3 +444,17 @@ export const digestRun = pgTable(
 
 export type DigestRun = typeof digestRun.$inferSelect;
 export type NewDigestRun = typeof digestRun.$inferInsert;
+
+// Content-hash-keyed embedding cache (ADR-7). A repeated article body
+// short-circuits the OpenAI embedding call — same pattern as
+// llm_response_cache, separate table because the value type is vector,
+// not text. Not user-scoped: same content hash → same embedding.
+export const embeddingCache = pgTable('embedding_cache', {
+  contentHash: text('content_hash').primaryKey(),
+  embedding: vector1536('embedding').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type EmbeddingCache = typeof embeddingCache.$inferSelect;

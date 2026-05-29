@@ -95,8 +95,43 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(100),
     ),
+    // Semantic similarity (ADR-7 / FR-5 Could). Self-contained config —
+    // separate from LLM_PROVIDER on purpose, so the cost lens, key, and
+    // provider can be managed independently. Off by default; flipping
+    // ENABLED=true plus a valid API_KEY turns the worker hook on and
+    // surfaces the "Related (semantic)" section on the article detail page.
+    // When ENABLED=false: no embeddings, no extra cost, UI section hidden,
+    // deterministic dedup keeps working.
+    SEMANTIC_SIMILARITY_ENABLED: envBool('false'),
+    // Provider for embeddings. Only 'openai' shipped today; the interface
+    // is provider-agnostic and a second adapter can land later.
+    SEMANTIC_SIMILARITY_PROVIDER: z.enum(['openai']).default('openai'),
+    SEMANTIC_SIMILARITY_MODEL: z.preprocess(
+      emptyToUndef,
+      z.string().default('text-embedding-3-small'),
+    ),
+    SEMANTIC_SIMILARITY_API_KEY: z.preprocess(
+      emptyToUndef,
+      z.string().optional(),
+    ),
+    // Cosine similarity threshold for "related" — values below this stay
+    // hidden. Range [-1, 1]; 0.85 surfaces only meaningfully-related copies.
+    SEMANTIC_SIMILARITY_THRESHOLD: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().min(-1).max(1).default(0.85),
+    ),
   })
   .superRefine((env, ctx) => {
+    // Semantic similarity: when ENABLED=true, the API key must be set —
+    // otherwise the worker would silently no-op at every call.
+    if (env.SEMANTIC_SIMILARITY_ENABLED && !env.SEMANTIC_SIMILARITY_API_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SEMANTIC_SIMILARITY_API_KEY'],
+        message:
+          'SEMANTIC_SIMILARITY_API_KEY is required when SEMANTIC_SIMILARITY_ENABLED is true',
+      });
+    }
     if (env.LLM_FALLBACK_PROVIDER) {
       if (env.LLM_FALLBACK_PROVIDER === env.LLM_PROVIDER) {
         ctx.addIssue({

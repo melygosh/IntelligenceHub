@@ -1,0 +1,29 @@
+- generic [ref=e29]:
+  - img
+  - generic [ref=e31]:
+    - img [ref=e32]
+    - generic [ref=e37]: news intelligence
+  - generic [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]: Create account
+      - heading "Make your hub." [level=1] [ref=e42]
+      - generic [ref=e43]:
+        - generic [ref=e44]: Email
+        - textbox "Email" [active] [ref=e45]
+      - generic [ref=e46]:
+        - generic [ref=e47]: Password
+        - textbox "Password Minimum 8 characters." [ref=e48]
+        - text: Minimum 8 characters.
+      - generic [ref=e49]:
+        - checkbox "Load demo data What does this do?" [ref=e50] [cursor=pointer]
+        - generic [ref=e51]:
+          - text: Load demo data
+          - tooltip "What does this do?" [ref=e52]: "?"
+      - button "create account →" [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: create account
+        - generic [ref=e55]: →
+      - generic [ref=e56]:
+        - text: Have an account?
+        - link "Sign in →" [ref=e57] [cursor=pointer]:
+          - /url: /auth/login
+    - generic [ref=e58]: backdrop · sample week of an actual knowledge graph

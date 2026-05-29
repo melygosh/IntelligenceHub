@@ -13,6 +13,30 @@ export type ArticleEntitySummary = z.infer<typeof ArticleEntitySummary>;
 export const ArticleStatus = z.enum(['ready', 'pending', 'filtered', 'failed', 'duplicate']);
 export type ArticleStatus = z.infer<typeof ArticleStatus>;
 
+// Semantic similarity (ADR-7, FR-5 Could-tier). Surfaced under the article
+// detail's "Related (semantic)" section.
+export const RelatedSemanticItem = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  url: z.string().url(),
+  // Cosine similarity in [0, 1]. Backend already filters by threshold; the
+  // value is preserved so the UI can show a badge.
+  score: z.number().min(0).max(1),
+  // Feed title at query time. Null when the source feed was deleted (US-3).
+  feedTitle: z.string().nullable(),
+});
+export type RelatedSemanticItem = z.infer<typeof RelatedSemanticItem>;
+
+export const RelatedSemanticResponse = z.object({
+  // 'ready' when the source article has an embedding; 'pending' while the
+  // backfill job is in flight (UI shows a "still computing" hint instead of
+  // an empty list); 'unavailable' when the embedding feature is disabled
+  // (no API key) — UI hides the section.
+  status: z.enum(['ready', 'pending', 'unavailable']),
+  items: z.array(RelatedSemanticItem),
+});
+export type RelatedSemanticResponse = z.infer<typeof RelatedSemanticResponse>;
+
 export const ArticleListItem = z.object({
   id: z.string().uuid(),
   title: z.string(),

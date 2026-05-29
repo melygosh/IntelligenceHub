@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import {
@@ -14,6 +14,7 @@ import {
 } from '../db/schema';
 import { LlmService } from '../llm/llm.service';
 import { EntityResolverService } from '../entities/entity-resolver.service';
+import { EmbeddingService } from '../embeddings/embedding.service';
 import {
   UserConfigService,
   type UserConfigSnapshot,
@@ -33,6 +34,7 @@ export class ArticleProcessor {
     private readonly llm: LlmService,
     private readonly resolver: EntityResolverService,
     private readonly userConfig: UserConfigService,
+    private readonly embeddings: EmbeddingService,
   ) {}
 
   /**
@@ -105,7 +107,55 @@ export class ArticleProcessor {
     });
 
     await this.applyAnalysis(articleId, userId, analysis, config.hash);
+
+    // Best-effort embed (ADR-7). The article is already 'ready' — a missing
+    // embedding only hides the semantic-similarity section in the UI, the
+    // rest of the analysis is fully persisted. No-op when the feature is
+    // off; logs on its own when the API fails.
+    if (this.embeddings.isEnabled()) {
+      const vec = await this.embeddings.embed(
+        article.contentHash,
+        article.body ?? '',
+      );
+      if (vec) {
+        await this.db
+          .update(articles)
+          .set({ embedding: vec })
+          .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
+      }
+    }
+
     return 'analyzed';
+  }
+
+  /**
+   * Backfill an article's embedding when it's missing — used by the lazy
+   * read-side trigger (open /articles/:id with NULL embedding) and the
+   * admin one-shot route. Idempotent: skips when embedding is already set
+   * or the article has no body to embed.
+   */
+  async backfillEmbedding(articleId: string, userId: string): Promise<void> {
+    if (!this.embeddings.isEnabled()) return;
+    const [article] = await this.db
+      .select({
+        id: articles.id,
+        body: articles.body,
+        contentHash: articles.contentHash,
+        hasEmbedding: sql<boolean>`embedding IS NOT NULL`,
+      })
+      .from(articles)
+      .where(and(eq(articles.id, articleId), eq(articles.userId, userId)))
+      .limit(1);
+    if (!article || article.hasEmbedding || !article.contentHash) return;
+    const vec = await this.embeddings.embed(
+      article.contentHash,
+      article.body ?? '',
+    );
+    if (!vec) return;
+    await this.db
+      .update(articles)
+      .set({ embedding: vec })
+      .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
   }
 
   /**

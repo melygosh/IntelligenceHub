@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 is a drop-in PG16 image bundled with the pgvector
+    # extension — required for the semantic similarity feature (ADR-7 / FR-5
+    # Could). Data files are PG16-compatible so existing volumes carry over.
+    image: pgvector/pgvector:pg16
     container_name: ih-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -64,6 +67,11 @@ services:
       PREFILTER_TITLE_RATIO: ${PREFILTER_TITLE_RATIO}
       PREFILTER_LINK_DENSITY_RATIO: ${PREFILTER_LINK_DENSITY_RATIO}
       GRAPH_SELECTION_CAP: ${GRAPH_SELECTION_CAP}
+      SEMANTIC_SIMILARITY_ENABLED: ${SEMANTIC_SIMILARITY_ENABLED}
+      SEMANTIC_SIMILARITY_PROVIDER: ${SEMANTIC_SIMILARITY_PROVIDER}
+      SEMANTIC_SIMILARITY_MODEL: ${SEMANTIC_SIMILARITY_MODEL}
+      SEMANTIC_SIMILARITY_API_KEY: ${SEMANTIC_SIMILARITY_API_KEY}
+      SEMANTIC_SIMILARITY_THRESHOLD: ${SEMANTIC_SIMILARITY_THRESHOLD}
     ports:
       # Host port 3010 -> container port 3011. Both 3000 and 3005 are taken on the
       # dev host, so the container listens on 3011 for defense in depth.

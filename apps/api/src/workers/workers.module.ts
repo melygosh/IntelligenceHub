@@ -13,6 +13,7 @@ import { RegenerationWorker } from './regeneration.worker';
 import { RegenerationStartupCleanup } from './regeneration-startup.cleanup';
 import { DemoSeederWorker } from './demo-seeder.worker';
 import { DigestBuilderWorker } from './digest-builder.worker';
+import { EmbedBackfillWorker } from './embed-backfill.worker';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DigestBuilderWorker } from './digest-builder.worker';
     BullModule.registerQueue({ name: QUEUE_NAMES.REGENERATION }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DEMO_SEED }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DIGEST_BUILD }),
+    BullModule.registerQueue({ name: QUEUE_NAMES.EMBED_BACKFILL }),
     FeedsModule,
     ArticlesModule,
     SeedModule,
@@ -35,6 +37,7 @@ import { DigestBuilderWorker } from './digest-builder.worker';
     RegenerationStartupCleanup,
     DemoSeederWorker,
     DigestBuilderWorker,
+    EmbedBackfillWorker,
   ],
 })
 export class WorkersModule {}

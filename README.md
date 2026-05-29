@@ -375,6 +375,40 @@ commits for verification.
   return, no impedance mismatch with the async pipeline and every layer
   stays explainable on demand (§9.7).
 
+### ADR-7 — Semantic similarity via pgvector embeddings (FR-5 Could)
+
+- **Context.** Exact dedup catches verbatim re-publications (URL +
+  content-hash). It misses the more common case where two outlets cover
+  the same event with different prose. FR-5's Could-tier extension asks
+  for that. FR-10 explicitly forbids pairwise LLM dedup ("дедуплікація не
+  повинна породжувати потік LLM-звернень"). Embeddings sidestep the
+  prohibition: one cheap call per article, then deterministic kNN.
+- **Decision.** Self-contained `SEMANTIC_SIMILARITY_*` config namespace
+  (PROVIDER / MODEL / API_KEY / THRESHOLD / ENABLED), separate from
+  `LLM_PROVIDER`. Off by default — opt-in via two env vars. When on, the
+  `article.analyze` worker makes one extra call to OpenAI's
+  `text-embedding-3-small` after the structured analysis succeeds; the
+  resulting 1536-dim vector is persisted in a pgvector column
+  (`articles.embedding`) with an HNSW cosine-distance index. A
+  content-hash-keyed `embedding_cache` short-circuits repeat embeddings.
+  `/articles/:id/related-semantic` runs `embedding <=> $1` kNN scoped to
+  the user, filters by `SEMANTIC_SIMILARITY_THRESHOLD` (default 0.85),
+  returns top-5. Lazy backfill: opening a pre-feature article enqueues an
+  `embed.backfill` BullMQ job; `POST /articles/embed-backfill-mine`
+  is the one-shot admin trigger.
+- **Alternatives.** Bag-of-words / TF-IDF (poor recall for paraphrases).
+  Pairwise LLM dedup (O(n²) calls, breaks FR-10). In-process
+  sentence-BERT (extra ML infra). Reusing the LLM_* key (forced shared
+  cost lens — rejected after user feedback in favour of self-contained
+  config).
+- **Trade-offs.** pgvector extension on Postgres (drop-in
+  `pgvector/pgvector:pg16` image), ~10 KB per article of vector data,
+  one extra provider dependency, and the FR-10 line drawn carefully —
+  embeddings are vectorisation, not the `lookupPricing`-tracked
+  semantic-LLM operations. In return, O(log n) semantic recall, zero
+  cost when disabled, and a clean separation between deterministic
+  exact dedup and probabilistic semantic similarity.
+
 ## Should / Could status (§9.5)
 
 Honest snapshot of the optional tiers. The mandatory features are described
@@ -412,7 +446,13 @@ under "What the app does" above and verified against §4.1 / §9.4.
   `mentions` edges (article → entity, so the dash direction follows the
   article's `ts`). Co-mention edges stay static (symmetric). Auto-disables
   with a hint when more than 80 mentions edges are in view.
-- ❌ Timeline scrubber · semantic article similarity. Not built.
+- ✅ **Semantic article similarity** — opt-in via
+  `SEMANTIC_SIMILARITY_ENABLED=true` + `SEMANTIC_SIMILARITY_API_KEY`
+  (OpenAI). `article.analyze` worker embeds each ready article via
+  `text-embedding-3-small`; pgvector HNSW kNN powers a "Related
+  (semantic)" section on `/articles/:id`. Threshold-gated (default 0.85
+  cosine). See ADR-7.
+- ❌ Timeline scrubber. Not built.
 
 ## Local development outside Docker
 

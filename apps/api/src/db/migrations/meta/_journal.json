@@ -134,6 +134,13 @@
       "when": 1780051861620,
       "tag": "0018_dizzy_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780064000000,
+      "tag": "0019_pgvector_embeddings",
+      "breakpoints": true
     }
   ]
 }

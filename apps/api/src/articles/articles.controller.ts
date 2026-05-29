@@ -5,20 +5,34 @@ import {
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import type {
   ArticleDetail,
   ArticleListResponse,
   ArticleStatus,
+  RelatedSemanticResponse,
 } from '@intelligencehub/shared';
 import {
   DEFAULT_PAGE_SIZE,
   GetArticlesQuery,
   MAX_PAGE_SIZE,
+  QUEUE_NAMES,
 } from '@intelligencehub/shared';
+import { sql } from 'drizzle-orm';
+import { DB } from '../db/db.module';
+import type { Db } from '../db/client';
+import { Inject } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
+import { RelatedSemanticService } from './related-semantic.service';
+import {
+  EMBED_BACKFILL_JOB_OPTS,
+  type EmbedBackfillJobData,
+} from '../workers/embed-backfill.worker';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
 import {
@@ -77,7 +91,13 @@ function resolvePeriodWindow(
 @Controller('articles')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
 export class ArticlesController {
-  constructor(private readonly articles: ArticlesService) {}
+  constructor(
+    private readonly articles: ArticlesService,
+    private readonly relatedSemantic: RelatedSemanticService,
+    @Inject(DB) private readonly db: Db,
+    @InjectQueue(QUEUE_NAMES.EMBED_BACKFILL)
+    private readonly embedBackfillQueue: Queue<EmbedBackfillJobData>,
+  ) {}
 
   @Get()
   async list(
@@ -177,5 +197,60 @@ export class ArticlesController {
     const result = await this.articles.getById(id, user.userId);
     if (!result) throw new NotFoundException();
     return result;
+  }
+
+  /**
+   * Semantic similarity (ADR-7). Returns up to top-5 articles whose
+   * embeddings are within SEMANTIC_SIMILARITY_THRESHOLD of the source.
+   *
+   * Lazy backfill: when the feature is enabled but the source article
+   * has no embedding yet (pre-feature articles), enqueue an embed.backfill
+   * job and return status='pending' so the UI can render a "still
+   * computing" hint instead of an empty list.
+   */
+  @Get(':id/related-semantic')
+  async getRelatedSemantic(
+    @CurrentUser() user: AuthUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<RelatedSemanticResponse> {
+    const result = await this.relatedSemantic.related(user.userId, id);
+    if (result.status === 'pending') {
+      await this.embedBackfillQueue.add(
+        'embed-backfill',
+        { articleId: id, userId: user.userId },
+        { jobId: `backfill:${id}`, ...EMBED_BACKFILL_JOB_OPTS },
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Admin one-shot: enqueue a backfill job for every of the caller's
+   * articles whose embedding is still NULL. Useful right after flipping
+   * SEMANTIC_SIMILARITY_ENABLED=true on an account with existing articles
+   * (the worker hook only embeds NEW analyses). Returns the count enqueued
+   * so the caller can decide how long to wait.
+   */
+  @Post('embed-backfill-mine')
+  async embedBackfillMine(
+    @CurrentUser() user: AuthUserContext,
+  ): Promise<{ enqueued: number }> {
+    const rows = await this.db.execute<{ id: string }>(sql`
+      SELECT id FROM articles
+      WHERE user_id = ${user.userId}::uuid
+        AND status = 'ready'
+        AND embedding IS NULL
+        AND content_hash IS NOT NULL
+        AND body IS NOT NULL
+    `);
+    const ids = (rows as unknown as { rows: Array<{ id: string }> }).rows;
+    for (const r of ids) {
+      await this.embedBackfillQueue.add(
+        'embed-backfill',
+        { articleId: r.id, userId: user.userId },
+        { jobId: `backfill:${r.id}`, ...EMBED_BACKFILL_JOB_OPTS },
+      );
+    }
+    return { enqueued: ids.length };
   }
 }

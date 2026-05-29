@@ -40,6 +40,7 @@ import type {
   TelemetrySummary,
   DashboardResponse,
   DashboardPeriod,
+  RelatedSemanticResponse,
   UpdateAxisRequest,
   UpdateFeedRequest,
   UserResponse,
@@ -321,6 +322,9 @@ export const api = createApi({
     getPublicConfig: build.query<PublicConfig, void>({
       query: () => '/config',
     }),
+    getRelatedSemantic: build.query<RelatedSemanticResponse, string>({
+      query: (articleId) => `/articles/${articleId}/related-semantic`,
+    }),
     getDashboard: build.query<DashboardResponse, { period: DashboardPeriod; from?: string; to?: string }>({
       query: ({ period, from, to }) => {
         const params = new URLSearchParams({ period });
@@ -368,4 +372,5 @@ export const {
   useGetTelemetrySummaryQuery,
   useGetPublicConfigQuery,
   useGetDashboardQuery,
+  useGetRelatedSemanticQuery,
 } = api;

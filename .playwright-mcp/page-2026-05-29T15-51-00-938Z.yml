@@ -1,0 +1,685 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - img [ref=e6]
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e14]
+        - generic: Dashboard
+      - link "Articles" [active] [ref=e19] [cursor=pointer]:
+        - /url: /articles
+        - img [ref=e21]
+        - generic: Articles
+      - link "Graph" [ref=e24] [cursor=pointer]:
+        - /url: /graph
+        - img [ref=e26]
+        - generic: Graph
+      - link "Digests" [ref=e31] [cursor=pointer]:
+        - /url: /digests
+        - img [ref=e33]
+        - generic: Digests
+      - link "Feeds" [ref=e36] [cursor=pointer]:
+        - /url: /feeds
+        - img [ref=e38]
+        - generic: Feeds
+    - generic [ref=e40]:
+      - link "Entities" [ref=e41] [cursor=pointer]:
+        - /url: /entities
+        - img [ref=e43]
+        - generic: Entities
+      - link "Categories" [ref=e47] [cursor=pointer]:
+        - /url: /categories
+        - img [ref=e49]
+        - generic: Categories
+      - link "Axes" [ref=e52] [cursor=pointer]:
+        - /url: /settings/axes
+        - img [ref=e54]
+        - generic: Axes
+      - link "Telemetry" [ref=e57] [cursor=pointer]:
+        - /url: /telemetry
+        - img [ref=e59]
+        - generic: Telemetry
+    - button "Expand sidebar" [ref=e62] [cursor=pointer]:
+      - img [ref=e63]
+  - generic [ref=e65]:
+    - banner [ref=e66]:
+      - generic [ref=e69]: Articles
+      - button "P playwright-walk@example.com" [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: P
+        - generic [ref=e73]: playwright-walk@example.com
+        - img [ref=e75]
+    - main [ref=e77]:
+      - generic [ref=e219]:
+        - generic [ref=e220]:
+          - generic [ref=e221]: /articles
+          - heading "Your feed" [level=1] [ref=e222]
+        - generic [ref=e223]:
+          - generic [ref=e224]:
+            - button "Importance" [ref=e226] [cursor=pointer]:
+              - generic [ref=e227]: Importance
+              - img [ref=e229]
+            - button "Category" [ref=e232] [cursor=pointer]:
+              - generic [ref=e233]: Category
+              - img [ref=e235]
+            - button "Feed" [ref=e238] [cursor=pointer]:
+              - generic [ref=e239]: Feed
+              - img [ref=e241]
+            - button "Axis" [ref=e244] [cursor=pointer]:
+              - generic [ref=e245]: Axis
+              - img [ref=e247]
+            - button "Date" [ref=e250] [cursor=pointer]:
+              - generic [ref=e251]: Date
+              - img [ref=e253]
+            - generic [ref=e255]:
+              - img [ref=e256]
+              - textbox "search title, entity, summary…" [ref=e259]
+              - generic [ref=e260]: /
+          - generic [ref=e261]:
+            - button "Status" [ref=e263] [cursor=pointer]:
+              - generic [ref=e264]: Status
+              - img [ref=e266]
+            - button "Sort · newest first" [ref=e269] [cursor=pointer]:
+              - generic [ref=e270]: Sort
+              - generic [ref=e271]: · newest first
+              - img [ref=e273]
+            - button "Per page · 50" [ref=e276] [cursor=pointer]:
+              - generic [ref=e277]: Per page
+              - generic [ref=e278]: · 50
+              - img [ref=e280]
+          - generic [ref=e282]:
+            - generic [ref=e283]: no active filters · all sources, all importances, all time
+            - generic [ref=e284]: sort newest first · 20 articles
+          - article [ref=e285]:
+            - generic [ref=e287]:
+              - generic [ref=e288]:
+                - 'link "C64 Basic: Game Map Overhead \"Camera View\"" [ref=e289] [cursor=pointer]':
+                  - /url: /articles/7ddc02cc-0877-4174-962d-a2c9e4edb13c
+                - link "Open original" [ref=e290] [cursor=pointer]:
+                  - /url: https://retrogamecoders.com/overhead-camera-view
+                  - img [ref=e291]
+              - generic [ref=e293]:
+                - generic [ref=e295]: Hacker News (demo snapshot)
+                - generic [ref=e296]: ·
+                - generic "2026-05-26T13:47:39.000Z" [ref=e297]: 26 May, 16:47
+                - generic [ref=e298]: ·
+                - generic [ref=e299]: junk
+                - generic [ref=e301]: ·
+                - button "1 similar" [ref=e302] [cursor=pointer]:
+                  - img [ref=e303]
+                  - generic [ref=e305]: "1"
+                  - generic [ref=e306]: similar
+                - generic [ref=e307]: ·
+                - generic [ref=e309]: DevTools
+                - generic [ref=e310]: ·
+                - generic [ref=e311]:
+                  - link "Commodore 64" [ref=e312] [cursor=pointer]:
+                    - /url: /entities/193fc136-041f-4b54-a40a-3a0aca884094
+                    - img [ref=e314]
+                    - generic [ref=e316]: Commodore 64
+                  - link "Retro Game Coders" [ref=e317] [cursor=pointer]:
+                    - /url: /entities/532bd598-deef-4f1d-935a-02fbaecb10a8
+                    - img [ref=e319]
+                    - generic [ref=e321]: Retro Game Coders
+          - article [ref=e322]:
+            - generic [ref=e324]:
+              - generic [ref=e325]:
+                - link "Spain blocks prediction markets Polymarket, Kalshi over lack of gambling licence" [ref=e326] [cursor=pointer]:
+                  - /url: /articles/27885040-3d5c-4314-91a6-2d14ddcf6452
+                - link "Open original" [ref=e327] [cursor=pointer]:
+                  - /url: https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26
+                  - img [ref=e328]
+              - generic [ref=e330]: Spain's financial regulator has blocked the prediction markets Polymarket and Kalshi from operating within the country, citing a lack of required gambling licenses. The move represents a regulatory enforcement action against the two platforms, which operate on blockchain-based prediction markets that allow users to bet on real-world events. This is one of the first major jurisdictional blockers against these platforms in Europe.
+              - generic [ref=e331]:
+                - generic [ref=e333]: Hacker News (demo snapshot)
+                - generic [ref=e334]: ·
+                - generic "2026-05-26T13:08:13.000Z" [ref=e335]: 26 May, 16:08
+                - generic [ref=e336]: ·
+                - generic [ref=e337]: normal
+                - generic [ref=e339]: ·
+                - button "1 similar" [ref=e340] [cursor=pointer]:
+                  - img [ref=e341]
+                  - generic [ref=e343]: "1"
+                  - generic [ref=e344]: similar
+                - generic [ref=e345]: ·
+                - generic [ref=e347]: Crypto regulation
+                - generic [ref=e348]: ·
+                - generic [ref=e349]:
+                  - link "Spain" [ref=e350] [cursor=pointer]:
+                    - /url: /entities/4ebc57a9-e9a3-4c37-abf8-a48ee8cd44fe
+                    - img [ref=e352]
+                    - generic [ref=e354]: Spain
+                  - link "Polymarket" [ref=e355] [cursor=pointer]:
+                    - /url: /entities/a2003b33-aa24-4748-9cc6-da06512f749f
+                    - img [ref=e357]
+                    - generic [ref=e359]: Polymarket
+                  - link "Kalshi" [ref=e360] [cursor=pointer]:
+                    - /url: /entities/141cc649-ce1d-488b-80b7-652090f5a1b2
+                    - img [ref=e362]
+                    - generic [ref=e364]: Kalshi
+          - article [ref=e365]:
+            - generic [ref=e367]:
+              - generic [ref=e368]:
+                - link "Outsourcing plus LocalAI will soon become more economical vs. Frontier labs" [ref=e369] [cursor=pointer]:
+                  - /url: /articles/868583af-2cbb-44f7-b49d-269a76ee1b41
+                - link "Open original" [ref=e370] [cursor=pointer]:
+                  - /url: https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs
+                  - img [ref=e371]
+              - generic [ref=e373]: The article argues that combining outsourced services with local AI models will become more cost-effective than relying on frontier AI labs' API pricing in the near future. This reflects shifting economics in AI deployment as local inference improves and becomes cheaper relative to proprietary cloud-based solutions.
+              - generic [ref=e374]:
+                - generic [ref=e376]: Hacker News (demo snapshot)
+                - generic [ref=e377]: ·
+                - generic "2026-05-26T12:08:33.000Z" [ref=e378]: 26 May, 15:08
+                - generic [ref=e379]: ·
+                - generic [ref=e380]: normal
+                - generic [ref=e382]: ·
+                - button "1 similar" [ref=e383] [cursor=pointer]:
+                  - img [ref=e384]
+                  - generic [ref=e386]: "1"
+                  - generic [ref=e387]: similar
+                - generic [ref=e388]: ·
+                - generic [ref=e390]: AI infra
+                - generic [ref=e391]: ·
+                - generic [ref=e392]:
+                  - link "LocalAI" [ref=e393] [cursor=pointer]:
+                    - /url: /entities/611fbe8b-9804-493b-9a9c-6f96a2054d95
+                    - img [ref=e395]
+                    - generic [ref=e397]: LocalAI
+                  - link "SignalBloom" [ref=e398] [cursor=pointer]:
+                    - /url: /entities/f3a8fcf6-c658-4d38-8210-4e3270d76a3a
+                    - img [ref=e400]
+                    - generic [ref=e402]: SignalBloom
+          - article [ref=e403]:
+            - generic [ref=e405]:
+              - generic [ref=e406]:
+                - 'link "Eagle 3.1: Collaboration Between the EAGLE Team, vLLM Team, and TorchSpec Team" [ref=e407] [cursor=pointer]':
+                  - /url: /articles/ad64146d-92a6-4ef8-9997-575a5dfefbb3
+                - link "Open original" [ref=e408] [cursor=pointer]:
+                  - /url: https://vllm.ai/blog/2026-05-26-eagle-3-1
+                  - img [ref=e409]
+              - generic [ref=e411]: Eagle 3.1 is a software release resulting from collaboration between the EAGLE Team, vLLM Team, and TorchSpec Team. The article is hosted on vLLM's official blog and has received modest engagement (28 points, 11 comments on Hacker News).
+              - generic [ref=e412]:
+                - generic [ref=e414]: Hacker News (demo snapshot)
+                - generic [ref=e415]: ·
+                - generic "2026-05-26T11:46:10.000Z" [ref=e416]: 26 May, 14:46
+                - generic [ref=e417]: ·
+                - generic [ref=e418]: normal
+                - generic [ref=e420]: ·
+                - button "1 similar" [ref=e421] [cursor=pointer]:
+                  - img [ref=e422]
+                  - generic [ref=e424]: "1"
+                  - generic [ref=e425]: similar
+                - generic [ref=e426]: ·
+                - generic [ref=e428]: AI infra
+                - generic [ref=e429]: ·
+                - generic [ref=e430]:
+                  - link "Eagle" [ref=e431] [cursor=pointer]:
+                    - /url: /entities/a239af14-46ff-4235-8a78-b7c0a5d5ab6e
+                    - img [ref=e433]
+                    - generic [ref=e435]: Eagle
+                  - link "vLLM" [ref=e436] [cursor=pointer]:
+                    - /url: /entities/51004680-288f-4283-9cce-b3ad5b7bb977
+                    - img [ref=e438]
+                    - generic [ref=e440]: vLLM
+                  - link "TorchSpec" [ref=e441] [cursor=pointer]:
+                    - /url: /entities/65b06881-c37f-4f1d-bed3-6944fc46dc14
+                    - img [ref=e443]
+                    - generic [ref=e445]: TorchSpec
+          - article [ref=e446]:
+            - generic [ref=e448]:
+              - generic [ref=e449]:
+                - link "Netherlands blocks US takeover of vital digital supplier" [ref=e450] [cursor=pointer]:
+                  - /url: /articles/73ed511e-6023-4591-8fba-322db19e0629
+                - link "Open original" [ref=e451] [cursor=pointer]:
+                  - /url: https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier
+                  - img [ref=e452]
+              - generic [ref=e454]: The Netherlands has blocked a US acquisition of a critical digital infrastructure supplier, citing national security concerns. The move reflects escalating trade tensions and strategic competition between the US and European nations over control of essential technology assets.
+              - generic [ref=e455]:
+                - generic [ref=e457]: Hacker News (demo snapshot)
+                - generic [ref=e458]: ·
+                - generic "2026-05-26T11:46:08.000Z" [ref=e459]: 26 May, 14:46
+                - generic [ref=e460]: ·
+                - generic [ref=e461]: high
+                - generic [ref=e463]: ·
+                - button "1 similar" [ref=e464] [cursor=pointer]:
+                  - img [ref=e465]
+                  - generic [ref=e467]: "1"
+                  - generic [ref=e468]: similar
+                - generic [ref=e469]: ·
+                - generic [ref=e470]:
+                  - generic [ref=e471]: Hardware
+                  - generic [ref=e472]: Crypto regulation
+                - generic [ref=e473]: ·
+                - generic [ref=e474]:
+                  - link "Netherlands" [ref=e475] [cursor=pointer]:
+                    - /url: /entities/b4859712-ca29-4feb-a6a8-0279467ee6a1
+                    - img [ref=e477]
+                    - generic [ref=e479]: Netherlands
+                  - link "United States" [ref=e480] [cursor=pointer]:
+                    - /url: /entities/843617f0-cce0-4178-9a80-8f66eb155f77
+                    - img [ref=e482]
+                    - generic [ref=e484]: United States
+          - article [ref=e485]:
+            - generic [ref=e487]:
+              - generic [ref=e488]:
+                - link "GitHub Actions down again today" [ref=e489] [cursor=pointer]:
+                  - /url: /articles/1e2dd630-2c94-4f0a-9b04-bd9d211c8bbb
+                - link "Open original" [ref=e490] [cursor=pointer]:
+                  - /url: https://www.githubstatus.com/?today=
+                  - img [ref=e491]
+              - generic [ref=e493]: GitHub Actions experienced a service outage today. The incident gained significant traction on Hacker News with 383 points and 189 comments, indicating substantial user impact and community concern.
+              - generic [ref=e494]:
+                - generic [ref=e496]: Hacker News (demo snapshot)
+                - generic [ref=e497]: ·
+                - generic "2026-05-26T11:42:58.000Z" [ref=e498]: 26 May, 14:42
+                - generic [ref=e499]: ·
+                - generic [ref=e500]: normal
+                - generic [ref=e502]: ·
+                - button "1 similar" [ref=e503] [cursor=pointer]:
+                  - img [ref=e504]
+                  - generic [ref=e506]: "1"
+                  - generic [ref=e507]: similar
+                - generic [ref=e508]: ·
+                - generic [ref=e510]: DevTools
+                - generic [ref=e511]: ·
+                - generic [ref=e512]:
+                  - link "GitHub" [ref=e513] [cursor=pointer]:
+                    - /url: /entities/295b2a00-ee33-4408-ba31-864dbf0694e1
+                    - img [ref=e515]
+                    - generic [ref=e517]: GitHub
+                  - link "GitHub Actions" [ref=e518] [cursor=pointer]:
+                    - /url: /entities/a2a0b45f-a852-4427-8c45-4b0e5319dd75
+                    - img [ref=e520]
+                    - generic [ref=e522]: GitHub Actions
+          - article [ref=e523]:
+            - generic [ref=e525]:
+              - generic [ref=e526]:
+                - link "Incident with Actions and Pages" [ref=e527] [cursor=pointer]:
+                  - /url: /articles/8020cf52-272a-48ba-9cd9-006210251000
+                - link "Open original" [ref=e528] [cursor=pointer]:
+                  - /url: https://www.githubstatus.com/incidents/gnftqj9htp0g
+                  - img [ref=e529]
+              - generic [ref=e531]: GitHub experienced an incident affecting Actions and Pages functionality. The incident report was published on GitHub's status page and received discussion on Hacker News with 39 points and 11 comments, indicating community interest in the service disruption.
+              - generic [ref=e532]:
+                - generic [ref=e534]: Hacker News (demo snapshot)
+                - generic [ref=e535]: ·
+                - generic "2026-05-26T11:10:19.000Z" [ref=e536]: 26 May, 14:10
+                - generic [ref=e537]: ·
+                - generic [ref=e538]: normal
+                - generic [ref=e540]: ·
+                - button "1 similar" [ref=e541] [cursor=pointer]:
+                  - img [ref=e542]
+                  - generic [ref=e544]: "1"
+                  - generic [ref=e545]: similar
+                - generic [ref=e546]: ·
+                - generic [ref=e547]:
+                  - generic [ref=e548]: DevTools
+                  - generic [ref=e549]: Web dev
+                - generic [ref=e550]: ·
+                - generic [ref=e551]:
+                  - link "GitHub" [ref=e552] [cursor=pointer]:
+                    - /url: /entities/295b2a00-ee33-4408-ba31-864dbf0694e1
+                    - img [ref=e554]
+                    - generic [ref=e556]: GitHub
+                  - link "GitHub Actions" [ref=e557] [cursor=pointer]:
+                    - /url: /entities/a2a0b45f-a852-4427-8c45-4b0e5319dd75
+                    - img [ref=e559]
+                    - generic [ref=e561]: GitHub Actions
+                  - link "GitHub Pages" [ref=e562] [cursor=pointer]:
+                    - /url: /entities/27211eae-1df4-4292-9273-cc5c7ec6322b
+                    - img [ref=e564]
+                    - generic [ref=e566]: GitHub Pages
+                  - link "Hacker News" [ref=e567] [cursor=pointer]:
+                    - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                    - img [ref=e569]
+                    - generic [ref=e571]: Hacker News
+          - article [ref=e572]:
+            - generic [ref=e574]:
+              - generic [ref=e575]:
+                - link "Uber president says AI spending is getting 'harder to justify'" [ref=e576] [cursor=pointer]:
+                  - /url: /articles/37ea2fa5-ebb7-4211-8fb5-787898b45e5d
+                - link "Open original" [ref=e577] [cursor=pointer]:
+                  - /url: https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify
+                  - img [ref=e578]
+              - generic [ref=e580]: Uber's president has publicly stated that the company's AI spending is becoming increasingly difficult to justify, signaling potential re-evaluation of the company's artificial intelligence investment strategy and priorities.
+              - generic [ref=e581]:
+                - generic [ref=e583]: Hacker News (demo snapshot)
+                - generic [ref=e584]: ·
+                - generic "2026-05-26T10:01:39.000Z" [ref=e585]: 26 May, 13:01
+                - generic [ref=e586]: ·
+                - generic [ref=e587]: normal
+                - generic [ref=e589]: ·
+                - generic [ref=e591]: AI infra
+                - generic [ref=e592]: ·
+                - link "Uber" [ref=e594] [cursor=pointer]:
+                  - /url: /entities/f8ba8281-56d3-4b63-adeb-01f043a11bd6
+                  - img [ref=e596]
+                  - generic [ref=e598]: Uber
+          - article [ref=e599]:
+            - generic [ref=e601]:
+              - generic [ref=e602]:
+                - link "Exposing Critical Vulnerabilities in CBSE's On-Screen Marking Portal" [ref=e603] [cursor=pointer]:
+                  - /url: /articles/cdf1d725-1d63-499a-9c2e-5509d8888f1c
+                - link "Open original" [ref=e604] [cursor=pointer]:
+                  - /url: https://ni5arga.com/blog/posts/hacking-cbse
+                  - img [ref=e605]
+              - generic [ref=e607]: A security researcher has identified and publicly disclosed critical vulnerabilities in the Central Board of Secondary Education (CBSE) on-screen marking portal, exposing flaws that could allow unauthorized access or data compromise. The findings were shared on a technical blog and discussed on Hacker News, indicating a serious security issue affecting India's largest secondary education examination system.
+              - generic [ref=e608]:
+                - generic [ref=e610]: Hacker News (demo snapshot)
+                - generic [ref=e611]: ·
+                - generic "2026-05-26T09:43:40.000Z" [ref=e612]: 26 May, 12:43
+                - generic [ref=e613]: ·
+                - generic [ref=e614]: high
+                - generic [ref=e616]: ·
+                - generic [ref=e618]: Web dev
+                - generic [ref=e619]: ·
+                - link "CBSE" [ref=e621] [cursor=pointer]:
+                  - /url: /entities/b4aaab07-d5fe-4f52-a241-e2f93c8e0c9a
+                  - img [ref=e623]
+                  - generic [ref=e625]: CBSE
+          - article [ref=e626]:
+            - generic [ref=e628]:
+              - generic [ref=e629]:
+                - link "DynIP – Dynamic DNS with RFC 2136, IPv6, DNSSEC, and BYOD" [ref=e630] [cursor=pointer]:
+                  - /url: /articles/2f9291ed-b676-43df-a828-e2c7d13b7808
+                - link "Open original" [ref=e631] [cursor=pointer]:
+                  - /url: https://dynip.dev/
+                  - img [ref=e632]
+              - generic [ref=e634]: DynIP is a dynamic DNS service supporting RFC 2136, IPv6, DNSSEC, and bring-your-own-domain functionality. The project garnered significant community discussion on Hacker News with 208 points and 88 comments, indicating solid technical interest in the DDNS space.
+              - generic [ref=e635]:
+                - generic [ref=e637]: Hacker News (demo snapshot)
+                - generic [ref=e638]: ·
+                - generic "2026-05-26T07:35:20.000Z" [ref=e639]: 26 May, 10:35
+                - generic [ref=e640]: ·
+                - generic [ref=e641]: normal
+                - generic [ref=e643]: ·
+                - generic [ref=e645]: DevTools
+                - generic [ref=e646]: ·
+                - generic [ref=e647]:
+                  - link "Hacker News" [ref=e648] [cursor=pointer]:
+                    - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                    - img [ref=e650]
+                    - generic [ref=e652]: Hacker News
+                  - link "DynIP" [ref=e653] [cursor=pointer]:
+                    - /url: /entities/c213ab77-eeba-48bc-9457-762d8e5744a3
+                    - img [ref=e655]
+                    - generic [ref=e657]: DynIP
+          - article [ref=e658]:
+            - generic [ref=e660]:
+              - generic [ref=e661]:
+                - link "Motorola phones have started hijacking the Amazon app to insert affiliate codes" [ref=e662] [cursor=pointer]:
+                  - /url: /articles/55e36bd8-458a-4e10-bbfa-72719cb9c322
+                - link "Open original" [ref=e663] [cursor=pointer]:
+                  - /url: https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior
+                  - img [ref=e664]
+              - generic [ref=e666]: Motorola has been caught modifying the Amazon app on its phones to insert affiliate codes, redirecting user transactions to generate revenue for the company. This practice intercepts normal app behavior without user consent and raises privacy and competition concerns.
+              - generic [ref=e667]:
+                - generic [ref=e669]: Hacker News (demo snapshot)
+                - generic [ref=e670]: ·
+                - generic "2026-05-26T03:56:09.000Z" [ref=e671]: 26 May, 06:56
+                - generic [ref=e672]: ·
+                - generic [ref=e673]: high
+                - generic [ref=e675]: ·
+                - generic [ref=e676]:
+                  - generic [ref=e677]: Hardware
+                  - generic [ref=e678]: Crypto regulation
+                - generic [ref=e679]: ·
+                - generic [ref=e680]:
+                  - link "Motorola" [ref=e681] [cursor=pointer]:
+                    - /url: /entities/07285848-71dc-4437-991d-e2d7b9847128
+                    - img [ref=e683]
+                    - generic [ref=e685]: Motorola
+                  - link "Amazon" [ref=e686] [cursor=pointer]:
+                    - /url: /entities/f34e52f4-9452-4853-aa2f-d850823da232
+                    - img [ref=e688]
+                    - generic [ref=e690]: Amazon
+                  - link "Amazon app" [ref=e691] [cursor=pointer]:
+                    - /url: /entities/f4881965-8933-4143-9f60-5e72985f646e
+                    - img [ref=e693]
+                    - generic [ref=e695]: Amazon app
+          - article [ref=e696]:
+            - generic [ref=e698]:
+              - generic [ref=e699]:
+                - 'link "Earthion: A New Mega Drive-Style Shoot-Em-Up" [ref=e700] [cursor=pointer]':
+                  - /url: /articles/343395da-0268-4042-a088-89d13aea95c2
+                - link "Open original" [ref=e701] [cursor=pointer]:
+                  - /url: https://earthiongame.com/
+                  - img [ref=e702]
+              - generic [ref=e704]: Earthion is a new shoot-em-up video game styled after classic Sega Mega Drive titles. The game has generated modest community interest on Hacker News with 102 points and 47 comments, suggesting some appeal among retro gaming enthusiasts.
+              - generic [ref=e705]:
+                - generic [ref=e707]: Hacker News (demo snapshot)
+                - generic [ref=e708]: ·
+                - generic "2026-05-26T03:42:23.000Z" [ref=e709]: 26 May, 06:42
+                - generic [ref=e710]: ·
+                - generic [ref=e711]: normal
+                - generic [ref=e713]: ·
+                - generic [ref=e715]: Hardware
+                - generic [ref=e716]: ·
+                - generic [ref=e717]:
+                  - link "Hacker News" [ref=e718] [cursor=pointer]:
+                    - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                    - img [ref=e720]
+                    - generic [ref=e722]: Hacker News
+                  - link "Earthion" [ref=e723] [cursor=pointer]:
+                    - /url: /entities/da859d57-2263-452e-9840-d1cd49e67d1a
+                    - img [ref=e725]
+                    - generic [ref=e727]: Earthion
+                  - link "Sega Mega Drive" [ref=e728] [cursor=pointer]:
+                    - /url: /entities/b8306b6d-a00f-4d86-b1ac-178139c1162e
+                    - img [ref=e730]
+                    - generic [ref=e732]: Sega Mega Drive
+          - article [ref=e733]:
+            - generic [ref=e735]:
+              - generic [ref=e736]:
+                - link "Using AI to write better code more slowly" [ref=e737] [cursor=pointer]:
+                  - /url: /articles/f4181e54-53c2-4145-b540-7346b70b9508
+                - link "Open original" [ref=e738] [cursor=pointer]:
+                  - /url: https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly
+                  - img [ref=e739]
+              - generic [ref=e741]: A blog post exploring the tradeoff between using AI for code generation and code quality. The article, which garnered significant discussion (858 points, 332 comments on Hacker News), argues that AI tools can improve code quality but may slow down development velocity—challenging the assumption that AI-assisted coding is purely a productivity accelerator.
+              - generic [ref=e742]:
+                - generic [ref=e744]: Hacker News (demo snapshot)
+                - generic [ref=e745]: ·
+                - generic "2026-05-25T23:16:59.000Z" [ref=e746]: 26 May, 02:16
+                - generic [ref=e747]: ·
+                - generic [ref=e748]: normal
+                - generic [ref=e750]: ·
+                - generic [ref=e751]:
+                  - generic [ref=e752]: AI infra
+                  - generic [ref=e753]: DevTools
+                - generic [ref=e754]: ·
+                - link "Nolan Lawson" [ref=e756] [cursor=pointer]:
+                  - /url: /entities/d4fc90c5-cb2e-4355-9dd0-fa3e031db0bb
+                  - img [ref=e758]
+                  - generic [ref=e760]: Nolan Lawson
+          - article [ref=e761]:
+            - generic [ref=e763]:
+              - generic [ref=e764]:
+                - link "How Shamir's Secret Sharing Works" [ref=e765] [cursor=pointer]:
+                  - /url: /articles/9fc22982-511e-40cc-9831-9578d3404bfc
+                - link "Open original" [ref=e766] [cursor=pointer]:
+                  - /url: https://ente.com/blog/how-shamirs-secret-sharing-works
+                  - img [ref=e767]
+              - generic [ref=e769]: An educational explainer on Shamir's Secret Sharing, a cryptographic technique for splitting secrets into shares such that a threshold number of shares can reconstruct the original secret. The article appears on Ente's blog and received significant engagement on Hacker News with 287 points and 49 comments, indicating audience interest in cryptographic methods.
+              - generic [ref=e770]:
+                - generic [ref=e772]: Hacker News (demo snapshot)
+                - generic [ref=e773]: ·
+                - generic "2026-05-25T22:37:24.000Z" [ref=e774]: 26 May, 01:37
+                - generic [ref=e775]: ·
+                - generic [ref=e776]: normal
+                - generic [ref=e778]: ·
+                - generic [ref=e780]: DevTools
+                - generic [ref=e781]: ·
+                - generic [ref=e782]:
+                  - link "Hacker News" [ref=e783] [cursor=pointer]:
+                    - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                    - img [ref=e785]
+                    - generic [ref=e787]: Hacker News
+                  - link "Ente" [ref=e788] [cursor=pointer]:
+                    - /url: /entities/d462ec49-7c88-437b-9b6a-ab0b3a199e15
+                    - img [ref=e790]
+                    - generic [ref=e792]: Ente
+                  - link "Shamir's Secret Sharing" [ref=e793] [cursor=pointer]:
+                    - /url: /entities/a56f39a3-367d-4be0-9506-269c51824a6a
+                    - img [ref=e795]
+                    - generic [ref=e797]: Shamir's Secret Sharing
+          - article [ref=e798]:
+            - generic [ref=e800]:
+              - generic [ref=e801]:
+                - link "Taking a walk may lead to more creativity than sitting, study finds (2014)" [ref=e802] [cursor=pointer]:
+                  - /url: /articles/46b067f4-7f28-4539-90d1-3636fe458f62
+                - link "Open original" [ref=e803] [cursor=pointer]:
+                  - /url: https://www.apa.org/news/press/releases/2014/04/creativity-walk
+                  - img [ref=e804]
+              - generic [ref=e806]: A 2014 study by researchers found that walking increases creative thinking compared to sitting. The research suggests that taking walks may enhance divergent thinking and creative problem-solving abilities.
+              - generic [ref=e807]:
+                - generic [ref=e809]: Hacker News (demo snapshot)
+                - generic [ref=e810]: ·
+                - generic "2026-05-25T22:30:27.000Z" [ref=e811]: 26 May, 01:30
+                - generic [ref=e812]: ·
+                - generic [ref=e813]: normal
+                - generic [ref=e815]: ·
+                - generic [ref=e817]: DevTools
+                - generic [ref=e818]: ·
+                - link "American Psychological Association" [ref=e820] [cursor=pointer]:
+                  - /url: /entities/8407b0df-6bd0-44f3-8c12-43379b056119
+                  - img [ref=e822]
+                  - generic [ref=e824]: American Psychological Association
+          - article [ref=e825]:
+            - generic [ref=e827]:
+              - generic [ref=e828]:
+                - link "Ferrari Luce" [ref=e829] [cursor=pointer]:
+                  - /url: /articles/d3f05f31-9884-4f03-bc8a-4a62bc8c48ff
+                - link "Open original" [ref=e830] [cursor=pointer]:
+                  - /url: https://www.ferrari.com/en-EN/auto/ferrari-luce
+                  - img [ref=e831]
+              - generic [ref=e833]: Ferrari has unveiled the Luce, its first fully electric vehicle. The announcement marks a significant shift in strategy for the storied Italian luxury automaker as it enters the EV market.
+              - generic [ref=e834]:
+                - generic [ref=e836]: Hacker News (demo snapshot)
+                - generic [ref=e837]: ·
+                - generic "2026-05-25T21:00:38.000Z" [ref=e838]: 26 May, 00:00
+                - generic [ref=e839]: ·
+                - generic [ref=e840]: high
+                - generic [ref=e842]: ·
+                - generic [ref=e844]: Hardware
+                - generic [ref=e845]: ·
+                - generic [ref=e846]:
+                  - link "Ferrari" [ref=e847] [cursor=pointer]:
+                    - /url: /entities/813176b8-bc39-4c9f-96e2-d73daf3891dc
+                    - img [ref=e849]
+                    - generic [ref=e851]: Ferrari
+                  - link "Ferrari Luce" [ref=e852] [cursor=pointer]:
+                    - /url: /entities/98bd4f31-63e8-49cb-b30a-c4c586912817
+                    - img [ref=e854]
+                    - generic [ref=e856]: Ferrari Luce
+          - article [ref=e857]:
+            - generic [ref=e859]:
+              - generic [ref=e860]:
+                - link "Hacker News front page as a site" [ref=e861] [cursor=pointer]:
+                  - /url: /articles/a3324972-084b-4c78-b539-ead48be7b6ff
+                - link "Open original" [ref=e862] [cursor=pointer]:
+                  - /url: https://thefrontpage.dev/
+                  - img [ref=e863]
+              - generic [ref=e865]: A Hacker News user created a site that presents the Hacker News front page as a standalone website at thefrontpage.dev. The post received 357 points and 98 comments on Hacker News, indicating notable community interest in the project.
+              - generic [ref=e866]:
+                - generic [ref=e868]: Hacker News (demo snapshot)
+                - generic [ref=e869]: ·
+                - generic "2026-05-25T20:12:29.000Z" [ref=e870]: 25 May, 23:12
+                - generic [ref=e871]: ·
+                - generic [ref=e872]: normal
+                - generic [ref=e874]: ·
+                - generic [ref=e875]:
+                  - generic [ref=e876]: Web dev
+                  - generic [ref=e877]: DevTools
+                - generic [ref=e878]: ·
+                - generic [ref=e879]:
+                  - link "Hacker News" [ref=e880] [cursor=pointer]:
+                    - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                    - img [ref=e882]
+                    - generic [ref=e884]: Hacker News
+                  - link "thefrontpage.dev" [ref=e885] [cursor=pointer]:
+                    - /url: /entities/4c127ffe-fb0b-443b-a70f-b716db891d22
+                    - img [ref=e887]
+                    - generic [ref=e889]: thefrontpage.dev
+          - article [ref=e890]:
+            - generic [ref=e892]:
+              - generic [ref=e893]:
+                - link "A successful Japanese trial of a ramjet engine designed for Mach‑5 aircraft" [ref=e894] [cursor=pointer]:
+                  - /url: /articles/2fbdfb0a-8f8e-4a2c-9218-676616bdec3d
+                - link "Open original" [ref=e895] [cursor=pointer]:
+                  - /url: https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us
+                  - img [ref=e896]
+              - generic [ref=e898]: Japan has successfully tested a ramjet engine designed to power Mach-5 hypersonic aircraft, with potential to enable 2-hour transatlantic flights to the United States. This represents a significant milestone in hypersonic propulsion technology development.
+              - generic [ref=e899]:
+                - generic [ref=e901]: Hacker News (demo snapshot)
+                - generic [ref=e902]: ·
+                - generic "2026-05-25T19:43:45.000Z" [ref=e903]: 25 May, 22:43
+                - generic [ref=e904]: ·
+                - generic [ref=e905]: high
+                - generic [ref=e907]: ·
+                - generic [ref=e909]: Hardware
+                - generic [ref=e910]: ·
+                - generic [ref=e911]:
+                  - link "United States" [ref=e912] [cursor=pointer]:
+                    - /url: /entities/843617f0-cce0-4178-9a80-8f66eb155f77
+                    - img [ref=e914]
+                    - generic [ref=e916]: United States
+                  - link "Japan" [ref=e917] [cursor=pointer]:
+                    - /url: /entities/b744ec16-6cb5-4a22-a989-30c516e70a90
+                    - img [ref=e919]
+                    - generic [ref=e921]: Japan
+          - article [ref=e922]:
+            - generic [ref=e924]:
+              - generic [ref=e925]:
+                - link "Norway's 2 petabytes of Huawei flash storage and LLM training" [ref=e926] [cursor=pointer]:
+                  - /url: /articles/50ef4b89-db35-42bb-8110-4113271c2e89
+                - link "Open original" [ref=e927] [cursor=pointer]:
+                  - /url: https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910
+                  - img [ref=e928]
+              - generic [ref=e930]: Norway is deploying 2 petabytes of Huawei flash storage for large language model training, according to a report from Blocks and Files. The significant infrastructure investment highlights China-based hardware usage in critical AI infrastructure within Europe, raising potential geopolitical and supply-chain considerations.
+              - generic [ref=e931]:
+                - generic [ref=e933]: Hacker News (demo snapshot)
+                - generic [ref=e934]: ·
+                - generic "2026-05-25T19:37:57.000Z" [ref=e935]: 25 May, 22:37
+                - generic [ref=e936]: ·
+                - generic [ref=e937]: normal
+                - generic [ref=e939]: ·
+                - generic [ref=e940]:
+                  - generic [ref=e941]: AI infra
+                  - generic [ref=e942]: Hardware
+                - generic [ref=e943]: ·
+                - generic [ref=e944]:
+                  - link "Norway" [ref=e945] [cursor=pointer]:
+                    - /url: /entities/4a3a6fa0-2222-4f10-ae8b-5ac3f5fd6d7e
+                    - img [ref=e947]
+                    - generic [ref=e949]: Norway
+                  - link "Huawei" [ref=e950] [cursor=pointer]:
+                    - /url: /entities/03fa4997-e6ea-4e65-9679-d7e955d4b780
+                    - img [ref=e952]
+                    - generic [ref=e954]: Huawei
+          - article [ref=e955]:
+            - generic [ref=e957]:
+              - generic [ref=e958]:
+                - link "California moves to exempt Linux from its age-verification law after backlash" [ref=e959] [cursor=pointer]:
+                  - /url: /articles/412e1c7a-bc7a-4b99-9a11-e0767b84b7ae
+                - link "Open original" [ref=e960] [cursor=pointer]:
+                  - /url: https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law
+                  - img [ref=e961]
+              - generic [ref=e963]: California is moving to exempt Linux from its age-verification law following significant backlash over requirements that operating systems collect user age data. The amendment is being proposed by the same legislator who authored the original law, suggesting a retreat from the earlier mandate that faced criticism from the open-source and tech communities.
+              - generic [ref=e964]:
+                - generic [ref=e966]: Hacker News (demo snapshot)
+                - generic [ref=e967]: ·
+                - generic "2026-05-25T18:19:58.000Z" [ref=e968]: 25 May, 21:19
+                - generic [ref=e969]: ·
+                - generic [ref=e970]: normal
+                - generic [ref=e972]: ·
+                - generic [ref=e974]: Crypto regulation
+                - generic [ref=e975]: ·
+                - generic [ref=e976]:
+                  - link "California" [ref=e977] [cursor=pointer]:
+                    - /url: /entities/ba14e790-9b75-46e2-9775-3dbe467d788c
+                    - img [ref=e979]
+                    - generic [ref=e981]: California
+                  - link "Linux" [ref=e982] [cursor=pointer]:
+                    - /url: /entities/d579faf3-bdb1-43eb-a459-1c3bd6990b75
+                    - img [ref=e984]
+                    - generic [ref=e986]: Linux

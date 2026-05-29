@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Link, useParams } from 'react-router-dom';
-import { useGetArticleQuery } from '../../store/api';
+import { useGetArticleQuery, useGetRelatedSemanticQuery } from '../../store/api';
 import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
@@ -35,6 +35,10 @@ function looksLikeHtml(s: string): boolean {
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useGetArticleQuery(id ?? '', { skip: !id });
+  // Semantic similarity (ADR-7). Hook always fires; the component renders
+  // nothing when status='unavailable' (feature off) — no extra request
+  // budget on accounts that haven't opted in.
+  const { data: related } = useGetRelatedSemanticQuery(id ?? '', { skip: !id });
 
   useSetPageTitle(data?.title);
 
@@ -228,6 +232,50 @@ export default function ArticleDetail() {
             Found {data.similarCount} similar in other feeds
           </div>
           <ArticleListCard items={data.similarArticles} />
+        </section>
+      ) : null}
+
+      {related && related.status !== 'unavailable' ? (
+        <section className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+              Related (semantic)
+            </div>
+            {related.status === 'pending' ? (
+              <span className="font-mono text-[11px] text-mute2">
+                · computing embedding…
+              </span>
+            ) : related.items.length === 0 ? (
+              <span className="font-mono text-[11px] text-mute2">
+                · no neighbours above threshold
+              </span>
+            ) : null}
+          </div>
+          {related.status === 'ready' && related.items.length > 0 ? (
+            <ul className="flex flex-col">
+              {related.items.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-baseline gap-3 border-t border-border py-2 first:border-t-0"
+                >
+                  <span className="w-12 font-mono text-[12px] tnum text-mute2">
+                    {r.score.toFixed(2)}
+                  </span>
+                  <Link
+                    to={`/articles/${r.id}`}
+                    className="min-w-0 flex-1 text-ink hover:text-accent-deep"
+                  >
+                    {r.title}
+                  </Link>
+                  {r.feedTitle ? (
+                    <span className="font-mono text-[11.5px] text-mute2">
+                      {r.feedTitle}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       ) : null}
     </article>

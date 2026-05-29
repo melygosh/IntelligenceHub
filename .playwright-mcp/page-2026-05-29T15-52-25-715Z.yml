@@ -1,0 +1,89 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - img [ref=e6]
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e14]
+        - generic: Dashboard
+      - link "Articles" [ref=e19] [cursor=pointer]:
+        - /url: /articles
+        - img [ref=e21]
+        - generic: Articles
+      - link "Graph" [ref=e24] [cursor=pointer]:
+        - /url: /graph
+        - img [ref=e26]
+        - generic: Graph
+      - link "Digests" [ref=e31] [cursor=pointer]:
+        - /url: /digests
+        - img [ref=e33]
+        - generic: Digests
+      - link "Feeds" [ref=e36] [cursor=pointer]:
+        - /url: /feeds
+        - img [ref=e38]
+        - generic: Feeds
+    - generic [ref=e40]:
+      - link "Entities" [ref=e41] [cursor=pointer]:
+        - /url: /entities
+        - img [ref=e43]
+        - generic: Entities
+      - link "Categories" [ref=e47] [cursor=pointer]:
+        - /url: /categories
+        - img [ref=e49]
+        - generic: Categories
+      - link "Axes" [ref=e52] [cursor=pointer]:
+        - /url: /settings/axes
+        - img [ref=e54]
+        - generic: Axes
+      - link "Telemetry" [ref=e57] [cursor=pointer]:
+        - /url: /telemetry
+        - img [ref=e59]
+        - generic: Telemetry
+    - button "Expand sidebar" [ref=e62] [cursor=pointer]:
+      - img [ref=e63]
+  - generic [ref=e65]:
+    - banner [ref=e66]:
+      - generic [ref=e69]: Graph
+      - button "P playwright-walk@example.com" [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: P
+        - generic [ref=e73]: playwright-walk@example.com
+        - img [ref=e75]
+    - main [ref=e77]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - generic [ref=e80]: Graph
+          - heading "Relationships" [level=1] [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: "period:"
+            - generic [ref=e85]:
+              - button "all" [pressed] [ref=e86] [cursor=pointer]
+              - button "24h" [ref=e87] [cursor=pointer]
+              - button "7d" [ref=e88] [cursor=pointer]
+              - button "30d" [ref=e89] [cursor=pointer]
+              - button "custom" [ref=e90] [cursor=pointer]
+          - generic [ref=e91]:
+            - generic [ref=e92]: "show:"
+            - generic [ref=e93]:
+              - button "both" [pressed] [ref=e94] [cursor=pointer]
+              - button "articles" [ref=e95] [cursor=pointer]
+              - button "entities" [ref=e96] [cursor=pointer]
+          - button "Category" [ref=e98] [cursor=pointer]:
+            - generic [ref=e99]: Category
+            - img [ref=e101]
+          - button "Customize…" [ref=e103] [cursor=pointer]
+          - generic "Animate mentions edges in chronological direction (article → entity)" [ref=e104]:
+            - checkbox "animate edges" [ref=e105]
+            - text: animate edges
+          - group [ref=e107]:
+            - generic "Export graph" [ref=e108] [cursor=pointer]:
+              - text: Export
+              - generic [ref=e109]: ▾
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]: Entities on canvas · 0
+            - paragraph [ref=e113]: No entities in this view.
+          - generic [ref=e114]:
+            - generic [ref=e115]: Articles on canvas · 0
+            - paragraph [ref=e116]: No articles in this view.
+        - paragraph [ref=e119]: Loading…

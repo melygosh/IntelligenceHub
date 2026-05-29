@@ -1,0 +1,184 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - img [ref=e6]
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e14]
+        - generic: Dashboard
+      - link "Articles" [ref=e19] [cursor=pointer]:
+        - /url: /articles
+        - img [ref=e21]
+        - generic: Articles
+      - link "Graph" [ref=e24] [cursor=pointer]:
+        - /url: /graph
+        - img [ref=e26]
+        - generic: Graph
+      - link "Digests" [ref=e31] [cursor=pointer]:
+        - /url: /digests
+        - img [ref=e33]
+        - generic: Digests
+      - link "Feeds" [ref=e36] [cursor=pointer]:
+        - /url: /feeds
+        - img [ref=e38]
+        - generic: Feeds
+    - generic [ref=e40]:
+      - link "Entities" [ref=e41] [cursor=pointer]:
+        - /url: /entities
+        - img [ref=e43]
+        - generic: Entities
+      - link "Categories" [ref=e47] [cursor=pointer]:
+        - /url: /categories
+        - img [ref=e49]
+        - generic: Categories
+      - link "Axes" [ref=e52] [cursor=pointer]:
+        - /url: /settings/axes
+        - img [ref=e54]
+        - generic: Axes
+      - link "Telemetry" [ref=e57] [cursor=pointer]:
+        - /url: /telemetry
+        - img [ref=e59]
+        - generic: Telemetry
+    - button "Expand sidebar" [ref=e62] [cursor=pointer]:
+      - img [ref=e63]
+  - generic [ref=e65]:
+    - banner [ref=e66]:
+      - generic [ref=e69]: Dashboard
+      - button "P playwright-walk@example.com" [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: P
+        - generic [ref=e73]: playwright-walk@example.com
+        - img [ref=e75]
+    - main [ref=e77]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - generic [ref=e80]: /dashboard
+          - heading "Dashboard" [level=1] [ref=e81]
+          - paragraph [ref=e82]: Top entities, categories, and feeds for the chosen window. Deterministic — no LLM call.
+        - generic [ref=e83]:
+          - generic [ref=e84]: "period:"
+          - generic [ref=e85]:
+            - button "all" [ref=e86] [cursor=pointer]
+            - button "24h" [ref=e87] [cursor=pointer]
+            - button "7d" [pressed] [ref=e88] [cursor=pointer]
+            - button "30d" [ref=e89] [cursor=pointer]
+            - button "custom" [ref=e90] [cursor=pointer]
+        - generic [ref=e91]:
+          - generic [ref=e92]: 20 articles
+          - generic [ref=e93]: ·
+          - generic [ref=e94]: scoped to last 7d
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - heading "Top entities" [level=2] [ref=e98]
+              - generic [ref=e99]: top 10
+            - list [ref=e101]:
+              - listitem [ref=e102]:
+                - generic [ref=e103]: "1"
+                - link "Hacker News" [ref=e105] [cursor=pointer]:
+                  - /url: /entities/4bc6a184-875d-498c-8834-c5d4ccc8124b
+                - generic [ref=e106]: product
+                - generic [ref=e107]: "5"
+              - listitem [ref=e108]:
+                - generic [ref=e109]: "2"
+                - link "GitHub" [ref=e111] [cursor=pointer]:
+                  - /url: /entities/295b2a00-ee33-4408-ba31-864dbf0694e1
+                - generic [ref=e112]: company
+                - generic [ref=e113]: "2"
+              - listitem [ref=e114]:
+                - generic [ref=e115]: "3"
+                - link "GitHub Actions" [ref=e117] [cursor=pointer]:
+                  - /url: /entities/a2a0b45f-a852-4427-8c45-4b0e5319dd75
+                - generic [ref=e118]: product
+                - generic [ref=e119]: "2"
+              - listitem [ref=e120]:
+                - generic [ref=e121]: "4"
+                - link "United States" [ref=e123] [cursor=pointer]:
+                  - /url: /entities/843617f0-cce0-4178-9a80-8f66eb155f77
+                - generic [ref=e124]: location
+                - generic [ref=e125]: "2"
+              - listitem [ref=e126]:
+                - generic [ref=e127]: "5"
+                - link "Commodore 64" [ref=e129] [cursor=pointer]:
+                  - /url: /entities/193fc136-041f-4b54-a40a-3a0aca884094
+                - generic [ref=e130]: product
+                - generic [ref=e131]: "1"
+              - listitem [ref=e132]:
+                - generic [ref=e133]: "6"
+                - link "GitHub Pages" [ref=e135] [cursor=pointer]:
+                  - /url: /entities/27211eae-1df4-4292-9273-cc5c7ec6322b
+                - generic [ref=e136]: product
+                - generic [ref=e137]: "1"
+              - listitem [ref=e138]:
+                - generic [ref=e139]: "7"
+                - link "Kalshi" [ref=e141] [cursor=pointer]:
+                  - /url: /entities/141cc649-ce1d-488b-80b7-652090f5a1b2
+                - generic [ref=e142]: product
+                - generic [ref=e143]: "1"
+              - listitem [ref=e144]:
+                - generic [ref=e145]: "8"
+                - link "Norway" [ref=e147] [cursor=pointer]:
+                  - /url: /entities/4a3a6fa0-2222-4f10-ae8b-5ac3f5fd6d7e
+                - generic [ref=e148]: location
+                - generic [ref=e149]: "1"
+              - listitem [ref=e150]:
+                - generic [ref=e151]: "9"
+                - link "Spain" [ref=e153] [cursor=pointer]:
+                  - /url: /entities/4ebc57a9-e9a3-4c37-abf8-a48ee8cd44fe
+                - generic [ref=e154]: location
+                - generic [ref=e155]: "1"
+              - listitem [ref=e156]:
+                - generic [ref=e157]: "10"
+                - link "thefrontpage.dev" [ref=e159] [cursor=pointer]:
+                  - /url: /entities/4c127ffe-fb0b-443b-a70f-b716db891d22
+                - generic [ref=e160]: product
+                - generic [ref=e161]: "1"
+          - generic [ref=e162]:
+            - generic [ref=e163]:
+              - heading "Top categories" [level=2] [ref=e164]
+              - generic [ref=e165]: top 5
+            - list [ref=e167]:
+              - listitem [ref=e168]:
+                - generic [ref=e169]:
+                  - generic [ref=e170]: "1"
+                  - link "DevTools" [ref=e171] [cursor=pointer]:
+                    - /url: /articles?category=934c2487-9f12-421e-9b64-9894663f64b1
+                  - generic [ref=e172]: "8"
+                  - generic [ref=e173]: 40%
+              - listitem [ref=e176]:
+                - generic [ref=e177]:
+                  - generic [ref=e178]: "2"
+                  - link "Hardware" [ref=e179] [cursor=pointer]:
+                    - /url: /articles?category=12edf79d-0817-490f-8b25-e24eeb94795a
+                  - generic [ref=e180]: "6"
+                  - generic [ref=e181]: 30%
+              - listitem [ref=e184]:
+                - generic [ref=e185]:
+                  - generic [ref=e186]: "3"
+                  - link "AI infra" [ref=e187] [cursor=pointer]:
+                    - /url: /articles?category=2aa59de9-4ce7-43dd-bea3-86f6b8bbcabd
+                  - generic [ref=e188]: "5"
+                  - generic [ref=e189]: 25%
+              - listitem [ref=e192]:
+                - generic [ref=e193]:
+                  - generic [ref=e194]: "4"
+                  - link "Crypto regulation" [ref=e195] [cursor=pointer]:
+                    - /url: /articles?category=c466f55c-8d82-46a3-8ebd-415d37761866
+                  - generic [ref=e196]: "4"
+                  - generic [ref=e197]: 20%
+              - listitem [ref=e200]:
+                - generic [ref=e201]:
+                  - generic [ref=e202]: "5"
+                  - link "Web dev" [ref=e203] [cursor=pointer]:
+                    - /url: /articles?category=388a14c7-2608-44c3-97ee-9da291c0954b
+                  - generic [ref=e204]: "3"
+                  - generic [ref=e205]: 15%
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - heading "Top feeds" [level=2] [ref=e210]
+              - generic [ref=e211]: top 1
+            - list [ref=e213]:
+              - listitem [ref=e214]:
+                - generic [ref=e215]: "1"
+                - link "Hacker News (demo snapshot)" [ref=e217] [cursor=pointer]:
+                  - /url: /articles?feed=ac85b794-2579-4e99-92e2-473567df838f
+                - generic [ref=e218]: "20"
