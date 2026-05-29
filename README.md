@@ -1,370 +1,402 @@
 # News Intelligence Hub
 
-UA-Skills tournament submission. Multi-user web app that pulls RSS feeds, processes
-articles through an LLM pipeline, deduplicates entities, and exposes the result as a
-feed + knowledge graph + on-demand digests.
+A multi-user web app that pulls RSS feeds, runs each article through a single
+structured LLM call, deduplicates entities, and surfaces the result as a
+filterable feed, an interactive knowledge graph, and on-demand period digests.
+Submitted for the UA-Skills tournament (`docs/spec.pdf`).
 
-> **Current phase:** Phase 2 Day 13 — Should-tier bonuses. Articles
-> list gains a time-window filter (preset chips + custom range) and
-> Postgres full-text search across title + body. LLM provider failover
-> (Anthropic ⇄ OpenAI, opt-in via `LLM_FALLBACK_PROVIDER`) retries the
-> request once on the secondary adapter after the primary's existing
-> retry exhausts; both attempts persist to `llm_calls` telemetry. A new
-> `/telemetry` page aggregates calls per (operation, provider, model)
-> with computed USD cost from a hardcoded `MODEL_PRICING` table.
+## Stack
 
-## Prerequisites
+- **Backend** — NestJS 11, Drizzle ORM, PostgreSQL 16, Redis 7 + BullMQ, argon2
+  passwords, JWT in an httpOnly cookie. LLM access via `@anthropic-ai/sdk` and
+  `openai` behind a hand-written service abstraction (no agent framework — see
+  ADR-1). Lint enforces the Google TypeScript Style Guide via `gts`.
+- **Frontend** — React + Vite, Tailwind CSS v4, React Router v7, Redux Toolkit
+  + RTK Query, react-hook-form + Zod.
+- **Shared** — Zod schemas in `packages/shared`, compiled to `dist/` and
+  imported by both api and web for end-to-end types.
+- **Tooling** — pnpm workspaces, TypeScript strict, ESLint + Prettier, Jest.
 
-- Docker + Docker Compose (Docker Desktop on macOS/Windows works)
-- Node 22+ and pnpm 9.15+ (only for local development outside Docker)
+## Quick start
 
-## Run
+Prerequisites: Docker + Docker Compose. (For local-host dev outside Docker see
+the last section.)
 
 ```bash
 cp .env.example .env
-
-# Fill in the required secrets in .env:
-#   POSTGRES_PASSWORD  (your choice; the DATABASE_URL below must use the same value)
-#   JWT_SECRET         (generate with: openssl rand -base64 32)
-#   BULL_BOARD_PASS    (your choice; protects /admin/queues)
-#   LLM_PROVIDER          (anthropic | openai; default anthropic)
-#   LLM_PROVIDER_API_KEY  (required — the API key for whichever provider you picked)
-#   LLM_PROVIDER_MODEL    (optional — defaults to claude-haiku-4-5 or gpt-4o-mini)
-#   LLM_FALLBACK_PROVIDER / _API_KEY / _MODEL  (optional failover trio — must differ from primary)
-# Important: update DATABASE_URL's embedded password to match POSTGRES_PASSWORD.
+# Fill in:
+#   POSTGRES_PASSWORD              your choice; DATABASE_URL below must match
+#   JWT_SECRET                     openssl rand -base64 32
+#   BULL_BOARD_USER / _PASS        protects /admin/queues
+#   LLM_PROVIDER                   anthropic | openai (default anthropic)
+#   LLM_PROVIDER_API_KEY           required, for the active provider
+#   LLM_PROVIDER_MODEL             optional, defaults to claude-haiku-4-5 / gpt-4o-mini
+#   LLM_FALLBACK_PROVIDER / _API_KEY / _MODEL   optional cross-provider failover
 
 docker compose up --build
 ```
 
-Then open **http://localhost:5174** in your browser.
+The api auto-applies Drizzle migrations and seeds the four default axes on
+first boot. Once all four services are healthy:
 
-## Ports
+1. Open **http://localhost:5174** in a browser.
+2. Register with email + password. Tick **Load demo data** if you want a
+   pre-built dataset instead of waiting for a live feed pull.
+3. The next page shows the email confirmation link (it is also written to
+   the api log as `auth.confirmation_link`); follow it to activate the
+   account.
+4. Log in. Without demo data, go to `/feeds` and add an RSS URL
+   (`https://hnrss.org/frontpage` works). Wait ~30 s for the pull + analyse
+   workers; the row turns from `pending` to `ready`. With demo data the
+   account already has three paused feeds, ~20 ready articles, and a
+   populated graph.
+5. Explore `/articles`, `/entities`, `/graph`, `/digests`. Change category or
+   axis configuration under `/settings`, then click **Regenerate articles**
+   to re-tag against the new config; progress streams via SSE without
+   blocking the UI.
+6. **http://localhost:3010/admin/queues** opens Bull Board behind HTTP basic
+   auth (the `BULL_BOARD_USER` / `BULL_BOARD_PASS` you set in `.env`).
 
-The docker-compose maps containers to non-default host ports to avoid clashes with other
-local dev servers:
+### Ports
 
-| Service  | Container port | Host port | Reason                                                |
-|----------|---------------:|----------:|-------------------------------------------------------|
-| web      |           5173 |  **5174** | avoid clashing with a local Vite dev server on 5173   |
-| api      |           3011 |  **3010** | avoid clashing with other local servers on 3000/3005  |
-| postgres |           5432 |  **5433** | avoid clashing with a local Postgres on 5432          |
-| redis    |           6379 |  **6380** | avoid clashing with a local Redis on 6379             |
+Mapped to non-default host ports to avoid clashes with common local services.
+Inside the docker network everything talks on standard ports.
 
-Inside the docker network, services reach each other on internal ports (e.g. the api
-reaches Postgres at `postgres:5432` per `DATABASE_URL`).
-
-## What works (end of Phase 2 Day 13)
-
-- `docker compose up --build` brings up Postgres, Redis, API, and Web.
-- API auto-applies Drizzle migrations on container start.
-- Register / log in / log out flow with JWT in an httpOnly cookie (`ih_auth`).
-- Session survives page reload. Multi-tenant isolation enforced at the data layer —
-  `users`, `feeds`, `articles`, `entities`, `article_entity` all carry `user_id`;
-  cross-user access returns 404 throughout.
-- Vite dev server proxies `/api/*` and `/admin/queues/*` to the api container so the
-  browser only ever talks to `http://localhost:5174`.
-- **Feeds (`/feeds`):** add an RSS/Atom feed by URL — the puller worker fetches it
-  (10s timeout, custom UA), parses items, normalises URLs (strips tracking params),
-  computes content hashes, dedups against existing articles, runs a heuristic
-  pre-filter (length / emptiness / spam / link density), and persists each item as
-  `status='pending'` (enqueued for analysis) or `status='filtered' + filter_reason`
-  (no LLM call). Each row shows status
-  (active / paused / error), title, last-pull timestamp; pause/resume + delete +
-  manual pull-now actions. Try `https://hnrss.org/frontpage` to see real articles
-  flow through.
-- **LLM extraction pipeline:** analysis is a first-class **`article.analyze` BullMQ
-  queue** — feed-pull enqueues one job per `pending` article (it never analyses
-  inline, so a pull can't block on the LLM). The worker makes a single LLM call
-  returning a structured `{summary, importance, entities[]}` and promotes the row to
-  `status='ready'`. Our own abstraction layer (no third-party agent framework — per
-  spec) ships two adapters: Anthropic (via `@anthropic-ai/sdk`, structured output via
-  `tool_use`, system prompt marked `cache_control: ephemeral`) and OpenAI (via
-  `openai`, structured output via `response_format.json_schema`, automatic prefix
-  caching). Active provider via `LLM_PROVIDER` env; the other adapter stays inert.
-  Response shape is Zod-validated; an invalid response is retried once in-call. On
-  failure the job throws and **BullMQ owns retry/backoff** (fixed delay, configurable
-  via `ANALYZE_MAX_ATTEMPTS` / `ANALYZE_BACKOFF_SECONDS`) — the job sits in the queue's
-  `delayed` set between attempts (visible in Bull Board) and lands in `status='failed'`
-  only after the budget is spent. Postgres `status='pending'` is the durable source of
-  truth; a boot-time reconcile re-enqueues any orphaned pending article so a Redis flush
-  can't strand work.
-- **Cost controls (FR-10):** content-hash response cache (`llm_response_cache`) — a
-  repeated article body short-circuits before reaching the model. Per-call telemetry
-  in `llm_calls` records provider, model, status, input/output/cache tokens, latency,
-  and error message (ready for the Phase 3 telemetry dashboard).
-- **Entity dedup (FR-6):** every LLM-extracted entity passes through `EntityResolver`,
-  which normalizes the canonical name (NFKC + lowercase + Latin-suffix strip), looks
-  for an existing exact / alias / type-scoped likely-match (token-prefix shortcut OR
-  Jaro-Winkler ≥ 0.95), and only inserts a new row when no equivalent exists.
-  Aliases are emitted by the LLM in the same call as the rest of the analysis
-  (no extra LLM calls — FR-10 compliant) and recorded in the `entity_alias` table
-  for future lookups. A smoke test against `https://hnrss.org/frontpage` reliably
-  collapses `Microsoft` / `MSFT` / `Microsoft Corp.` into a single entity per user.
-- **Email confirmation (US-1):** registration creates an unconfirmed account with
-  an `email_confirmation_token` row (sha256-hashed, 24h expiry, one-time use). In
-  dev mode (`APP_DEV_MODE=true`) the link is logged as a structured
-  `auth.confirmation_link` event AND surfaced in the registration response so the
-  `/auth/check-email` page can display it with a "DEV MODE" pill. Unconfirmed users
-  get `403 {error: 'email_unconfirmed'}` on every business route via
-  `RequireConfirmedEmailGuard`; the frontend api wrapper redirects them to
-  `/auth/check-email`. Resend endpoint is rate-limited (60s cooldown — register
-  itself starts the window) and invalidates prior tokens on success.
-- **Categories + axes (FR-8, US-4, US-5):** per-user category CRUD and axis CRUD
-  (with values) via `/categories` and `/settings/axes`. 4 axes seeded on
-  registration (content type / reader level / region / tonality). The
-  `analyzeArticle` LLM call (now operation `v3`) takes each user's config inline,
-  returns `categoryNames[]` and `axisAssignments[]`, and the cache key includes a
-  `config_hash` so two users with identical configs still share the cache while
-  changes invalidate per-user correctly. Article list and graph are filterable by
-  category.
-- **Regeneration (US-6, FR-9):** when categories or axes change, the user clicks
-  "Regenerate articles" on the Categories or Axes settings page. A Bull job
-  re-tags every article whose stored `config_hash` doesn't match the user's
-  current config. Each article runs through `ArticleProcessor.retag`, which
-  reuses the LLM response cache (keyed on content_hash + config_hash) — so a
-  revert to a previously-used config completes with zero LLM calls. Progress
-  is visible via a banner mounted in the global Shell layout (polls
-  `/api/regeneration/current` every 2s while running). Partial unique index
-  on `regeneration_run (user_id) WHERE status='running'` prevents concurrent
-  runs per user; boot-time cleanup marks any stale `running` rows from a
-  previous process crash as `failed` so users never deadlock.
-- **Feed validate (`POST /api/feeds/validate`):** pre-flight a URL before adding it
-  — returns the discovered channel title + normalised URL + item count, or a
-  structured error (`unreachable` / `not_a_feed` / `malformed_url` / `empty`).
-- **Articles (`/articles`):** see your articles ordered by publication time, each row
-  showing importance dot, mono timestamp, entity chips with per-type glyphs, and a
-  `· N similar` badge when the same article appears in other feeds. Click a row to
-  open the detail card; click an entity chip to open that entity's page.
-- **Article detail (`/articles/:id`, US-8):** full layout with summary, body (LLM
-  body preserved from Day 8b), entity chips (each links to `/entities/:id`),
-  category + axis tags, and "Found N similar in other feeds" with per-item links
-  to that copy's article page and an `open source ↗` shortcut.
-- **Entity detail (`/entities/:id`, US-10):** canonical name, type, aliases (from
-  Day 6's `entity_alias`), mention count + first/last seen, a pure-SVG **mention
-  timeline** sparkline (per-UTC-day buckets with native `<title>` tooltips), top-20
-  **related entities** with co-mention weights, and the full mentioning-articles list.
-- **Duplicate detection (FR-5 exact):** when the puller sees the same `content_hash`
-  or normalised URL again for the same user, the new row is persisted with
-  `status='duplicate'` + `duplicate_of` pointing to the canonical original (not
-  silently filtered). Duplicates are never enqueued for analysis, so they don't
-  burn tokens. They surface as the `N similar` counter on the list + the expandable
-  list on the article card. Semantic similarity (FR-5 Should) not implemented —
-  see Should/Could status below.
-- **Demo data seed (spec §6):** the registration page has a "Load demo data"
-  checkbox (default unchecked). When ticked, `AuthService` enqueues a
-  `demo.seed` Bull job that asynchronously loads a frozen HN-snapshot dataset
-  (~20 articles + ~7 duplicates spread across 3 paused demo feeds + entities
-  + categories + axis assignments) into the user's account in ~200ms. Zero
-  runtime LLM calls — the data ships as a static JSON with LLM-pre-generated
-  summaries/entities. Reviewer following the spec §9.4 walkthrough step 8 can
-  pick this in lieu of waiting for a live HN pull. Demo feeds stay paused so
-  the puller worker never tries to GET `demo://...`. To refresh the snapshot
-  from new HN content: `cd apps/api && tsx scripts/dump-demo-snapshot.ts <email>`.
-- **Digests (`/digests`, US-11 + Case 3):** request a digest for a period
-  (day/week/month) optionally filtered by categories or entities. Backend
-  asynchronously assembles in-scope articles via Bull queue + single LLM
-  call (`'build_digest_v1'`, both Anthropic + OpenAI adapters supported),
-  produces a 2-3 paragraph editorial summary + top-20 entities + top-10
-  categories + top-10 key articles snapshot. Persisted in `digest_run`
-  table; history list on `/digests`; detail page at `/digests/:id` in
-  magazine layout (header + summary + lists grid + key articles +
-  per-digest telemetry: model + tokens + ms). LLM response cache reuse —
-  identical inputs share the cache (FR-10), zero LLM tokens on cache hit.
-  Empty-scope failure path: if no articles match the window+filter, the
-  build skips the LLM call and marks `status='failed'` with an explicit
-  error message.
-- **Generic SSE events** (`GET /api/events`): server-sent events channel
-  exposing typed `ServerEvent` payloads (discriminated union by `type`).
-  First event type: `digest.status_changed` (drives the digest history
-  live-update without polling). Per-user `EventsService` subjects with
-  refcounted teardown; in-memory only (single api instance; Redis pubsub
-  swap documented for horizontal scaling). Frontend `useServerEvents`
-  hook opens one EventSource and dispatches to typed consumer hooks
-  (e.g. `useDigestStatusEvents`); future event types add new union
-  variants + consumers without changing the channel.
-- **Time-window filter + text search (`/articles`):** toolbar chip
-  group (All / 24h / 7d / 30d / Custom) + debounced search input,
-  both URL-backed via `useSearchParams`. Search uses a Postgres
-  generated `search_vector` tsvector column (migration 0012) with a
-  GIN index; `plainto_tsquery` sanitizes input. When searching,
-  results order by `ts_rank` DESC instead of recency. Composes with
-  the existing category filter.
-- **LLM provider failover** (`LLM_FALLBACK_PROVIDER` env, opt-in):
-  After the primary adapter's 2-attempt retry exhausts (any error
-  class), retry once on the configured secondary. Both attempts
-  persist their own `llm_calls` row; the fallback's row carries
-  `failover_reason` (auth | rate_limit | network | timeout |
-  invalid_response | unknown). Boot-time Zod validation ensures the
-  fallback differs from the primary AND its API key is present.
-  Cache writes use the responding provider+model — content-addressed
-  cache hits work across providers.
-- **Telemetry dashboard (`/telemetry`):** lifetime aggregation of
-  `llm_calls` per (operation, provider, model). Columns: call count,
-  input/output/cache tokens, computed USD cost, avg latency, success
-  rate, failover count. Cost via hardcoded `MODEL_PRICING` lookup
-  (claude-opus/sonnet/haiku 4.x, gpt-5/5-mini/4o/4o-mini); unknown
-  models render `—` and are tallied separately. Multi-tenant via
-  `WHERE user_id=$1`.
-- **Graph (`/graph`):** hybrid analytical view (Case 2 — *Аналітика зв'язків*).
-  Filter bar: **period chips** (`24h / 7d / 30d / all / custom`, default 7d —
-  Should bonus closed), node-type toggle (default `entities`), category filter,
-  and an **entity search** that anchors the canvas on any of your entities
-  (typeahead → click → URL `?anchor=<id>`; closes the other Should "extended
-  graph filter: text search" bonus). Filters URL-backed via `?period=`,
-  `?nodeKind=`, `?category=`, `?anchor=`. **Two-cell
-  summary band** above the canvas: top 5 entities (by mention count, with a
-  dominant-category dot) and top 5 articles (importance: high preferred,
-  normal as fill); each row is clickable and opens the side panel + focuses
-  the graph. **Canvas:** react-flow with top-20 entities by mentions (or, when
-  anchored via the search box, the anchor + its top-20 co-mentioned neighbours
-  in scope); **size encodes mention count**, **fill encodes dominant category**
-  via a stable 6-colour palette (Could "visual category clustering" bonus).
-  Article nodes
-  (when toggled on) carry `importance` (FR-7) as a coloured left border
-  reusing the article-list palette. **Clicking a node** opens a persistent
-  360 px right rail with that node's details (US-9) — entity: name + type +
-  mention count + aliases + co-mentioned chips; article: title + source +
-  importance pill + summary + entities + link to the full page. The clicked
-  node + its 1-hop neighbours stay at full opacity, everything else dims;
-  pane-click and filter changes clear selection. Category legend in the
-  canvas footer shows only colours present in view. New backend route
-  `GET /api/graph/summary` powers the band; `GET /api/graph` accepts
-  `period` + `top`.
-- **Bull Board:** queue dashboard at **http://localhost:3010/admin/queues** behind HTTP
-  Basic auth — credentials via `BULL_BOARD_USER` / `BULL_BOARD_PASS` in `.env`.
-- **Editorial design system:** cream paper, Instrument Serif headlines, IBM Plex Mono
-  metadata, single deep-moss accent. Applied consistently across auth pages, sidebar,
-  topbar, feeds, articles, graph.
-
-## Should / Could status (§9.5)
-
-Honest snapshot of the optional tiers. Musts are covered in "What works" above.
-
-**Should (+10):**
-
-- ✅ **LLM provider failover** — opt-in via `LLM_FALLBACK_PROVIDER`; retries once on the
-  secondary adapter after the primary exhausts; both attempts persist to `llm_calls`.
-- ✅ **Period digests** — `/digests`, day/week/month, category/entity scoped (also a Must).
-- ✅ **LLM-telemetry aggregate view** — `/telemetry`, per (operation, provider, model)
-  with computed USD cost.
-- ✅ **Extended graph filters** — the graph canvas has a **time-window filter**
-  (period chips, default 7d) AND an **entity name/alias search** that anchors
-  the canvas on any entity (`?anchor=<id>`) → the anchor + its top-N
-  co-mentioned neighbours in scope. Both Should-tier extensions to the
-  mandatory node-type + category filters.
-- ◐ **Meaningful unit tests on critical parts** — entity dedup, pre-filter, and the SSRF
-  URL-guard have unit tests; **article dedup (content-hash + URL) is not yet unit-tested**
-  (known gap).
-
-**Could (+10):**
-
-- ✅ **Full-text article search** — Postgres `tsvector` + GIN, `ts_rank` ordering.
-- ◐ **Top entities / top categories for a period** — surfaced via digests (top-20 entities
-  + top-10 categories per window), not as a standalone dashboard.
-- ❌ Edge animation along timestamps · timeline scrubber · graph clustering by category ·
-  graph export · semantic article similarity (deterministic exact dedup only). Not built.
-
-## Architectural decisions
-
-ADRs reflect decisions actually in the code. Format: Context / Decision / Alternatives / Trade-offs.
-
-### ADR-1 — Own LLM abstraction, no agent framework (Principle 1, FR-3)
-
-- **Context:** §5.2/§6 require the LLM to be used only for genuinely semantic work and
-  forbid a high-level framework (LangChain/LlamaIndex) as the architecture unless every
-  component is explainable.
-- **Decision:** a provider-agnostic `LlmService` with hand-written `AnthropicAdapter` and
-  `OpenAIAdapter`. Deterministic work — URL normalization, content hashing, pre-filter,
-  exact dedup, alias normalization — is plain code; the LLM does only NER, summary,
-  importance, category/axis assignment, and alias proposal.
-- **Alternatives:** LangChain/LlamaIndex (opaque, violates §5.2); a single-provider SDK
-  wired directly into services (no switchability).
-- **Trade-offs:** more adapter code to own; in return, full control over request shaping,
-  validation, and caching, plus provider switching via one env var.
-
-### ADR-2 — Asynchronous analysis queue with durable pending + Bull-native retry (Principles 2 & 3, FR-2)
-
-- **Context:** P3 keeps expensive work off the request path; P2 requires graceful
-  degradation on LLM failure (retry/backoff, or switch adapter, or mark pending), one dead
-  feed not halting others, and no swallowed errors.
-- **Decision:** feed-pull inserts each article as `pending` and enqueues one
-  `article.analyze` job; the worker analyses and promotes to `ready`, or throws so BullMQ
-  retries with fixed backoff (jobs observable in the `delayed` set), marking `failed` only
-  after `ANALYZE_MAX_ATTEMPTS`. Postgres status is the durable source of truth; a boot
-  reconcile re-enqueues orphaned pending rows. Optional cross-provider failover (ADR-1
-  adapters) covers provider-level outages.
-- **Alternatives:** analyse inline inside the pull job (blocks the pull, opaque retries);
-  a custom `@Interval` DB-poller (we had this — invisible in Bull Board, reinvents backoff).
-- **Trade-offs:** a Redis-backed queue plus DB status to keep in sync (the reconcile absorbs
-  drift); in return, every attempt is visible in Bull Board and retry/backoff is built-in.
-
-### ADR-3 — Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
-
-- **Context:** FR-10 caps ≤1 LLM call per article in normal mode, mandates a content-hash
-  cache, a concurrency cap, and telemetry, and forbids pre-filter/dedup from fanning out
-  LLM calls.
-- **Decision:** `llm_response_cache` keyed on `content_hash + config_hash + operation`, so a
-  repeated body — or a reverted config — short-circuits before the model. Deterministic
-  pre-filter + exact dedup gate the queue so junk and duplicates never reach the LLM.
-  `LLM_CONCURRENCY` caps parallelism; every call lands in `llm_calls` (tokens, cost, latency)
-  and aggregates at `/telemetry`.
-- **Alternatives:** no cache (re-pull/regen re-bills); per-user-only cache (identical configs
-  wouldn't share); cache by raw URL (misses content-identical cross-source copies).
-- **Trade-offs:** correctness hinges on the `config_hash`; in return, regeneration after a
-  config revert is ~free and cross-source duplicates cost nothing.
-
-### ADR-4 — Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
-
-- **Context:** FR-6 must merge `Microsoft` / `MSFT` / `Microsoft Corp.` / a Cyrillic spelling
-  / `MS`-in-context into one entity with an alias set, without pairwise LLM comparison.
-- **Decision:** the analysis call emits aliases alongside entities (no extra call);
-  `EntityResolver` normalizes (NFKC + lowercase + Latin-suffix strip) then resolves by exact
-  name → alias table → type-scoped likely-match (token-prefix shortcut OR Jaro-Winkler ≥ 0.95),
-  inserting a new row only when nothing matches. Aliases persist to `entity_alias`.
-- **Alternatives:** pure string similarity (can't separate `MSFT`↔`Microsoft` from random
-  near-misses); pairwise LLM dedup (O(n²) calls, breaks FR-10); embeddings (extra infra/cost
-  for MVP scope).
-- **Trade-offs:** depends on the LLM proposing good aliases and a tuned threshold; in return,
-  dedup costs zero extra LLM calls and is mostly deterministic and debuggable.
-
-### ADR-5 — NestJS over Directus for the backend
-
-- **Context:** the spec offers NestJS or Directus. We need custom BullMQ workers, an LLM
-  abstraction, SSE, auth guards, and a typed contract shared with the frontend.
-- **Decision:** NestJS — DI + modules fit the worker/service/guard split, BullMQ and schedule
-  integrate first-class, and the same Zod schemas in `packages/shared` give end-to-end types.
-- **Alternatives:** Directus — a headless-CMS/admin model fights the custom pipeline + queue +
-  LLM-abstraction work; we'd be working around it rather than with it.
-- **Trade-offs:** more boilerplate than a batteries-included CMS; in return, no impedance
-  mismatch with the async pipeline and every layer stays explainable (§9.7).
-
-## Stack
-
-- **Backend:** NestJS 11, Drizzle ORM, PostgreSQL 16, Redis 7, BullMQ, argon2, JWT
-  via httpOnly cookie. LLM via `@anthropic-ai/sdk` + `openai` behind our own service
-  abstraction (no agent framework). Lint enforces Google TypeScript Style Guide (`gts`).
-- **Frontend:** React + Vite, Tailwind CSS v4, React Router v7, Redux Toolkit + RTK
-  Query, react-hook-form + Zod.
-- **Shared:** Zod schemas in `packages/shared` (compiled to `dist/` so Node can resolve
-  at runtime); imported by both api and web for end-to-end type safety.
-- **Tooling:** pnpm workspaces, TypeScript strict, ESLint + Prettier.
+| Service  | Container port | Host port | Reason                                              |
+|----------|---------------:|----------:|-----------------------------------------------------|
+| web      |           5173 |  **5174** | local Vite dev server typically holds 5173          |
+| api      |           3011 |  **3010** | avoid clashing with other local servers on 3000     |
+| postgres |           5432 |  **5433** | avoid clashing with a host-side Postgres            |
+| redis    |           6379 |  **6380** | avoid clashing with a host-side Redis               |
 
 ## Project layout
 
 ```
-apps/api          NestJS backend + Drizzle schema + auth
+apps/api          NestJS backend: HTTP routes, BullMQ workers, Drizzle schema
 apps/web          React + Vite frontend
 packages/shared   Zod schemas shared between api and web
+docs/             Spec, design notes, audit checklist (gitignored)
 ```
+
+## What the app does
+
+### Authentication and tenancy
+
+Email + password registration with argon2 hashing, JWT in an httpOnly cookie,
+session survives page reload. Email confirmation is mandatory before access:
+unconfirmed users see `403 email_unconfirmed` on every business route and the
+frontend redirects them to a resend page (60-second cooldown). In dev mode
+(`APP_DEV_MODE=true`) the confirmation link is surfaced both in the api log
+and on the post-register screen with a "DEV MODE" pill.
+
+Multi-tenant isolation lives at the data layer: every table that holds
+user-owned rows carries a `user_id` column and every read/write is
+constrained by the authenticated user's id. Cross-user access returns `404`
+end-to-end (not `403`, to avoid leaking existence).
+
+### Feeds and the content pipeline
+
+Add an RSS or Atom feed by URL. `POST /api/feeds/validate` pre-flights it
+(returns the channel title + normalised URL + item count, or one of
+`unreachable | not_a_feed | malformed_url | empty`). Feeds have an explicit
+status (`active | paused | error`); pause/resume/delete and a manual
+**Pull now** action are available per row. Deleting a feed detaches its
+articles (`articles.feed_id` becomes `NULL`) instead of cascading them away,
+so the user's archive is never lost (US-3).
+
+The pull worker fetches every active feed on the BullMQ schedule, normalises
+each item's URL (strips tracking params), computes a SHA-256 content hash,
+deduplicates against existing articles for the same user, runs a
+deterministic pre-filter (length / emptiness / spam markers / link density),
+and persists the result. Duplicates land with `status='duplicate'` and a
+`duplicate_of` pointer; pre-filtered junk lands with `status='filtered'`
+and a structured `filter_reason`; everything else lands as `status='pending'`
+and a single `article.analyze` job is enqueued. The pull worker never makes
+an LLM call directly.
+
+### LLM analysis
+
+The analyse worker takes one pending article and makes exactly one
+structured LLM call per article in normal mode (FR-10). The active provider
+(`anthropic | openai`) is chosen via `LLM_PROVIDER`; the inactive adapter
+stays inert. The Anthropic adapter uses `tool_use` for structured output
+with `cache_control: ephemeral` on the system prompt; the OpenAI adapter
+uses `response_format.json_schema` with automatic prefix caching. Both
+return the same Zod-validated `{summary, importance, entities, aliases,
+categoryNames, axisAssignments}` shape; an invalid response is retried once
+in-call and otherwise propagates. On success the worker promotes the row to
+`status='ready'`; on terminal failure the row lands at `status='failed'`.
+
+### Deduplication
+
+**Articles** (FR-5) are dedup'd deterministically: exact match on the
+normalised URL or on the SHA-256 content hash, scoped to the same user. The
+decision rule is extracted as a pure function (`decideDedupAction` in
+`apps/api/src/articles/dedup-decision.ts`) and unit-tested across all
+branches — only a `ready` original from a *different* feed materialises a
+duplicate row (the cross-source similar-articles anchor); same-feed
+re-pulls and pending/failed siblings are skipped silently to avoid
+inflating the "N similar" counter.
+
+**Entities** (FR-6) are dedup'd via LLM-emitted aliases plus a deterministic
+resolver. The analysis call returns aliases alongside entities, so dedup
+costs zero extra LLM calls. `EntityResolver` normalises the canonical name
+(NFKC + lowercase + Latin-suffix strip), then matches by exact name → alias
+table → type-scoped likely-match (token-prefix shortcut OR Jaro-Winkler
+≥ 0.95). A new row is inserted only when nothing matches. The result
+collapses `Microsoft` / `MSFT` / `Microsoft Corp.` / Cyrillic spellings into
+one entity per user.
+
+### Article list and cards
+
+`/articles` shows the user's articles ordered by publication time, with an
+importance dot, mono timestamp, entity chips (per-type glyphs), category
+tags, the processing status, and a "· N similar" badge whenever the same
+content appears in other feeds. Filter chips at the top combine category,
+feed, importance, time window (24h / 7d / 30d / all / custom) and a
+debounced text search. Search uses a Postgres `tsvector` GIN index;
+`plainto_tsquery` sanitises input and results re-order by `ts_rank`.
+
+The article detail page (`/articles/:id`, US-8) shows the full LLM summary,
+the original body, clickable entity chips, the full set of category and
+axis tags, and "Found N similar in other feeds" with per-item links and an
+`open source ↗` shortcut to the source URL. The entity detail page
+(`/entities/:id`, US-10) shows the canonical name, type, description (when
+the LLM produced one), the alias set, a pure-SVG mention timeline, top-20
+related entities ranked by co-mention weight, and the full mentioning-
+articles list. Entity timestamps serialise as Unix seconds per FR-6.
+
+### Knowledge graph
+
+`/graph` is the analytical view (Case 2). The filter bar carries the
+mandatory node-type toggle + category filter, plus two Should-tier
+extensions: a **time-window** chip group (default 7d) and an **entity
+search** that anchors the canvas on a specific entity and shows it
+alongside its top-N co-mentioned neighbours in scope. All filters are
+URL-backed.
+
+A two-cell summary band above the canvas surfaces the top 5 entities
+(by mention count, dot-coded by dominant category) and the top 5 articles
+(importance-weighted). Both are clickable.
+
+The canvas is react-flow with dagre LR layout. Entity-node size encodes
+mention count and fill encodes dominant category via a stable six-colour
+palette (Could-tier visual clustering). Article-node left border encodes
+importance (FR-7). Clicking any node opens a 360px right rail with the
+node's details (US-9 — side panel, not navigation); the clicked node plus
+its 1-hop neighbourhood stays at full opacity while the rest dims.
+
+### Period digests
+
+`/digests` lets the user request a digest for a day / week / month,
+optionally scoped to chosen categories or entities (US-11). The request
+enqueues a single `digest.build` job; the worker collects matching articles
+deterministically, makes one LLM call for the editorial summary, and
+persists the run with top-20 entities, top-10 categories, top-10 key
+articles, model, tokens, and latency. The history list updates live via a
+server-sent events channel (`GET /api/events`, single per-user
+`EventsService` subject). Identical inputs share the LLM response cache, so
+re-requesting an unchanged digest costs zero tokens.
+
+### Cost control and telemetry
+
+Every LLM call is recorded in `llm_calls` (provider, model, operation,
+status, input/output/cache tokens, latency, error message). `LLM_CONCURRENCY`
+caps parallel calls. A content-addressed cache (`llm_response_cache`, keyed
+on `content_hash + config_hash + operation`) short-circuits the model when
+the same content + config has been seen, including across users — so a
+config revert during regeneration completes with zero LLM calls. The
+deterministic pre-filter and exact-dedup pipeline gate the queue so junk
+and duplicates never reach the model. `/telemetry` aggregates lifetime
+calls per `(operation, provider, model)` with token totals, computed USD
+cost (from a hardcoded `MODEL_PRICING` table covering current Claude 4.x
+and GPT-4o/5 SKUs), average latency, success rate, and failover count.
+
+### Regeneration on configuration change
+
+When the user edits categories or axes and clicks **Regenerate articles**,
+a Bull job walks every article whose stored `config_hash` doesn't match the
+user's current config and re-runs `ArticleProcessor.retag`. The retag path
+re-uses the LLM response cache, so a revert to a previously-used config
+completes with zero LLM calls. A partial unique index
+(`regeneration_run (user_id) WHERE status='running'`) prevents concurrent
+runs per user; a boot-time cleanup marks stale `running` rows from a
+previous process crash as `failed`. Progress streams to a banner mounted
+in the global layout via SSE.
+
+### Demo data
+
+The registration page has a **Load demo data** checkbox. When ticked, a
+`demo.seed` Bull job loads a frozen snapshot (~20 ready articles, ~7
+duplicates, three paused demo feeds, the resolved entity set, categories,
+axis assignments) into the new account in ~200 ms. The data ships as a
+static JSON with pre-generated LLM summaries and entities, so the seed
+makes zero LLM calls. Demo feeds stay paused so the puller never tries to
+GET `demo://...`. To refresh the snapshot from live HN content:
+`cd apps/api && tsx scripts/dump-demo-snapshot.ts <email>`.
+
+## Architectural decisions
+
+Format follows §9.6: Context / Decision / Alternatives / Trade-offs. Each
+ADR reflects code that is actually shipping; see file references and
+commits for verification.
+
+### ADR-1 — Own LLM abstraction, no agent framework (Principle 1, FR-3)
+
+- **Context.** §5.2/§6 require the LLM to be used only for genuinely
+  semantic work and forbid a high-level framework (LangChain / LlamaIndex /
+  similar) as the architecture unless every component is explainable.
+- **Decision.** A provider-agnostic `LlmService` with hand-written
+  `AnthropicAdapter` and `OpenAIAdapter`. Deterministic work — URL
+  normalisation, content hashing, pre-filter, exact dedup, alias
+  normalisation — is plain code; the LLM is invoked only for NER, summary,
+  importance, category/axis assignment, and alias proposal. Provider is
+  selected via one env var; adapters are interchangeable behind the same
+  Zod-validated contract.
+- **Alternatives.** LangChain or LlamaIndex (opaque, violates §5.2). A
+  single-provider SDK wired directly into services (no switchability, no
+  failover, no cache layer).
+- **Trade-offs.** More adapter code to maintain; in return, full control
+  over request shaping, validation, caching, and provider switching.
+
+### ADR-2 — Asynchronous analysis queue with durable pending (Principle 3, FR-2)
+
+- **Context.** P3 keeps expensive work off the request path: HTTP handlers
+  must not block on the LLM, and feed pulls must not stall on per-article
+  analysis. A Redis flush must not strand work.
+- **Decision.** Feed-pull inserts each article as `pending` and enqueues
+  one `article.analyze` BullMQ job per article; the worker analyses and
+  promotes to `ready`. Postgres `status` is the durable source of truth — a
+  boot-time reconcile re-enqueues any pending row that is missing a live
+  job. Categories, axes, digests, and regeneration all hand off to BullMQ
+  the same way.
+- **Alternatives.** Analyse inline inside the pull job (blocks the pull,
+  opaque retries, one slow feed delays the rest). A custom `@Interval`
+  DB-poller (we had this — invisible in Bull Board, reinvents backoff).
+- **Trade-offs.** A Redis-backed queue plus DB status to keep in sync (the
+  reconcile absorbs drift); in return, every attempt is visible in Bull
+  Board and HTTP handlers stay sub-50ms even under load.
+
+### ADR-3 — LLM error handling: per-job retry, cross-provider failover, per-feed isolation (Principle 2)
+
+- **Context.** P2 requires graceful degradation on LLM-provider failure
+  (retry with backoff, or switch adapter, or mark `pending`); one dead
+  feed must not halt the others; unrecoverable errors must be logged with
+  structured context, never swallowed.
+- **Decision.** Three layers. *(1)* Per-job retry: every `article.analyze`
+  job retries with fixed backoff (`ANALYZE_MAX_ATTEMPTS`,
+  `ANALYZE_BACKOFF_SECONDS`); the row lands at `status='failed'` only
+  after the budget is spent and the retries are visible in Bull Board's
+  `delayed` set. *(2)* Optional cross-provider failover: if
+  `LLM_FALLBACK_PROVIDER` is set, the secondary adapter retries the call
+  once after the primary's retries exhaust; both attempts persist their
+  own `llm_calls` row and the fallback row carries `failover_reason`
+  (`auth | rate_limit | network | timeout | invalid_response | unknown`).
+  Cache writes use the responding provider, so cache hits work across
+  providers. *(3)* Per-feed isolation: the pull worker wraps each item in
+  a try/catch; a single feed that 4xx/5xxs marks itself `status='error'`
+  with the error in `last_pull_error` and the loop continues to the next
+  feed. Every error path emits a structured JSON log with `event`,
+  `feedId` / `articleId`, `userId`, and the raw error message.
+- **Alternatives.** Hand-rolled retry in the worker (reinvents BullMQ).
+  Failover as a separate queue (extra moving part for a one-time
+  fallback). Pulling all feeds in a single transaction (one failure
+  aborts every feed).
+- **Trade-offs.** Failover correctness depends on the fallback API key
+  being valid at boot (a Zod check enforces this) and a row's eventual
+  consistency between Bull state and DB status during reconcile. In
+  return, a provider outage is opt-in survivable, a poisoned feed never
+  poisons the rest, and every failure is auditable post hoc.
+
+### ADR-4 — Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
+
+- **Context.** FR-10 caps ≤1 LLM call per article in normal mode, mandates
+  a content-hash cache, a concurrency cap, and telemetry, and forbids
+  pre-filter and dedup from fanning out LLM calls.
+- **Decision.** `llm_response_cache` keyed on `content_hash + config_hash +
+  operation`, so a repeated body — or a reverted config — short-circuits
+  before the model. The deterministic pre-filter and exact-dedup pipeline
+  gate the queue so junk and duplicates never reach the LLM at all.
+  `LLM_CONCURRENCY` caps parallelism; every call lands in `llm_calls` with
+  tokens and latency and aggregates at `/telemetry` with computed USD cost.
+- **Alternatives.** No cache (every re-pull or regen re-bills). Per-user
+  cache only (identical configs across users wouldn't share). Cache by raw
+  URL (would miss content-identical cross-source copies).
+- **Trade-offs.** Correctness hinges on the `config_hash` covering every
+  input the LLM actually sees; in return, regeneration after a config
+  revert is effectively free and cross-source duplicates cost zero tokens.
+
+### ADR-5 — Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
+
+- **Context.** FR-6 must merge `Microsoft` / `MSFT` / `Microsoft Corp.` /
+  Cyrillic spellings / `MS`-in-context into one entity with an alias set,
+  without pairwise LLM comparison.
+- **Decision.** The analysis call emits aliases alongside entities (no
+  extra LLM call). `EntityResolver` normalises (NFKC + lowercase +
+  Latin-suffix strip), then resolves in order: exact name → alias table →
+  type-scoped likely-match (token-prefix shortcut OR Jaro-Winkler ≥ 0.95).
+  A new row is inserted only when nothing matches. Aliases persist to
+  `entity_alias` for future lookups.
+- **Alternatives.** Pure string similarity (cannot separate `MSFT` ↔
+  `Microsoft` from random near-misses without a threshold that also
+  collapses unrelated names). Pairwise LLM dedup (O(n²) calls, breaks
+  FR-10). Embeddings (extra infra and tokens for MVP scope).
+- **Trade-offs.** Depends on the LLM proposing good aliases plus a tuned
+  Jaro-Winkler threshold; in return, dedup costs zero extra LLM calls and
+  is mostly deterministic and debuggable.
+
+### ADR-6 — NestJS over Directus for the backend
+
+- **Context.** The spec offers NestJS or Directus. We need custom BullMQ
+  workers, an LLM abstraction, SSE, auth guards, and a typed contract
+  shared with the frontend.
+- **Decision.** NestJS — DI + modules fit the worker/service/guard split,
+  BullMQ integrates first-class, and the same Zod schemas in
+  `packages/shared` give end-to-end types on both api and web.
+- **Alternatives.** Directus — its headless-CMS / admin model fights the
+  custom pipeline + queue + LLM-abstraction work; we would be working
+  around it rather than with it.
+- **Trade-offs.** More boilerplate than a batteries-included CMS; in
+  return, no impedance mismatch with the async pipeline and every layer
+  stays explainable on demand (§9.7).
+
+## Should / Could status (§9.5)
+
+Honest snapshot of the optional tiers. The mandatory features are described
+under "What the app does" above and verified against §4.1 / §9.4.
+
+**Should (+10):**
+
+- ✅ **LLM provider failover** — opt-in via `LLM_FALLBACK_PROVIDER`; one
+  cross-provider retry after the primary's per-job retries exhaust; both
+  attempts persist to `llm_calls` with `failover_reason`.
+- ✅ **Period digests** — `/digests`; also a Must under §4.1.
+- ✅ **LLM-telemetry aggregate view** — `/telemetry`, per
+  `(operation, provider, model)` with USD cost.
+- ✅ **Extended graph filters** — time-window chip group **and** an
+  entity-anchor search that re-roots the graph on a specific entity.
+- ✅ **Meaningful unit tests on critical parts** — pure-function tests
+  cover article dedup decision (6 branches), entity dedup, pre-filter,
+  URL normalisation, and content hashing.
+
+**Could (+10):**
+
+- ✅ **Full-text article search** — Postgres `tsvector` + GIN, `ts_rank`
+  ordering.
+- ✅ **Visual graph clustering by category** — entity-node fill via a
+  stable per-category palette; legend in the canvas footer.
+- ◐ **Top entities / top categories for a period** — surfaced via digests
+  (top-20 entities + top-10 categories per window), not as a standalone
+  dashboard.
+- ❌ Edge animation along timestamps · timeline scrubber · graph export ·
+  semantic article similarity. Not built.
 
 ## Local development outside Docker
 
-Day 1 is designed to run in Docker. If you want a local dev loop:
-
 ```bash
 pnpm install
-pnpm -F @intelligencehub/shared build   # required: api imports the built dist/
-# Run Postgres + Redis (e.g. via `docker compose up postgres redis -d`)
+pnpm -F @intelligencehub/shared build   # api imports the built dist/
+# Run Postgres + Redis (e.g. `docker compose up postgres redis -d`)
 pnpm -F @intelligencehub/api dev        # http://localhost:3011
 pnpm -F @intelligencehub/web dev        # http://localhost:5173
 ```
