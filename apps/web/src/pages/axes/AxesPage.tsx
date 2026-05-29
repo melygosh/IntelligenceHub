@@ -8,6 +8,7 @@ import {
 import type { Axis } from '@intelligencehub/shared';
 import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
 import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
+import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export default function AxesPage() {
   const { data, isLoading } = useGetAxesQuery();
@@ -68,7 +69,7 @@ export default function AxesPage() {
       </form>
 
       {isLoading ? (
-        <p className="font-mono text-[12.5px] text-muted">Loading…</p>
+        <LoadingHint />
       ) : (
         <ul className="space-y-3">
           {data?.axes.map((a) => (

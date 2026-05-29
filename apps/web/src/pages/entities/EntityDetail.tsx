@@ -5,6 +5,8 @@ import { MentionTimeline } from './MentionTimeline';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 function formatDate(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
@@ -51,15 +53,23 @@ export default function EntityDetail() {
   useSetPageTitle(data?.canonicalName);
 
   if (isLoading) {
-    return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
+    return <LoadingHint />;
   }
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-5xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[22px] text-ink">Entity not found</p>
-        <p className="mt-2 font-mono text-[14px] text-muted">
-          Back to <Link to="/entities" className="text-accent hover:text-accent-deep">entities</Link>.
-        </p>
+      <div className="mx-auto max-w-5xl border border-dashed border-border">
+        <EmptyState
+          title="Entity not found"
+          subtitle={
+            <>
+              Back to{' '}
+              <Link to="/entities" className="text-accent hover:text-accent-deep">
+                entities
+              </Link>
+              .
+            </>
+          }
+        />
       </div>
     );
   }

@@ -36,6 +36,9 @@ import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
 import { GraphSelectionPanel } from './GraphSelectionPanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { colourFor } from './graph-palette';
 
 const nodeTypes = {
@@ -346,12 +349,7 @@ export default function GraphPage() {
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Graph
-        </div>
-        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">Relationships</h1>
-      </header>
+      <PageHeader eyebrow="Graph" title="Relationships" />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <PeriodChips value={period} onChange={updatePeriod} />
         <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
@@ -393,26 +391,28 @@ export default function GraphPage() {
       <div className="flex min-h-[440px] flex-1 gap-0">
         <div className="min-w-0 flex-1 border border-border bg-surface">
           {isLoading ? (
-            <p className="p-6 font-mono text-[13px] text-mute2">Loading…</p>
+            <LoadingHint className="p-6" />
           ) : !filtered || filtered.nodes.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center">
-              <div>
-                <p className="font-serif text-[22px] text-ink">No activity in this window</p>
-                <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-                  Try a wider window or pull a feed in{' '}
-                  <a href="/feeds" className="text-accent hover:text-accent-deep">
-                    Feeds
-                  </a>
-                  .
-                </p>
-                <button
-                  type="button"
-                  onClick={() => updatePeriod('all')}
-                  className="mt-3 border border-border bg-paper px-3 py-1 font-mono text-[12px] text-ink hover:bg-paper2"
-                >
-                  Use period=all
-                </button>
-              </div>
+            <div className="flex h-full flex-col items-center justify-center">
+              <EmptyState
+                title="No activity in this window"
+                subtitle={
+                  <>
+                    Try a wider window or pull a feed in{' '}
+                    <a href="/feeds" className="text-accent hover:text-accent-deep">
+                      Feeds
+                    </a>
+                    .
+                  </>
+                }
+              />
+              <button
+                type="button"
+                onClick={() => updatePeriod('all')}
+                className="mt-3 border border-border bg-paper px-3 py-1 font-mono text-[12px] text-ink hover:bg-paper2"
+              >
+                Use period=all
+              </button>
             </div>
           ) : (
             <ReactFlow

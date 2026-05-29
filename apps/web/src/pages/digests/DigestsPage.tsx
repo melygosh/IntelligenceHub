@@ -16,6 +16,9 @@ import {
 import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { useSlashToFocus } from '../../components/filters/useSlashToFocus';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 function EntitySearchInput({
   value,
@@ -531,27 +534,27 @@ export default function DigestsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          /digests
-        </div>
-        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
-          Digests
-        </h1>
-        {data ? <StatsLine items={data.items} /> : null}
-      </header>
+      <PageHeader
+        eyebrow="/digests"
+        title="Digests"
+        subtitle={data ? <StatsLine items={data.items} /> : undefined}
+      />
 
       <DigestForm />
 
       {isLoading ? (
-        <p className="font-mono text-[13px] text-mute2">Loading…</p>
+        <LoadingHint />
       ) : !data || data.items.length === 0 ? (
-        <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-ink">No digests yet</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            Fill the form above and click <span className="text-ink">Generate digest</span> to
-            create one. Watch the new row appear at the top and update live as it builds.
-          </p>
+        <div className="border border-dashed border-border">
+          <EmptyState
+            title="No digests yet"
+            subtitle={
+              <>
+                Fill the form above and click <span className="text-ink">Generate digest</span>{' '}
+                to create one. Watch the new row appear at the top and update live as it builds.
+              </>
+            }
+          />
         </div>
       ) : (
         <div className="border border-border bg-paper">

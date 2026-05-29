@@ -8,6 +8,8 @@ import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
   day: 'Last 24 hours',
@@ -60,14 +62,22 @@ export default function DigestDetailPage() {
     data && periodLabel ? (data.title ? `${periodLabel}: ${data.title}` : periodLabel) : null,
   );
 
-  if (isLoading) return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
+  if (isLoading) return <LoadingHint />;
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-5xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[22px] text-ink">Digest not found</p>
-        <p className="mt-2 font-mono text-[14px] text-muted">
-          Back to <Link to="/digests" className="text-accent hover:text-accent-deep">all digests</Link>.
-        </p>
+      <div className="mx-auto max-w-5xl border border-dashed border-border">
+        <EmptyState
+          title="Digest not found"
+          subtitle={
+            <>
+              Back to{' '}
+              <Link to="/digests" className="text-accent hover:text-accent-deep">
+                all digests
+              </Link>
+              .
+            </>
+          }
+        />
       </div>
     );
   }
@@ -117,21 +127,26 @@ export default function DigestDetailPage() {
       </header>
 
       {data.status === 'building' ? (
-        <section className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-ink">Building digest…</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            LLM is summarising {data.articleCount} articles. This usually takes 5-15 seconds.
-            Page will refresh automatically when ready.
-          </p>
+        <section className="border border-dashed border-border">
+          <EmptyState
+            title="Building digest…"
+            subtitle={
+              <>
+                LLM is summarising {data.articleCount} articles. This usually takes 5-15 seconds.
+                Page will refresh automatically when ready.
+              </>
+            }
+          />
         </section>
       ) : null}
 
       {data.status === 'failed' ? (
-        <section className="border border-dashed border-critical/40 bg-critical-bg px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-critical">Build failed</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            {data.errorMessage ?? 'Unknown error.'}
-          </p>
+        <section className="border border-dashed border-critical/40 bg-critical-bg">
+          <EmptyState
+            variant="error"
+            title="Build failed"
+            subtitle={data.errorMessage ?? 'Unknown error.'}
+          />
         </section>
       ) : null}
 

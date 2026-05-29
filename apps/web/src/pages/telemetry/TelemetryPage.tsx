@@ -1,5 +1,8 @@
 import type { TelemetryRow } from '@intelligencehub/shared';
 import { useGetTelemetrySummaryQuery } from '../../store/api';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -43,11 +46,11 @@ function TelemetryTableRow({ r }: { r: TelemetryRow }) {
 export default function TelemetryPage() {
   const { data, isLoading, isError } = useGetTelemetrySummaryQuery();
 
-  if (isLoading) return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
+  if (isLoading) return <LoadingHint />;
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-5xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[22px] text-ink">Telemetry unavailable</p>
+      <div className="mx-auto max-w-5xl border border-dashed border-border">
+        <EmptyState title="Telemetry unavailable" />
       </div>
     );
   }
@@ -56,25 +59,18 @@ export default function TelemetryPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          /telemetry
-        </div>
-        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
-          LLM telemetry
-        </h1>
-        <p className="font-mono text-[12.5px] text-mute2">
-          Per-operation token use and latency. Lifetime totals scoped to your
-          user.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="/telemetry"
+        title="LLM telemetry"
+        subtitle="Per-operation token use and latency. Lifetime totals scoped to your user."
+      />
 
       {isEmpty ? (
-        <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-ink">No LLM calls yet</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            Add a feed and let it process to see token use here.
-          </p>
+        <div className="border border-dashed border-border">
+          <EmptyState
+            title="No LLM calls yet"
+            subtitle="Add a feed and let it process to see token use here."
+          />
         </div>
       ) : (
         <>

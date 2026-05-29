@@ -11,6 +11,9 @@ import {
 import type { Feed, ValidateFeedResponse } from '@intelligencehub/shared';
 import { useFeedPullEvents } from '../../events/useFeedPullEvents';
 import { useToasts } from '../../components/toast/useToasts';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -599,28 +602,28 @@ export default function FeedsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          /feeds
-        </div>
-        <h1 className="pretty mb-3 font-serif text-[30px] leading-tight text-ink">
-          Sources & pulls
-        </h1>
-        {data ? <StatsLine feeds={data.feeds} /> : null}
-      </header>
+      <PageHeader
+        eyebrow="/feeds"
+        title="Sources & pulls"
+        subtitle={data ? <StatsLine feeds={data.feeds} /> : undefined}
+      />
 
       <AddFeedForm />
 
       {isLoading ? (
-        <p className="font-mono text-[13px] text-mute2">Loading…</p>
+        <LoadingHint />
       ) : !data || data.feeds.length === 0 ? (
-        <div className="border border-dashed border-border px-6 py-10 text-center">
-          <p className="font-serif text-[22px] text-ink">No feeds yet</p>
-          <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-            Add an RSS or Atom feed URL above to start pulling articles. Try{' '}
-            <code className="text-ink">https://hnrss.org/frontpage</code> if you don't have one
-            handy.
-          </p>
+        <div className="border border-dashed border-border">
+          <EmptyState
+            title="No feeds yet"
+            subtitle={
+              <>
+                Add an RSS or Atom feed URL above to start pulling articles. Try{' '}
+                <code className="text-ink">https://hnrss.org/frontpage</code> if you don't have one
+                handy.
+              </>
+            }
+          />
         </div>
       ) : (
         <div className="space-y-2">

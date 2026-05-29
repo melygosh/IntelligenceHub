@@ -6,6 +6,7 @@ import {
 } from '../../store/api';
 import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
 import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
+import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export default function CategoriesPage() {
   const { data, isLoading } = useGetCategoriesQuery();
@@ -54,7 +55,7 @@ export default function CategoriesPage() {
       {error ? <p className="font-mono text-[12.5px] text-critical">{error}</p> : null}
 
       {isLoading ? (
-        <p className="font-mono text-[12.5px] text-muted">Loading…</p>
+        <LoadingHint />
       ) : data?.categories.length === 0 ? (
         <p className="font-mono text-[12.5px] text-mute2">
           No categories yet. Add one above to start tagging articles.

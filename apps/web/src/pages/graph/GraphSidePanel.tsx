@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useGetArticleQuery, useGetEntityQuery } from '../../store/api';
 import { IMP_STYLE } from '../../components/articles/importance';
+import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export type SelectedNode = { id: string; kind: 'article' | 'entity' };
 
@@ -45,7 +46,7 @@ export function GraphSidePanel({
 
 function ArticlePanel({ id }: { id: string }) {
   const { data, isLoading, isError } = useGetArticleQuery(id);
-  if (isLoading) return <p className="font-mono text-[12.5px] text-muted">Loading…</p>;
+  if (isLoading) return <LoadingHint />;
   if (isError || !data) return <p className="font-mono text-[12.5px] text-muted">Could not load article.</p>;
   const imp = (data.importance ?? 'normal') as 'high' | 'normal' | 'junk';
   const impStyle = IMP_STYLE[imp];
@@ -97,7 +98,7 @@ function ArticlePanel({ id }: { id: string }) {
 
 function EntityPanel({ id }: { id: string }) {
   const { data, isLoading, isError } = useGetEntityQuery(id);
-  if (isLoading) return <p className="font-mono text-[12.5px] text-muted">Loading…</p>;
+  if (isLoading) return <LoadingHint />;
   if (isError || !data) return <p className="font-mono text-[12.5px] text-muted">Could not load entity.</p>;
   return (
     <div className="flex flex-col gap-3">

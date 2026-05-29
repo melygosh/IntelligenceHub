@@ -6,6 +6,9 @@ import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { FacetDropdown } from '../../components/filters/FacetDropdown';
 import { SearchInput } from '../../components/filters/SearchInput';
 import { Pager } from '../../components/filters/Pager';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -163,14 +166,7 @@ export default function EntitiesList() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          /entities
-        </div>
-        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
-          Entities
-        </h1>
-      </header>
+      <PageHeader eyebrow="/entities" title="Entities" />
 
       <div className="border border-border bg-paper">
         {/* Toolbar */}
@@ -213,26 +209,29 @@ export default function EntitiesList() {
 
         {/* Body */}
         {isLoading ? (
-          <div className="px-5 py-10 text-center font-mono text-[13px] text-mute2">Loading…</div>
+          <LoadingHint className="px-5 py-10 text-center" />
         ) : error ? (
-          <div className="px-5 py-10 text-center">
-            <p className="font-serif text-[22px] text-critical">Couldn't load entities</p>
-            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-              {(error as { data?: { message?: string } }).data?.message ??
-                'Try a different filter or refresh the page.'}
-            </p>
-          </div>
+          <EmptyState
+            variant="error"
+            title="Couldn't load entities"
+            subtitle={
+              (error as { data?: { message?: string } }).data?.message ??
+              'Try a different filter or refresh the page.'
+            }
+          />
         ) : !data || data.entities.length === 0 ? (
-          <div className="px-5 py-10 text-center">
-            <p className="font-serif text-[22px] text-ink">No entities yet</p>
-            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-              Entities are extracted from articles. Pull a feed in{' '}
-              <Link to="/feeds" className="text-accent hover:text-accent-deep">
-                Feeds
-              </Link>{' '}
-              to populate this directory.
-            </p>
-          </div>
+          <EmptyState
+            title="No entities yet"
+            subtitle={
+              <>
+                Entities are extracted from articles. Pull a feed in{' '}
+                <Link to="/feeds" className="text-accent hover:text-accent-deep">
+                  Feeds
+                </Link>{' '}
+                to populate this directory.
+              </>
+            }
+          />
         ) : (
           <>
             {data.entities.map((e) => (

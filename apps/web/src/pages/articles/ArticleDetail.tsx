@@ -6,6 +6,8 @@ import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@i
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 type EntityType = ArticleEntitySummary['type'];
 
@@ -64,15 +66,23 @@ export default function ArticleDetail() {
   }, [data]);
 
   if (isLoading) {
-    return <p className="font-mono text-[13px] text-mute2">Loading…</p>;
+    return <LoadingHint />;
   }
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-5xl border border-dashed border-border px-6 py-10 text-center">
-        <p className="font-serif text-[22px] text-ink">Article not found</p>
-        <p className="mt-2 font-mono text-[14px] text-muted">
-          Back to <Link to="/articles" className="text-accent hover:text-accent-deep">all articles</Link>.
-        </p>
+      <div className="mx-auto max-w-5xl border border-dashed border-border">
+        <EmptyState
+          title="Article not found"
+          subtitle={
+            <>
+              Back to{' '}
+              <Link to="/articles" className="text-accent hover:text-accent-deep">
+                all articles
+              </Link>
+              .
+            </>
+          }
+        />
       </div>
     );
   }

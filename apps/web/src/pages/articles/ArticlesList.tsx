@@ -31,6 +31,9 @@ import { StatusChip } from './StatusChip';
 import { SortDropdown } from './SortDropdown';
 import { PageSizeDropdown } from './PageSizeDropdown';
 import { Pager } from '../../components/filters/Pager';
+import { LoadingHint } from '../../components/ui/LoadingHint';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const Sep = () => <span className="text-border2">·</span>;
 
@@ -419,7 +422,7 @@ function SimilarSidebar({
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="px-5 py-6 font-mono text-[12.5px] text-mute2">Loading…</div>
+            <LoadingHint className="px-5 py-6" />
           ) : isError || !data ? (
             <div className="px-5 py-6 font-mono text-[12.5px] text-critical">
               Couldn't load similar articles.
@@ -812,14 +815,7 @@ export default function ArticlesList() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <div className="mb-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          /articles
-        </div>
-        <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
-          Your feed
-        </h1>
-      </header>
+      <PageHeader eyebrow="/articles" title="Your feed" />
 
       <div className="border border-border bg-paper">
         {/* Toolbar row: content filters + search, all left-grouped. Status
@@ -912,28 +908,29 @@ export default function ArticlesList() {
 
         {/* Body */}
         {isLoading ? (
-          <div className="px-5 py-10 text-center font-mono text-[13px] text-mute2">
-            Loading…
-          </div>
+          <LoadingHint className="px-5 py-10 text-center" />
         ) : error ? (
-          <div className="px-5 py-10 text-center">
-            <p className="font-serif text-[22px] text-critical">Couldn't load articles</p>
-            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-              {(error as { data?: { message?: string } }).data?.message ??
-                'Try a different filter or refresh the page.'}
-            </p>
-          </div>
+          <EmptyState
+            variant="error"
+            title="Couldn't load articles"
+            subtitle={
+              (error as { data?: { message?: string } }).data?.message ??
+              'Try a different filter or refresh the page.'
+            }
+          />
         ) : !data || data.articles.length === 0 ? (
-          <div className="px-5 py-10 text-center">
-            <p className="font-serif text-[22px] text-ink">No articles match</p>
-            <p className="mx-auto mt-2 max-w-xl font-mono text-[14px] leading-relaxed text-muted">
-              Try a different filter, or add a feed in{' '}
-              <Link to="/feeds" className="text-accent hover:text-accent-deep">
-                Feeds
-              </Link>
-              .
-            </p>
-          </div>
+          <EmptyState
+            title="No articles match"
+            subtitle={
+              <>
+                Try a different filter, or add a feed in{' '}
+                <Link to="/feeds" className="text-accent hover:text-accent-deep">
+                  Feeds
+                </Link>
+                .
+              </>
+            }
+          />
         ) : (
           <>
             {data.articles.map((a) => (
