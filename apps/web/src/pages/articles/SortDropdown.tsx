@@ -1,8 +1,5 @@
 import type { ArticleSort } from '@intelligencehub/shared';
-import {
-  FacetDropdown,
-  CheckboxIcon,
-} from '../../components/filters/FacetDropdown';
+import { FacetDropdown } from '../../components/filters/FacetDropdown';
 
 const OPTIONS: { id: ArticleSort; label: string }[] = [
   { id: 'newest', label: 'newest first' },
@@ -40,12 +37,11 @@ export function SortDropdown({
                 close();
               }}
               className={
-                'flex w-full items-center gap-2 px-3 py-1.5 text-left font-mono text-[12.5px] transition-colors hover:bg-paper2 ' +
+                'block w-full px-3 py-1.5 text-left font-mono text-[12.5px] transition-colors hover:bg-paper2 ' +
                 (on ? 'text-ink' : 'text-muted')
               }
             >
-              <CheckboxIcon on={on} />
-              <span>{o.label}</span>
+              {o.label}
             </button>
           );
         })
