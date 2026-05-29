@@ -33,6 +33,7 @@ import { ArticleGraphNode } from './ArticleGraphNode';
 import { EntityGraphNode } from './EntityGraphNode';
 import { computeFocusSet } from './focus';
 import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
+import { GraphSelectionPanel } from './GraphSelectionPanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
 import { EntitySearchInput } from './EntitySearchInput';
@@ -205,12 +206,31 @@ export default function GraphPage() {
   const to = searchParams.get('to') ?? undefined;
   const anchorEntityId = searchParams.get('anchor') ?? undefined;
 
+  // Explicit-set mode: null means "use top-N defaults". Once the user
+  // diverges via the customize panel, these become the source of truth.
+  // In-memory only — refreshing the page resets to top-N as designed.
+  const [pickedEntityIds, setPickedEntityIds] = useState<Set<string> | null>(
+    null,
+  );
+  const [pickedArticleIds, setPickedArticleIds] = useState<Set<string> | null>(
+    null,
+  );
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+
+  const explicitMode = pickedEntityIds !== null || pickedArticleIds !== null;
+
   const { data, isLoading } = useGetGraphQuery({
     categoryIds,
     period,
     from,
     to,
-    anchorEntityId,
+    anchorEntityId: explicitMode ? undefined : anchorEntityId,
+    selectedEntityIds: pickedEntityIds
+      ? Array.from(pickedEntityIds)
+      : undefined,
+    selectedArticleIds: pickedArticleIds
+      ? Array.from(pickedArticleIds)
+      : undefined,
   });
   const { data: summary } = useGetGraphSummaryQuery({
     categoryIds,
@@ -298,6 +318,28 @@ export default function GraphPage() {
     setSelected(null);
   }
 
+  function openCustomize(): void {
+    // Seed the picked sets from the current canvas (top-N) the first time the
+    // panel opens, so the user starts from "everything visible is checked"
+    // rather than an empty canvas. Subsequent opens preserve their picks.
+    if (pickedEntityIds === null && pickedArticleIds === null && data) {
+      const initialEntities = new Set<string>();
+      const initialArticles = new Set<string>();
+      for (const n of data.nodes) {
+        if (n.kind === 'entity') initialEntities.add(n.id);
+        else initialArticles.add(n.id);
+      }
+      setPickedEntityIds(initialEntities);
+      setPickedArticleIds(initialArticles);
+    }
+    setCustomizeOpen(true);
+  }
+
+  function resetCustomize(): void {
+    setPickedEntityIds(null);
+    setPickedArticleIds(null);
+  }
+
   return (
     <div className="flex h-full flex-col gap-3">
       <header>
@@ -310,6 +352,34 @@ export default function GraphPage() {
         <PeriodChips value={period} onChange={updatePeriod} />
         <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
         <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
+        <button
+          type="button"
+          onClick={openCustomize}
+          className={
+            'inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[13.5px] transition-colors ' +
+            (explicitMode
+              ? 'border-ink bg-ink text-paper'
+              : 'border-border bg-paper text-ink hover:bg-paper2')
+          }
+          title="Open the customize-canvas panel"
+        >
+          Customize…
+          {explicitMode ? (
+            <span className="text-[11.5px]">
+              ({(pickedEntityIds?.size ?? 0) + (pickedArticleIds?.size ?? 0)})
+            </span>
+          ) : null}
+        </button>
+        {explicitMode ? (
+          <button
+            type="button"
+            onClick={resetCustomize}
+            className="font-mono text-[12.5px] text-muted hover:text-ink"
+            title="Restore the default top-N selection"
+          >
+            reset to top-N
+          </button>
+        ) : null}
       </div>
       <div className="flex">
         <EntitySearchInput
@@ -368,6 +438,19 @@ export default function GraphPage() {
         </div>
         {selected ? (
           <GraphSidePanel selected={selected} onClose={() => setSelected(null)} />
+        ) : null}
+        {customizeOpen ? (
+          <GraphSelectionPanel
+            selectedEntityIds={pickedEntityIds ?? new Set()}
+            selectedArticleIds={pickedArticleIds ?? new Set()}
+            onChangeEntities={(ids) => setPickedEntityIds(ids)}
+            onChangeArticles={(ids) => setPickedArticleIds(ids)}
+            onReset={() => {
+              resetCustomize();
+              setCustomizeOpen(false);
+            }}
+            onClose={() => setCustomizeOpen(false)}
+          />
         ) : null}
       </div>
     </div>

@@ -36,6 +36,8 @@ export class GraphController {
       top: q.top ?? DEFAULT_TOP,
       categoryIds: q.categoryIds,
       anchorEntityId: q.anchor,
+      selectedEntityIds: q.selectedEntityIds,
+      selectedArticleIds: q.selectedArticleIds,
     });
   }
 
@@ -61,7 +63,26 @@ type ParsedGraphQuery = {
   top?: number;
   categoryIds: string[];
   anchor?: string;
+  selectedEntityIds: string[];
+  selectedArticleIds: string[];
 };
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function csvToUuidList(raw: string | undefined, paramName: string): string[] {
+  if (!raw) return [];
+  const ids = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  for (const id of ids) {
+    if (!UUID_RE.test(id)) {
+      throw new BadRequestException(`invalid ${paramName} UUID: ${id}`);
+    }
+  }
+  return ids;
+}
 
 /**
  * Shared parse + validate for the two /graph routes. Mirrors ZodValidationPipe's
@@ -86,10 +107,9 @@ function parseGraphQuery(
   }
   // CSV → string[]. Empty string + filter out blanks so trailing commas
   // ('a,b,') don't produce empty UUID values.
-  const categoryIds = (q.category ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const categoryIds = csvToUuidList(q.category, 'category');
+  const selectedEntityIds = csvToUuidList(q.entityIds, 'entityIds');
+  const selectedArticleIds = csvToUuidList(q.articleIds, 'articleIds');
   return {
     period,
     from: q.from ? new Date(q.from) : undefined,
@@ -97,5 +117,7 @@ function parseGraphQuery(
     top: q.top,
     categoryIds,
     anchor: q.anchor,
+    selectedEntityIds,
+    selectedArticleIds,
   };
 }

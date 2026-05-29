@@ -1,0 +1,287 @@
+import { useMemo, useState } from 'react';
+import {
+  useGetArticlesQuery,
+  useGetEntityListQuery,
+} from '../../store/api';
+import { SearchInput } from '../../components/filters/SearchInput';
+
+type Tab = 'entities' | 'articles';
+
+export function GraphSelectionPanel({
+  selectedEntityIds,
+  selectedArticleIds,
+  onChangeEntities,
+  onChangeArticles,
+  onReset,
+  onClose,
+}: {
+  selectedEntityIds: ReadonlySet<string>;
+  selectedArticleIds: ReadonlySet<string>;
+  onChangeEntities: (ids: Set<string>) => void;
+  onChangeArticles: (ids: Set<string>) => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<Tab>('entities');
+  const [entityQ, setEntityQ] = useState('');
+  const [articleQ, setArticleQ] = useState('');
+
+  const { data: entityList } = useGetEntityListQuery({
+    sort: 'mentions',
+    q: entityQ || undefined,
+  });
+  const { data: articleList } = useGetArticlesQuery({
+    period: 'all',
+    q: articleQ || undefined,
+  });
+
+  const entityItems = useMemo(
+    () => entityList?.entities ?? [],
+    [entityList],
+  );
+  const articleItems = useMemo(
+    () => articleList?.articles ?? [],
+    [articleList],
+  );
+
+  function toggleEntity(id: string): void {
+    const next = new Set(selectedEntityIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChangeEntities(next);
+  }
+  function toggleArticle(id: string): void {
+    const next = new Set(selectedArticleIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChangeArticles(next);
+  }
+  function selectAllVisibleEntities(): void {
+    const next = new Set(selectedEntityIds);
+    for (const e of entityItems) next.add(e.id);
+    onChangeEntities(next);
+  }
+  function selectAllVisibleArticles(): void {
+    const next = new Set(selectedArticleIds);
+    for (const a of articleItems) next.add(a.id);
+    onChangeArticles(next);
+  }
+
+  return (
+    <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-paper">
+      <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          Customize canvas
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onReset}
+            className="font-mono text-[11.5px] text-muted hover:text-ink"
+            title="Restore the default top-N selection"
+          >
+            reset
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close panel"
+            title="Close"
+            className="px-1 text-muted hover:text-ink"
+          >
+            ×
+          </button>
+        </div>
+      </header>
+
+      <div className="flex border-b border-border">
+        <TabButton
+          label="Entities"
+          count={selectedEntityIds.size}
+          active={tab === 'entities'}
+          onClick={() => setTab('entities')}
+        />
+        <TabButton
+          label="Articles"
+          count={selectedArticleIds.size}
+          active={tab === 'articles'}
+          onClick={() => setTab('articles')}
+        />
+      </div>
+
+      {tab === 'entities' ? (
+        <ListBody
+          q={entityQ}
+          onQ={setEntityQ}
+          placeholder="search entities…"
+          onSelectAll={selectAllVisibleEntities}
+          onClearAll={() => onChangeEntities(new Set())}
+          selectedCount={selectedEntityIds.size}
+          visibleCount={entityItems.length}
+        >
+          {entityItems.map((e) => (
+            <Row
+              key={e.id}
+              checked={selectedEntityIds.has(e.id)}
+              onToggle={() => toggleEntity(e.id)}
+              primary={e.canonicalName}
+              secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
+            />
+          ))}
+        </ListBody>
+      ) : (
+        <ListBody
+          q={articleQ}
+          onQ={setArticleQ}
+          placeholder="search articles…"
+          onSelectAll={selectAllVisibleArticles}
+          onClearAll={() => onChangeArticles(new Set())}
+          selectedCount={selectedArticleIds.size}
+          visibleCount={articleItems.length}
+        >
+          {articleItems.map((a) => (
+            <Row
+              key={a.id}
+              checked={selectedArticleIds.has(a.id)}
+              onToggle={() => toggleArticle(a.id)}
+              primary={a.title}
+              secondary={new Date(a.ts).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            />
+          ))}
+        </ListBody>
+      )}
+    </aside>
+  );
+}
+
+function TabButton({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'flex-1 px-3 py-2 font-mono text-[12.5px] ' +
+        (active
+          ? 'border-b-2 border-ink text-ink'
+          : 'border-b-2 border-transparent text-muted hover:text-ink')
+      }
+      aria-pressed={active}
+    >
+      {label}{' '}
+      <span className="text-mute2">({count})</span>
+    </button>
+  );
+}
+
+function ListBody({
+  q,
+  onQ,
+  placeholder,
+  onSelectAll,
+  onClearAll,
+  selectedCount,
+  visibleCount,
+  children,
+}: {
+  q: string;
+  onQ: (v: string) => void;
+  placeholder: string;
+  onSelectAll: () => void;
+  onClearAll: () => void;
+  selectedCount: number;
+  visibleCount: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div className="border-b border-border p-3">
+        <SearchInput
+          value={q}
+          onChange={onQ}
+          placeholder={placeholder}
+          widthClass="w-full"
+        />
+        <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
+          <span>
+            {visibleCount} shown · <span className="text-ink">{selectedCount}</span> selected
+          </span>
+          <span className="flex gap-3">
+            <button
+              type="button"
+              onClick={onSelectAll}
+              className="hover:text-ink"
+              disabled={visibleCount === 0}
+            >
+              select all
+            </button>
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="hover:text-ink"
+              disabled={selectedCount === 0}
+            >
+              clear all
+            </button>
+          </span>
+        </div>
+      </div>
+      <ul className="flex-1 overflow-y-auto">{children}</ul>
+    </>
+  );
+}
+
+function Row({
+  checked,
+  onToggle,
+  primary,
+  secondary,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  primary: string;
+  secondary: string;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left hover:bg-paper2"
+      >
+        <span
+          aria-hidden
+          className={
+            'mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center border ' +
+            (checked
+              ? 'border-ink bg-ink text-paper'
+              : 'border-border bg-paper text-paper')
+          }
+        >
+          {checked ? '✓' : ''}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-mono text-[12.5px] text-ink">
+            {primary}
+          </span>
+          <span className="block truncate font-mono text-[11px] text-mute2">
+            {secondary}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
+}

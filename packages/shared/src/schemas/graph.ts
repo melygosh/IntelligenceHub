@@ -60,6 +60,11 @@ export const GetGraphQuery = z.object({
   to: z.string().datetime().optional(),
   top: z.coerce.number().int().positive().max(200).optional(), // default 20
   anchor: z.string().uuid().optional(),
+  // CSVs of explicit entity/article UUIDs. When either is non-empty the
+  // server skips top-N and renders exactly the union of these IDs (plus the
+  // edges among them). Used by the customize-canvas side panel.
+  entityIds: z.string().optional(),
+  articleIds: z.string().optional(),
 });
 export type GetGraphQuery = z.infer<typeof GetGraphQuery>;
 

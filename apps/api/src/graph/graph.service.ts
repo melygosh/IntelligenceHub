@@ -24,6 +24,13 @@ export type BuildGraphOpts = {
   // co-mentioned neighbours in scope] instead of the global top-N. The
   // anchor entity must belong to the user (silently empty if not).
   anchorEntityId?: string;
+  // Explicit-set mode: when either list is non-empty, top-N selection is
+  // skipped and the canvas renders exactly the union of these IDs plus the
+  // edges among them. mentionCount + dominantCategoryId on entity nodes
+  // still reflect the current window/category scope (may be 0 / null for
+  // picks outside scope). Used by the GraphSelectionPanel.
+  selectedEntityIds?: string[];
+  selectedArticleIds?: string[];
 };
 
 export type TopEntityRow = {
@@ -57,40 +64,63 @@ export class GraphService {
     const fromDate = periodToFromDate(opts.period, opts.from);
     const toDate = opts.period === 'custom' ? (opts.to ?? null) : null;
 
+    const explicitMode =
+      (opts.selectedEntityIds && opts.selectedEntityIds.length > 0) ||
+      (opts.selectedArticleIds && opts.selectedArticleIds.length > 0);
+
     // 1. Entity selection.
-    //    - Default mode: top-N entities by mention count in window.
-    //    - Anchor mode (opts.anchorEntityId): the anchor + its top-N
-    //      co-mentioned neighbours in window (anchor wins over global ranking).
-    const topEntities = opts.anchorEntityId
-      ? await this.selectAnchorNeighbors(
+    //    - Explicit-set mode: render exactly the entities the user picked,
+    //      with mention_count + dominant_category in the current window.
+    //    - Anchor mode: anchor + its top-N co-mentioned neighbours in window.
+    //    - Default: top-N entities by mention count in window.
+    const topEntities = explicitMode
+      ? await this.selectEntitiesByIds(
           userId,
+          opts.selectedEntityIds ?? [],
           fromDate,
           toDate,
-          opts.top,
           opts.categoryIds,
-          opts.anchorEntityId,
         )
-      : await this.selectTopEntities(
-          userId,
-          fromDate,
-          toDate,
-          opts.top,
-          opts.categoryIds,
-        );
-    if (topEntities.length === 0) return { nodes: [], edges: [] };
+      : opts.anchorEntityId
+        ? await this.selectAnchorNeighbors(
+            userId,
+            fromDate,
+            toDate,
+            opts.top,
+            opts.categoryIds,
+            opts.anchorEntityId,
+          )
+        : await this.selectTopEntities(
+            userId,
+            fromDate,
+            toDate,
+            opts.top,
+            opts.categoryIds,
+          );
 
     const topEntityIds = topEntities.map((e) => e.id);
 
-    // 2. Articles in window that mention at least one of the top-N entities.
-    //    Use a sub-query rather than a join + DISTINCT — clearer intent.
-    const articleRows = await this.selectArticlesConnectedToEntities(
-      userId,
-      fromDate,
-      toDate,
-      topEntityIds,
-      opts.categoryIds,
-    );
+    // 2. Articles.
+    //    - Explicit-set mode: render exactly the articles the user picked
+    //      (no window/category gate on the picks themselves).
+    //    - Default/anchor: articles in window that mention at least one of
+    //      the displayed entities.
+    const articleRows = explicitMode
+      ? await this.selectArticlesByIds(userId, opts.selectedArticleIds ?? [])
+      : topEntityIds.length === 0
+        ? []
+        : await this.selectArticlesConnectedToEntities(
+            userId,
+            fromDate,
+            toDate,
+            topEntityIds,
+            opts.categoryIds,
+          );
     const articleIds = articleRows.map((a) => a.id);
+
+    if (topEntities.length === 0 && articleRows.length === 0) {
+      return { nodes: [], edges: [] };
+    }
 
     // 3. Mention edges = article_entity rows from those articles to those entities.
     const mentionEdges: GraphEdge[] =
@@ -370,6 +400,133 @@ export class GraphService {
       WHERE e.user_id = ${userId}
       ORDER BY ds.is_partner ASC, m.mention_count DESC NULLS LAST,
                e.canonical_name ASC
+    `);
+    const rows = (
+      result as unknown as {
+        rows: Array<{
+          id: string;
+          canonical_name: string;
+          type: string;
+          mention_count: number;
+          dominant_category_id: string | null;
+        }>;
+      }
+    ).rows;
+    return rows.map((r) => ({
+      id: r.id,
+      canonicalName: r.canonical_name,
+      type: r.type,
+      mentionCount: r.mention_count,
+      dominantCategoryId: r.dominant_category_id,
+    }));
+  }
+
+  /**
+   * Explicit-set mode helper: fetch the user's articles by ID, no
+   * window/category gate. Renders exactly what the user picked even if
+   * they're outside the current window.
+   */
+  private async selectArticlesByIds(
+    userId: string,
+    ids: string[],
+  ): Promise<
+    Array<{
+      id: string;
+      title: string;
+      ts: Date;
+      importance: string | null;
+    }>
+  > {
+    if (ids.length === 0) return [];
+    return this.db
+      .select({
+        id: articles.id,
+        title: articles.title,
+        ts: articles.ts,
+        importance: articles.importance,
+      })
+      .from(articles)
+      .where(and(eq(articles.userId, userId), inArray(articles.id, ids)));
+  }
+
+  /**
+   * Explicit-set mode helper: fetch the given entities + decorate each with
+   * its in-window mention_count and dominant category. Structurally similar
+   * to selectAnchorNeighbors's display_set/mentions/dom CTEs but without
+   * the partner expansion. Entities outside the window get mentionCount=0
+   * and dominantCategoryId=null (still rendered — explicit picks aren't
+   * filtered by scope).
+   */
+  private async selectEntitiesByIds(
+    userId: string,
+    ids: string[],
+    fromDate: Date | null,
+    toDate: Date | null,
+    categoryIds: string[],
+  ): Promise<TopEntityRow[]> {
+    if (ids.length === 0) return [];
+    const categoryFilter = buildCategoryExists('a.id', categoryIds);
+    const fromFilter = fromDate ? sql`AND a.ts >= ${fromDate}` : sql``;
+    const toFilter = toDate ? sql`AND a.ts <= ${toDate}` : sql``;
+    const idArray = sql`ARRAY[${sql.join(
+      ids.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    )}]`;
+
+    const result = await this.db.execute<{
+      id: string;
+      canonical_name: string;
+      type: string;
+      mention_count: number;
+      dominant_category_id: string | null;
+    }>(sql`
+      WITH display_set AS (
+        SELECT unnest(${idArray}) AS entity_id
+      ),
+      mentions AS (
+        SELECT ae.entity_id, COUNT(*)::int AS mention_count
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        WHERE ae.entity_id IN (SELECT entity_id FROM display_set)
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+          ${categoryFilter}
+        GROUP BY ae.entity_id
+      ),
+      cat_counts AS (
+        SELECT ae.entity_id, ac.category_id, c.created_at, COUNT(*) AS n
+        FROM article_entity ae
+        JOIN articles a ON a.id = ae.article_id
+        JOIN article_category ac ON ac.article_id = a.id
+        JOIN category c ON c.id = ac.category_id
+        WHERE ae.entity_id IN (SELECT entity_id FROM display_set)
+          AND a.user_id = ${userId}
+          AND a.status = 'ready'
+          ${fromFilter}
+          ${toFilter}
+        GROUP BY ae.entity_id, ac.category_id, c.created_at
+      ),
+      dom AS (
+        SELECT entity_id, category_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY entity_id ORDER BY n DESC, created_at ASC
+          ) AS rn
+        FROM cat_counts
+      )
+      SELECT
+        e.id,
+        e.canonical_name,
+        e.type,
+        COALESCE(m.mention_count, 0)::int AS mention_count,
+        (SELECT category_id FROM dom WHERE dom.entity_id = e.id AND rn = 1)
+          AS dominant_category_id
+      FROM display_set ds
+      JOIN entities e ON e.id = ds.entity_id
+      LEFT JOIN mentions m ON m.entity_id = ds.entity_id
+      WHERE e.user_id = ${userId}
+      ORDER BY m.mention_count DESC NULLS LAST, e.canonical_name ASC
     `);
     const rows = (
       result as unknown as {

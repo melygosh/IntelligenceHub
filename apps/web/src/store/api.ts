@@ -180,6 +180,10 @@ export const api = createApi({
         to?: string;
         top?: number;
         anchorEntityId?: string;
+        // Explicit-set mode: when either is non-empty, top-N is skipped and
+        // the canvas renders exactly these IDs.
+        selectedEntityIds?: string[];
+        selectedArticleIds?: string[];
       } | void
     >({
       query: (arg) => {
@@ -191,6 +195,10 @@ export const api = createApi({
         if (arg?.to) params.set('to', arg.to);
         if (arg?.top !== undefined) params.set('top', String(arg.top));
         if (arg?.anchorEntityId) params.set('anchor', arg.anchorEntityId);
+        if (arg?.selectedEntityIds && arg.selectedEntityIds.length > 0)
+          params.set('entityIds', arg.selectedEntityIds.join(','));
+        if (arg?.selectedArticleIds && arg.selectedArticleIds.length > 0)
+          params.set('articleIds', arg.selectedArticleIds.join(','));
         const qs = params.toString();
         return `/graph${qs ? `?${qs}` : ''}`;
       },
