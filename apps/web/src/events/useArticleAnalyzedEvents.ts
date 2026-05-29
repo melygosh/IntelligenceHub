@@ -21,6 +21,11 @@ export function useArticleAnalyzedEvents(): void {
   useServerEvents((event) => {
     if (event.type !== 'article.analyzed') return;
     if (event.payload.status !== 'ready') return;
-    dispatch(api.util.invalidateTags(['Articles']));
+    // Dashboard cards also depend on ready-article counts (total articles,
+    // top entities/categories/feeds), so re-fetch them alongside the list.
+    // Graph is intentionally excluded — it's heavier and live-updating the
+    // layout while the user explores would be jarring; reload-on-open is
+    // the right UX there.
+    dispatch(api.util.invalidateTags(['Articles', 'Dashboard']));
   });
 }

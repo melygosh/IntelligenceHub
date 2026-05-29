@@ -7,6 +7,7 @@ import type {
   GraphPeriod,
 } from '@intelligencehub/shared';
 import { useGetDashboardQuery } from '../../store/api';
+import { useArticleAnalyzedEvents } from '../../events/useArticleAnalyzedEvents';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -28,6 +29,9 @@ export default function DashboardPage() {
   const to = params.get('to') ?? undefined;
 
   const { data, isLoading } = useGetDashboardQuery({ period, from, to });
+  // SSE: refresh the cards when new articles become ready so totals stay
+  // fresh while the user has /dashboard open and feed-pull is running.
+  useArticleAnalyzedEvents();
 
   function updatePeriod(next: GraphPeriod): void {
     const nextParams = new URLSearchParams(params);
