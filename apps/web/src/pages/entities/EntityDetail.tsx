@@ -70,7 +70,8 @@ export default function EntityDetail() {
           <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
           <TypeBadge type={data.type} />
           <Link
-            to={`/graph?anchor=${data.id}&period=all`}
+            to="/graph?period=all"
+            state={{ anchorEntityId: data.id }}
             className="font-mono text-[12.5px] text-accent hover:text-accent-deep"
           >
             view in graph →

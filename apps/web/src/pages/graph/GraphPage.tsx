@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   Background,
   BackgroundVariant,
@@ -36,7 +36,6 @@ import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
 import { GraphSelectionPanel } from './GraphSelectionPanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
-import { EntitySearchInput } from './EntitySearchInput';
 import { colourFor } from './graph-palette';
 
 const nodeTypes = {
@@ -204,7 +203,13 @@ export default function GraphPage() {
   const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
-  const anchorEntityId = searchParams.get('anchor') ?? undefined;
+  // Anchor mode rides in via React Router navigation state from EntityDetail's
+  // "view in graph" link — not persisted in the URL, so reloading the page
+  // drops back to top-N. Matches the same in-memory-only choice as the
+  // customize-canvas selection.
+  const location = useLocation();
+  const anchorEntityId = (location.state as { anchorEntityId?: string } | null)
+    ?.anchorEntityId;
 
   // Explicit-set mode: null means "use top-N defaults". Once the user
   // diverges via the customize panel, these become the source of truth.
@@ -278,10 +283,6 @@ export default function GraphPage() {
 
   function updateCategoryIds(ids: string[]): void {
     updateParam('category', ids.length > 0 ? ids.join(',') : undefined);
-    setSelected(null);
-  }
-  function updateAnchor(id: string | null): void {
-    updateParam('anchor', id ?? undefined);
     setSelected(null);
   }
   function updateNodeKind(kind: NodeKindFilter): void {
@@ -379,12 +380,6 @@ export default function GraphPage() {
             reset to top-N
           </button>
         ) : null}
-      </div>
-      <div className="flex">
-        <EntitySearchInput
-          value={anchorEntityId ?? null}
-          onChange={updateAnchor}
-        />
       </div>
       <SummaryBand
         data={filtered}
