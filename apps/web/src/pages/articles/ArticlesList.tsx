@@ -873,8 +873,9 @@ export default function ArticlesList() {
           />
         </div>
 
-        {/* Viewer controls row: how the list is *shown* (status visibility,
-            sort order, page size) — separate from the topic filters above. */}
+        {/* Viewer controls row: Status (left, filter-like) vs Sort + Per-page
+            (right, display-control). The flex-1 spacer separates the two
+            concerns visually. */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2">
           <StatusDropdown
             selected={statuses}
@@ -882,6 +883,7 @@ export default function ArticlesList() {
               updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
             }
           />
+          <div className="flex-1" />
           <SortDropdown
             value={sort}
             onChange={(s) => updateParams({ sort: s === 'newest' ? undefined : s })}
