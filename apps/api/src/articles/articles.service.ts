@@ -16,6 +16,7 @@ import {
 import type {
   ArticleDetail,
   ArticleListItem,
+  ArticleSort,
   AxisAssignmentSummary,
   EntityKind,
   SimilarArticleSummary,
@@ -57,6 +58,7 @@ export class ArticlesService {
       q?: string;
       offset?: number;
       limit?: number;
+      sort?: ArticleSort;
     } = {},
   ): Promise<{ items: ArticleListItem[]; total: number }> {
     // US-7 processing-state filter. Default is `['ready']` (today's behaviour);
@@ -134,9 +136,34 @@ export class ArticlesService {
       }
     }
 
+    // Inline sibling-count subquery so the row carries similarCount AND the
+    // `sort=duplicates` ORDER BY can reference it. Same predicate as the
+    // standalone findSiblings* helpers: status in (ready, duplicate),
+    // matching content_hash OR url, excluding self. Costs one indexed
+    // scan per page row — at pageSize<=500 that's a non-issue.
+    const similarCountExpr = sql<number>`(
+      SELECT COUNT(*)::int FROM ${articles} b
+      WHERE b.user_id = ${articles.userId}
+        AND b.id <> ${articles.id}
+        AND b.status IN ('ready', 'duplicate')
+        AND (
+          (${articles.contentHash} IS NOT NULL AND b.content_hash = ${articles.contentHash})
+          OR b.url = ${articles.url}
+        )
+    )`;
+
+    const sort: ArticleSort = opts.sort ?? 'newest';
+    // ts DESC + id DESC as a deterministic tiebreak so pagination doesn't
+    // shuffle when two rows share the same ts. Free-text search overrides
+    // any sort with relevance ranking — feed/duplicates only matter when
+    // browsing.
     const orderBy = opts.q
       ? sql`ts_rank(${articles.searchVector}, plainto_tsquery('english', ${opts.q})) DESC`
-      : desc(articles.ts);
+      : sort === 'feed'
+        ? sql`${feeds.title} ASC NULLS LAST, ${articles.ts} DESC, ${articles.id} DESC`
+        : sort === 'duplicates'
+          ? sql`${similarCountExpr} DESC, ${articles.ts} DESC, ${articles.id} DESC`
+          : sql`${articles.ts} DESC, ${articles.id} DESC`;
 
     const projection = {
       id: articles.id,
@@ -149,6 +176,7 @@ export class ArticlesService {
       contentHash: articles.contentHash,
       status: articles.status,
       filterReason: articles.filterReason,
+      similarCount: similarCountExpr,
     };
 
     // Total under the active filters first — used for the pagination
@@ -160,9 +188,12 @@ export class ArticlesService {
       .where(and(...conditions));
     const total = Number(totalNum);
 
+    // LEFT JOIN feeds is only required when ORDER BY references feeds.title;
+    // for the other sorts we skip the join to keep the plan small.
     const pageQuery = this.db
       .select(projection)
       .from(articles)
+      .leftJoin(feeds, eq(feeds.id, articles.feedId))
       .where(and(...conditions))
       .orderBy(orderBy);
     if (opts.limit !== undefined) pageQuery.limit(opts.limit);
@@ -215,8 +246,6 @@ export class ArticlesService {
       categoriesByArticle.set(c.articleId, list);
     }
 
-    const similarCounts = await this.findSiblingsForMany(userId, articleRows);
-
     const items: ArticleListItem[] = articleRows.map((a) => ({
       id: a.id,
       title: a.title,
@@ -229,7 +258,7 @@ export class ArticlesService {
       filterReason: a.filterReason,
       entities: entitiesByArticle.get(a.id) ?? [],
       categoryNames: categoriesByArticle.get(a.id) ?? [],
-      similarCount: similarCounts.get(a.id) ?? 0,
+      similarCount: Number(a.similarCount),
     }));
     return { items, total };
   }
@@ -370,52 +399,5 @@ export class ArticlesService {
         feedTitle: r.feedTitle ?? '(untitled feed)',
       }),
     );
-  }
-
-  /**
-   * Batched sibling counts for the list endpoint — one query for the whole
-   * page. Returns a Map<articleId, count>. Self-join on content_hash + url
-   * scoped to (user, status in (ready, duplicate)); excludes self via id <> id.
-   */
-  private async findSiblingsForMany(
-    userId: string,
-    rows: Array<{ id: string; contentHash: string | null; url: string }>,
-  ): Promise<Map<string, number>> {
-    if (rows.length === 0) return new Map();
-
-    // Single SQL: for each input id, count other articles sharing its
-    // content_hash or url (same user, status in (ready, duplicate)).
-    const ids = rows.map((r) => r.id);
-    const result = await this.db.execute<{
-      article_id: string;
-      count: number;
-    }>(sql`
-      SELECT a.id AS article_id, COUNT(b.id)::int AS count
-      FROM articles a
-      LEFT JOIN articles b
-        ON b.user_id = a.user_id
-       AND b.id <> a.id
-       AND b.status IN ('ready', 'duplicate')
-       AND (
-         (a.content_hash IS NOT NULL AND b.content_hash = a.content_hash)
-         OR b.url = a.url
-       )
-      WHERE a.user_id = ${userId}
-        AND a.id IN (${sql.join(
-          ids.map((i) => sql`${i}::uuid`),
-          sql`, `,
-        )})
-      GROUP BY a.id
-    `);
-    const resultRows = (
-      result as unknown as {
-        rows: Array<{ article_id: string; count: number }>;
-      }
-    ).rows;
-
-    const out = new Map<string, number>();
-    for (const r of resultRows) out.set(r.article_id, r.count);
-    for (const r of rows) if (!out.has(r.id)) out.set(r.id, 0);
-    return out;
   }
 }

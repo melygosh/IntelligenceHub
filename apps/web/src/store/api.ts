@@ -157,6 +157,7 @@ export const api = createApi({
         q?: string;
         page?: number;
         pageSize?: number;
+        sort?: 'newest' | 'feed' | 'duplicates';
       } | void
     >({
       query: (arg) => {
@@ -184,6 +185,7 @@ export const api = createApi({
           if (arg.page !== undefined) params.set('page', String(arg.page));
           if (arg.pageSize !== undefined)
             params.set('pageSize', String(arg.pageSize));
+          if (arg.sort && arg.sort !== 'newest') params.set('sort', arg.sort);
         }
         const qs = params.toString();
         return `/articles${qs ? `?${qs}` : ''}`;

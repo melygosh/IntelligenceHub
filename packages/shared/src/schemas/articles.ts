@@ -75,6 +75,13 @@ export type ArticlesPeriod = z.infer<typeof ArticlesPeriod>;
 export const ArticleImportance = z.enum(['high', 'normal', 'junk']);
 export type ArticleImportance = z.infer<typeof ArticleImportance>;
 
+/** Sort order for the articles list. `newest` is default; `feed` groups by
+ * source title; `duplicates` surfaces stories with the most cross-feed
+ * coverage first. Free-text search (?q=) overrides any sort with relevance
+ * ranking. */
+export const ArticleSort = z.enum(['newest', 'feed', 'duplicates']);
+export type ArticleSort = z.infer<typeof ArticleSort>;
+
 export const GetArticlesQuery = z.object({
   // CSV of category UUIDs. Backend matches any (OR). Single value remains valid.
   category: z.string().optional(),
@@ -101,5 +108,8 @@ export const GetArticlesQuery = z.object({
   // the graph customize panel) opt into pageSize=500.
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
+  // Default 'newest'. When `q` is set, sort is ignored — relevance ranking
+  // takes over.
+  sort: ArticleSort.optional(),
 });
 export type GetArticlesQuery = z.infer<typeof GetArticlesQuery>;

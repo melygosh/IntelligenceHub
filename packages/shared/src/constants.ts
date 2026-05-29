@@ -14,3 +14,6 @@ export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 // runaway-growing. Both are honoured by /api/articles and /api/entities.
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 500;
+// Page-size options surfaced in the articles toolbar. The maximum must
+// stay <= MAX_PAGE_SIZE (the API clamps anything larger).
+export const ARTICLE_PAGE_SIZE_OPTIONS = [25, 50, 100, 500] as const;

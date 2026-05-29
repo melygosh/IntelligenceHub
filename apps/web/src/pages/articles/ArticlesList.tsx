@@ -10,9 +10,14 @@ import {
 import type {
   ArticleListItem,
   ArticleEntitySummary,
+  ArticleSort,
   ArticleStatus,
   AxisList,
   Feed,
+} from '@intelligencehub/shared';
+import {
+  ARTICLE_PAGE_SIZE_OPTIONS,
+  DEFAULT_PAGE_SIZE,
 } from '@intelligencehub/shared';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { IMP_STYLE } from '../../components/articles/importance';
@@ -23,6 +28,8 @@ import { AxisDropdown } from '../../components/filters/AxisDropdown';
 import { FeedDropdown } from './FeedDropdown';
 import { StatusDropdown } from './StatusDropdown';
 import { StatusChip } from './StatusChip';
+import { SortDropdown } from './SortDropdown';
+import { PageSizeDropdown } from './PageSizeDropdown';
 import { Pager } from '../../components/filters/Pager';
 
 const Sep = () => <span className="text-border2">·</span>;
@@ -703,9 +710,29 @@ export default function ArticlesList() {
   const page =
     Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
 
+  const rawSort = searchParams.get('sort');
+  const sort: ArticleSort =
+    rawSort === 'feed' || rawSort === 'duplicates' ? rawSort : 'newest';
+
+  const parsedPageSize = Number(searchParams.get('pageSize'));
+  const pageSize = ARTICLE_PAGE_SIZE_OPTIONS.includes(
+    parsedPageSize as (typeof ARTICLE_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? parsedPageSize
+    : DEFAULT_PAGE_SIZE;
+
   const { data, isLoading, error } = useGetArticlesQuery(
     customInvalid || customIncomplete
-      ? { categoryIds, feedIds, importances, axisValueIds, statuses, page }
+      ? {
+          categoryIds,
+          feedIds,
+          importances,
+          axisValueIds,
+          statuses,
+          page,
+          pageSize,
+          sort,
+        }
       : {
           categoryIds,
           feedIds,
@@ -717,6 +744,8 @@ export default function ArticlesList() {
           to: apiTo,
           q: q || undefined,
           page,
+          pageSize,
+          sort,
         },
   );
   const { data: feedsData } = useGetFeedsQuery();
@@ -844,14 +873,24 @@ export default function ArticlesList() {
           />
         </div>
 
-        {/* Processing-state row: structurally distinct from the topic filters
-            above (it controls which DB statuses are visible, not what topic
-            they cover). */}
+        {/* Viewer controls row: how the list is *shown* (status visibility,
+            sort order, page size) — separate from the topic filters above. */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2">
           <StatusDropdown
             selected={statuses}
             onChange={(ss) =>
               updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
+            }
+          />
+          <SortDropdown
+            value={sort}
+            onChange={(s) => updateParams({ sort: s === 'newest' ? undefined : s })}
+          />
+          <PageSizeDropdown
+            value={pageSize}
+            defaultValue={DEFAULT_PAGE_SIZE}
+            onChange={(n) =>
+              updateParams({ pageSize: n === DEFAULT_PAGE_SIZE ? undefined : String(n) })
             }
           />
         </div>

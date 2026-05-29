@@ -100,6 +100,7 @@ export class ArticlesController {
       q,
       page,
       pageSize,
+      sort,
     } = parsed.data;
 
     const categoryIds = csvToList(category);
@@ -158,6 +159,7 @@ export class ArticlesController {
       q,
       offset: (effectivePage - 1) * effectivePageSize,
       limit: effectivePageSize,
+      sort: sort,
     });
     return {
       articles: items,
