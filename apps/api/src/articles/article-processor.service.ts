@@ -151,9 +151,18 @@ export class ArticleProcessor {
    * read-side trigger (open /articles/:id with NULL embedding) and the
    * admin one-shot route. Idempotent: skips when embedding is already set
    * or the article has no body to embed.
+   *
+   * Returns `true` when an embedding was actually written, `false` for
+   * every skip path (feature off, article missing, already embedded, no
+   * body, embedding api returned null). The caller uses this to decide
+   * whether to fire `article.embedded` over SSE — only meaningful
+   * transitions emit, so consumers don't see spurious refetches.
+   *
+   * Note: this re-throws transient embedding errors so the BullMQ retry
+   * policy on the embed.backfill worker actually retries.
    */
-  async backfillEmbedding(articleId: string, userId: string): Promise<void> {
-    if (!this.embeddings.isEnabled()) return;
+  async backfillEmbedding(articleId: string, userId: string): Promise<boolean> {
+    if (!this.embeddings.isEnabled()) return false;
     const [article] = await this.db
       .select({
         id: articles.id,
@@ -164,16 +173,17 @@ export class ArticleProcessor {
       .from(articles)
       .where(and(eq(articles.id, articleId), eq(articles.userId, userId)))
       .limit(1);
-    if (!article || article.hasEmbedding || !article.contentHash) return;
+    if (!article || article.hasEmbedding || !article.contentHash) return false;
     const vec = await this.embeddings.embed(
       article.contentHash,
       article.body ?? '',
     );
-    if (!vec) return;
+    if (!vec) return false;
     await this.db
       .update(articles)
       .set({ embedding: vec })
       .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
+    return true;
   }
 
   /**

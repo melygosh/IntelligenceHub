@@ -4,6 +4,8 @@ import type { Job, JobsOptions } from 'bullmq';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 // value import required for Nest DI metadata
 import { ArticleProcessor } from '../articles/article-processor.service';
+// value import required for Nest DI metadata
+import { EventsService } from '../events/events.service';
 
 export type EmbedBackfillJobData = { articleId: string; userId: string };
 
@@ -20,19 +22,32 @@ export const EMBED_BACKFILL_JOB_OPTS: JobsOptions = {
 export class EmbedBackfillWorker extends WorkerHost {
   private readonly log = new Logger(EmbedBackfillWorker.name);
 
-  constructor(private readonly processor: ArticleProcessor) {
+  constructor(
+    private readonly processor: ArticleProcessor,
+    private readonly events: EventsService,
+  ) {
     super();
   }
 
   async process(job: Job<EmbedBackfillJobData>): Promise<void> {
     const { articleId, userId } = job.data;
-    await this.processor.backfillEmbedding(articleId, userId);
+    const wrote = await this.processor.backfillEmbedding(articleId, userId);
+    if (wrote) {
+      // Article transitioned NULL → embedded. Fire SSE so the detail page
+      // (if open) flips its "computing embedding…" placeholder to the real
+      // neighbour list without polling.
+      this.events.publish(userId, {
+        type: 'article.embedded',
+        payload: { articleId },
+      });
+    }
     this.log.log(
       JSON.stringify({
         event: 'embed.backfill.done',
         articleId,
         userId,
         jobId: job.id,
+        wrote,
       }),
     );
   }

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Link, useParams } from 'react-router-dom';
 import { useGetArticleQuery, useGetRelatedSemanticQuery } from '../../store/api';
+import { useArticleEmbeddedEvents } from '../../events/useArticleEmbeddedEvents';
 import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
@@ -39,6 +40,10 @@ export default function ArticleDetail() {
   // nothing when status='unavailable' (feature off) — no extra request
   // budget on accounts that haven't opted in.
   const { data: related } = useGetRelatedSemanticQuery(id ?? '', { skip: !id });
+  // SSE invalidation: when the embed-backfill worker finishes for this
+  // article, refetch related-semantic so the "computing embedding…"
+  // placeholder flips to the real neighbour list without a reload.
+  useArticleEmbeddedEvents();
 
   useSetPageTitle(data?.title);
 

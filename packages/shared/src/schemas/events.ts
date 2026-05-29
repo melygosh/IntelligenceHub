@@ -75,6 +75,16 @@ export const ServerEvent = z.discriminatedUnion('type', [
       errorMessage: z.string(),
     }),
   }),
+  // Emitted by the embed-backfill worker when an article's embedding lands.
+  // The article detail page invalidates its related-semantic query on this
+  // event so the "computing embedding…" placeholder flips to the real
+  // neighbour list without a page reload (ADR-7).
+  z.object({
+    type: z.literal('article.embedded'),
+    payload: z.object({
+      articleId: z.string().uuid(),
+    }),
+  }),
 ]);
 export type ServerEvent = z.infer<typeof ServerEvent>;
 

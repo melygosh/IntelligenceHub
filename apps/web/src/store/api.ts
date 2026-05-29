@@ -76,7 +76,7 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph', 'Dashboard'],
+  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph', 'Dashboard', 'RelatedSemantic'],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -324,6 +324,9 @@ export const api = createApi({
     }),
     getRelatedSemantic: build.query<RelatedSemanticResponse, string>({
       query: (articleId) => `/articles/${articleId}/related-semantic`,
+      providesTags: (_r, _e, articleId) => [
+        { type: 'RelatedSemantic', id: articleId },
+      ],
     }),
     getDashboard: build.query<DashboardResponse, { period: DashboardPeriod; from?: string; to?: string }>({
       query: ({ period, from, to }) => {
