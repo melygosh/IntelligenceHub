@@ -118,7 +118,7 @@ export default function ArticleDetail() {
       {data.summary ? (
         <section className="space-y-2">
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Summary</div>
-          <p className="pretty font-serif text-[19px] leading-relaxed text-ink">{data.summary}</p>
+          <p className="pretty font-serif text-[19px] leading-relaxed text-ink text-justify">{data.summary}</p>
         </section>
       ) : null}
 
