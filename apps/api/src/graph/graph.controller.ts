@@ -14,6 +14,7 @@ import {
   CurrentUser,
   type AuthUserContext,
 } from '../common/decorators/current-user.decorator';
+import { loadEnv } from '../common/config/env';
 
 @Controller('graph')
 @UseGuards(JwtAuthGuard, RequireConfirmedEmailGuard)
@@ -70,12 +71,29 @@ type ParsedGraphQuery = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function csvToUuidList(raw: string | undefined, paramName: string): string[] {
+// Cap on entityIds / articleIds list length (per kind). Each UUID + comma is
+// ~37 chars, so the default 100 = ~3.7KB per list — well under Node's default
+// 16KB max-http-header-size. Sourced from env (GRAPH_SELECTION_CAP) so it
+// matches whatever value the frontend learns via GET /api/config.
+function getGraphIdCap(): number {
+  return loadEnv().GRAPH_SELECTION_CAP;
+}
+
+function csvToUuidList(
+  raw: string | undefined,
+  paramName: string,
+  maxCount?: number,
+): string[] {
   if (!raw) return [];
   const ids = raw
     .split(',')
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+  if (maxCount !== undefined && ids.length > maxCount) {
+    throw new BadRequestException(
+      `${paramName} accepts at most ${maxCount} IDs (got ${ids.length})`,
+    );
+  }
   for (const id of ids) {
     if (!UUID_RE.test(id)) {
       throw new BadRequestException(`invalid ${paramName} UUID: ${id}`);
@@ -108,8 +126,9 @@ function parseGraphQuery(
   // CSV → string[]. Empty string + filter out blanks so trailing commas
   // ('a,b,') don't produce empty UUID values.
   const categoryIds = csvToUuidList(q.category, 'category');
-  const selectedEntityIds = csvToUuidList(q.entityIds, 'entityIds');
-  const selectedArticleIds = csvToUuidList(q.articleIds, 'articleIds');
+  const cap = getGraphIdCap();
+  const selectedEntityIds = csvToUuidList(q.entityIds, 'entityIds', cap);
+  const selectedArticleIds = csvToUuidList(q.articleIds, 'articleIds', cap);
   return {
     period,
     from: q.from ? new Date(q.from) : undefined,

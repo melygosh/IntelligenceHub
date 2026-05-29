@@ -87,6 +87,14 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(2),
     ),
+    // Graph customize-canvas selection cap (per kind). UUID + comma is ~37
+    // chars, so 100 * 2 = ~7.4KB query string — well under Node's default
+    // 16KB max-http-header-size. Surfaced to the frontend via /api/config
+    // so the panel can disable selection past the cap.
+    GRAPH_SELECTION_CAP: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(100),
+    ),
   })
   .superRefine((env, ctx) => {
     if (env.LLM_FALLBACK_PROVIDER) {

@@ -14,6 +14,7 @@ import {
   useGetCategoriesQuery,
   useGetGraphQuery,
   useGetGraphSummaryQuery,
+  useGetPublicConfigQuery,
 } from '../../store/api';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
 import type {
@@ -216,6 +217,8 @@ export default function GraphPage() {
     null,
   );
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const { data: publicConfig } = useGetPublicConfigQuery();
+  const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
   const explicitMode = pickedEntityIds !== null || pickedArticleIds !== null;
 
@@ -326,8 +329,11 @@ export default function GraphPage() {
       const initialEntities = new Set<string>();
       const initialArticles = new Set<string>();
       for (const n of data.nodes) {
-        if (n.kind === 'entity') initialEntities.add(n.id);
-        else initialArticles.add(n.id);
+        if (n.kind === 'entity') {
+          if (initialEntities.size < selectionCap) initialEntities.add(n.id);
+        } else {
+          if (initialArticles.size < selectionCap) initialArticles.add(n.id);
+        }
       }
       setPickedEntityIds(initialEntities);
       setPickedArticleIds(initialArticles);
@@ -450,6 +456,7 @@ export default function GraphPage() {
               setCustomizeOpen(false);
             }}
             onClose={() => setCustomizeOpen(false)}
+            cap={selectionCap}
           />
         ) : null}
       </div>

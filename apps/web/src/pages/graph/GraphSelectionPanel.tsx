@@ -14,6 +14,7 @@ export function GraphSelectionPanel({
   onChangeArticles,
   onReset,
   onClose,
+  cap,
 }: {
   selectedEntityIds: ReadonlySet<string>;
   selectedArticleIds: ReadonlySet<string>;
@@ -21,6 +22,9 @@ export function GraphSelectionPanel({
   onChangeArticles: (ids: Set<string>) => void;
   onReset: () => void;
   onClose: () => void;
+  // Max items per kind. Mirrors the server-side GRAPH_SELECTION_CAP so the
+  // panel refuses to push the API past 400 with a long URL.
+  cap: number;
 }) {
   const [tab, setTab] = useState<Tab>('entities');
   const [entityQ, setEntityQ] = useState('');
@@ -46,26 +50,46 @@ export function GraphSelectionPanel({
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      if (next.size >= cap) return; // hard-stop at cap; UI also disables
+      next.add(id);
+    }
     onChangeEntities(next);
   }
   function toggleArticle(id: string): void {
     const next = new Set(selectedArticleIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      if (next.size >= cap) return;
+      next.add(id);
+    }
     onChangeArticles(next);
   }
+  // "Select all" walks the visible list but stops at the cap; the user can
+  // then refine via search to swap items in/out. Guarantees we never ship
+  // more than `cap` IDs to the API.
   function selectAllVisibleEntities(): void {
     const next = new Set(selectedEntityIds);
-    for (const e of entityItems) next.add(e.id);
+    for (const e of entityItems) {
+      if (next.size >= cap) break;
+      next.add(e.id);
+    }
     onChangeEntities(next);
   }
   function selectAllVisibleArticles(): void {
     const next = new Set(selectedArticleIds);
-    for (const a of articleItems) next.add(a.id);
+    for (const a of articleItems) {
+      if (next.size >= cap) break;
+      next.add(a.id);
+    }
     onChangeArticles(next);
   }
+
+  const entitiesAtCap = selectedEntityIds.size >= cap;
+  const articlesAtCap = selectedArticleIds.size >= cap;
 
   return (
     <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-paper">
@@ -118,16 +142,21 @@ export function GraphSelectionPanel({
           onClearAll={() => onChangeEntities(new Set())}
           selectedCount={selectedEntityIds.size}
           visibleCount={entityItems.length}
+          cap={cap}
         >
-          {entityItems.map((e) => (
-            <Row
-              key={e.id}
-              checked={selectedEntityIds.has(e.id)}
-              onToggle={() => toggleEntity(e.id)}
-              primary={e.canonicalName}
-              secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
-            />
-          ))}
+          {entityItems.map((e) => {
+            const isChecked = selectedEntityIds.has(e.id);
+            return (
+              <Row
+                key={e.id}
+                checked={isChecked}
+                disabled={!isChecked && entitiesAtCap}
+                onToggle={() => toggleEntity(e.id)}
+                primary={e.canonicalName}
+                secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
+              />
+            );
+          })}
         </ListBody>
       ) : (
         <ListBody
@@ -138,20 +167,25 @@ export function GraphSelectionPanel({
           onClearAll={() => onChangeArticles(new Set())}
           selectedCount={selectedArticleIds.size}
           visibleCount={articleItems.length}
+          cap={cap}
         >
-          {articleItems.map((a) => (
-            <Row
-              key={a.id}
-              checked={selectedArticleIds.has(a.id)}
-              onToggle={() => toggleArticle(a.id)}
-              primary={a.title}
-              secondary={new Date(a.ts).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            />
-          ))}
+          {articleItems.map((a) => {
+            const isChecked = selectedArticleIds.has(a.id);
+            return (
+              <Row
+                key={a.id}
+                checked={isChecked}
+                disabled={!isChecked && articlesAtCap}
+                onToggle={() => toggleArticle(a.id)}
+                primary={a.title}
+                secondary={new Date(a.ts).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              />
+            );
+          })}
         </ListBody>
       )}
     </aside>
@@ -195,6 +229,7 @@ function ListBody({
   onClearAll,
   selectedCount,
   visibleCount,
+  cap,
   children,
 }: {
   q: string;
@@ -204,8 +239,10 @@ function ListBody({
   onClearAll: () => void;
   selectedCount: number;
   visibleCount: number;
+  cap: number;
   children: React.ReactNode;
 }) {
+  const atCap = selectedCount >= cap;
   return (
     <>
       <div className="border-b border-border p-3">
@@ -217,27 +254,37 @@ function ListBody({
         />
         <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
           <span>
-            {visibleCount} shown · <span className="text-ink">{selectedCount}</span> selected
+            {visibleCount} shown ·{' '}
+            <span className={atCap ? 'text-accent-deep' : 'text-ink'}>
+              {selectedCount}
+            </span>{' '}
+            / {cap} selected
           </span>
           <span className="flex gap-3">
             <button
               type="button"
               onClick={onSelectAll}
-              className="hover:text-ink"
-              disabled={visibleCount === 0}
+              className="hover:text-ink disabled:cursor-not-allowed disabled:text-mute2 disabled:hover:text-mute2"
+              disabled={visibleCount === 0 || atCap}
+              title={atCap ? `max ${cap} reached` : undefined}
             >
               select all
             </button>
             <button
               type="button"
               onClick={onClearAll}
-              className="hover:text-ink"
+              className="hover:text-ink disabled:cursor-not-allowed disabled:text-mute2 disabled:hover:text-mute2"
               disabled={selectedCount === 0}
             >
               clear all
             </button>
           </span>
         </div>
+        {atCap ? (
+          <p className="mt-1.5 font-mono text-[11px] text-accent-deep">
+            Cap of {cap} reached — uncheck an item to add a different one.
+          </p>
+        ) : null}
       </div>
       <ul className="flex-1 overflow-y-auto">{children}</ul>
     </>
@@ -246,11 +293,13 @@ function ListBody({
 
 function Row({
   checked,
+  disabled = false,
   onToggle,
   primary,
   secondary,
 }: {
   checked: boolean;
+  disabled?: boolean;
   onToggle: () => void;
   primary: string;
   secondary: string;
@@ -260,7 +309,12 @@ function Row({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left hover:bg-paper2"
+        disabled={disabled}
+        title={disabled ? 'selection cap reached' : undefined}
+        className={
+          'flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left ' +
+          (disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-paper2')
+        }
       >
         <span
           aria-hidden

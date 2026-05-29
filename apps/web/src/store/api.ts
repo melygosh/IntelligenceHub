@@ -31,6 +31,7 @@ import type {
   GraphSummaryResponse,
   GraphPeriod,
   LoginRequest,
+  PublicConfig,
   PullAllFeedsResponse,
   PullFeedResponse,
   RegenerationRun,
@@ -312,6 +313,9 @@ export const api = createApi({
       query: () => '/telemetry/summary',
       providesTags: ['Telemetry'],
     }),
+    getPublicConfig: build.query<PublicConfig, void>({
+      query: () => '/config',
+    }),
   }),
 });
 
@@ -349,4 +353,5 @@ export const {
   useGetDigestQuery,
   useStartDigestMutation,
   useGetTelemetrySummaryQuery,
+  useGetPublicConfigQuery,
 } = api;
