@@ -24,6 +24,9 @@ const url = new URL(REDIS_URL);
       name: QUEUE_NAMES.REGENERATION,
     }),
     BullModule.registerQueue({
+      name: QUEUE_NAMES.RETAG_ARTICLE,
+    }),
+    BullModule.registerQueue({
       name: QUEUE_NAMES.DEMO_SEED,
     }),
     BullModule.registerQueue({

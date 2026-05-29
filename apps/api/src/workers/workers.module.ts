@@ -14,12 +14,14 @@ import { RegenerationStartupCleanup } from './regeneration-startup.cleanup';
 import { DemoSeederWorker } from './demo-seeder.worker';
 import { DigestBuilderWorker } from './digest-builder.worker';
 import { EmbedBackfillWorker } from './embed-backfill.worker';
+import { RetagArticleWorker } from './retag-article.worker';
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: QUEUE_NAMES.FEED_PULL }),
     BullModule.registerQueue({ name: QUEUE_NAMES.ARTICLE_ANALYZE }),
     BullModule.registerQueue({ name: QUEUE_NAMES.REGENERATION }),
+    BullModule.registerQueue({ name: QUEUE_NAMES.RETAG_ARTICLE }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DEMO_SEED }),
     BullModule.registerQueue({ name: QUEUE_NAMES.DIGEST_BUILD }),
     BullModule.registerQueue({ name: QUEUE_NAMES.EMBED_BACKFILL }),
@@ -38,6 +40,7 @@ import { EmbedBackfillWorker } from './embed-backfill.worker';
     DemoSeederWorker,
     DigestBuilderWorker,
     EmbedBackfillWorker,
+    RetagArticleWorker,
   ],
 })
 export class WorkersModule {}

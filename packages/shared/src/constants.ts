@@ -2,6 +2,7 @@ export const QUEUE_NAMES = {
   FEED_PULL: 'feed.pull',
   ARTICLE_ANALYZE: 'article.analyze',
   REGENERATION: 'regeneration',
+  RETAG_ARTICLE: 'retag.article',
   DEMO_SEED: 'demo.seed',
   DIGEST_BUILD: 'digest.build',
   EMBED_BACKFILL: 'embed.backfill',
