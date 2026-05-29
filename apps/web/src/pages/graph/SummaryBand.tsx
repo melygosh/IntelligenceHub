@@ -4,7 +4,6 @@ import { IMP_STYLE } from '../../components/articles/importance';
 import { colourFor } from './graph-palette';
 import type { SelectedNode } from './GraphSidePanel';
 
-const PREVIEW_COUNT = 5;
 const IMPORTANCE_RANK: Record<'high' | 'normal' | 'junk', number> = {
   high: 0,
   normal: 1,
@@ -80,8 +79,8 @@ export function SummaryBand({
       return (b.ts ?? 0) - (a.ts ?? 0);
     });
     return {
-      entities: ents.slice(0, PREVIEW_COUNT),
-      articles: arts.slice(0, PREVIEW_COUNT),
+      entities: ents,
+      articles: arts,
       totalEntities: ents.length,
       totalArticles: arts.length,
     };
@@ -93,7 +92,7 @@ export function SummaryBand({
         {entities.length === 0 ? (
           <Empty>No entities in this view.</Empty>
         ) : (
-          <ul className="space-y-0.5 font-mono text-[12px] leading-snug">
+          <ul className="max-h-[160px] space-y-0.5 overflow-y-auto pr-1 font-mono text-[12px] leading-snug">
             {entities.map((e) => {
               const isSelected =
                 selected?.kind === 'entity' && selected.id === e.id;
@@ -130,7 +129,7 @@ export function SummaryBand({
         {articles.length === 0 ? (
           <Empty>No articles in this view.</Empty>
         ) : (
-          <ul className="space-y-0.5 font-mono text-[12px] leading-snug">
+          <ul className="max-h-[160px] space-y-0.5 overflow-y-auto pr-1 font-mono text-[12px] leading-snug">
             {articles.map((a) => {
               const imp = (a.importance ?? 'normal') as 'high' | 'normal' | 'junk';
               const isSelected =
