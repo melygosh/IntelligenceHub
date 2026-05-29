@@ -22,6 +22,24 @@ import type {
 } from '@intelligencehub/shared';
 import { groupAxisValuesByAxis } from './group-axis-values';
 
+// US-7 processing-state default. Spec only requires the filter to expose
+// pre-filtered ('filtered') and other states as options; default visibility
+// stays at 'ready' so unfiltered loads don't suddenly grow rows for existing
+// users. 'duplicate' is intentionally excluded from the catalog — those rows
+// back the N-similar counter.
+const DEFAULT_VISIBLE_STATUSES: ArticleListItem['status'][] = ['ready'];
+
+/** Resolve the effective list of article statuses to show. When the caller
+ * omits / passes an empty list, fall back to the default visible set. */
+export function resolveStatuses(
+  requested: ArticleListItem['status'][] | undefined,
+): ArticleListItem['status'][] {
+  if (!requested || requested.length === 0) {
+    return [...DEFAULT_VISIBLE_STATUSES];
+  }
+  return [...requested];
+}
+
 @Injectable()
 export class ArticlesService {
   constructor(@Inject(DB) private readonly db: Db) {}
@@ -30,17 +48,26 @@ export class ArticlesService {
     userId: string,
     opts: {
       categoryIds?: string[];
+      feedIds?: string[];
       importances?: ('high' | 'normal' | 'junk')[];
       axisValueIds?: string[];
+      statuses?: ArticleListItem['status'][];
       windowFrom?: Date;
       windowTo?: Date;
       q?: string;
     } = {},
   ): Promise<ArticleListItem[]> {
+    // US-7 processing-state filter. Default is `['ready']` (today's behaviour);
+    // users opt into 'filtered' / 'pending' / 'failed' via the new dropdown.
+    // 'duplicate' rows back the N-similar counter and stay hidden by default.
+    const statuses = resolveStatuses(opts.statuses);
     const conditions = [
       eq(articles.userId, userId),
-      eq(articles.status, 'ready'),
+      inArray(articles.status, statuses),
     ];
+    if (opts.feedIds && opts.feedIds.length > 0) {
+      conditions.push(inArray(articles.feedId, opts.feedIds));
+    }
     if (opts.importances && opts.importances.length > 0) {
       conditions.push(inArray(articles.importance, opts.importances));
     }
@@ -118,6 +145,8 @@ export class ArticlesService {
       ts: articles.ts,
       feedId: articles.feedId,
       contentHash: articles.contentHash,
+      status: articles.status,
+      filterReason: articles.filterReason,
     };
 
     const articleRows = await this.db
@@ -182,6 +211,8 @@ export class ArticlesService {
       importance: a.importance as ArticleListItem['importance'],
       ts: a.ts.toISOString(),
       feedId: a.feedId,
+      status: a.status as ArticleListItem['status'],
+      filterReason: a.filterReason,
       entities: entitiesByArticle.get(a.id) ?? [],
       categoryNames: categoriesByArticle.get(a.id) ?? [],
       similarCount: similarCounts.get(a.id) ?? 0,
@@ -201,6 +232,7 @@ export class ArticlesService {
         body: articles.body,
         contentHash: articles.contentHash,
         status: articles.status,
+        filterReason: articles.filterReason,
       })
       .from(articles)
       .where(and(eq(articles.id, id), eq(articles.userId, userId)))
@@ -257,6 +289,8 @@ export class ArticlesService {
       importance: a.importance as ArticleListItem['importance'],
       ts: a.ts.toISOString(),
       feedId: a.feedId,
+      status: a.status as ArticleListItem['status'],
+      filterReason: a.filterReason,
       entities: entityRows.map((e) => ({
         id: e.id,
         canonicalName: e.canonicalName,
