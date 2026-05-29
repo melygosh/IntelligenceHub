@@ -392,8 +392,11 @@ under "What the app does" above and verified against §4.1 / §9.4.
 - ◐ **Top entities / top categories for a period** — surfaced via digests
   (top-20 entities + top-10 categories per window), not as a standalone
   dashboard.
-- ❌ Edge animation along timestamps · timeline scrubber · graph export ·
-  semantic article similarity. Not built.
+- ✅ **Graph export** — PNG / SVG snapshot (via `html-to-image`) and JSON
+  dump (`GraphResponse` plus the active filter context as `meta`) from a
+  filter-row Export menu on `/graph`.
+- ❌ Edge animation along timestamps · timeline scrubber · semantic article
+  similarity. Not built.
 
 ## Local development outside Docker
 
