@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   Background,
@@ -40,6 +40,7 @@ import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { colourFor } from './graph-palette';
+import { GraphExportMenu } from './GraphExportMenu';
 
 const nodeTypes = {
   article: ArticleGraphNode,
@@ -245,6 +246,10 @@ export default function GraphPage() {
 
   const [selected, setSelected] = useState<SelectedNode | null>(null);
 
+  // Snapshot target for PNG / SVG export. Wraps the ReactFlow canvas (not the
+  // legend strip below it), so the export shows exactly the canvas content.
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+
   const filtered: GraphResponse | null = useMemo(
     () => (data ? filterGraph(data, nodeKind) : null),
     [data, nodeKind],
@@ -382,6 +387,20 @@ export default function GraphPage() {
             reset to top-N
           </button>
         ) : null}
+        <div className="ml-auto">
+          <GraphExportMenu
+            getCanvasRoot={() => canvasRef.current}
+            graph={filtered}
+            filters={{
+              period,
+              from,
+              to,
+              nodeKind,
+              categoryIds,
+              anchorEntityId: explicitMode ? undefined : anchorEntityId,
+            }}
+          />
+        </div>
       </div>
       <SummaryBand
         data={filtered}
@@ -389,7 +408,10 @@ export default function GraphPage() {
         onSelect={setSelected}
       />
       <div className="flex min-h-[440px] flex-1 gap-0">
-        <div className="min-w-0 flex-1 border border-border bg-surface">
+        <div
+          ref={canvasRef}
+          className="min-w-0 flex-1 border border-border bg-surface"
+        >
           {isLoading ? (
             <LoadingHint className="p-6" />
           ) : !filtered || filtered.nodes.length === 0 ? (
