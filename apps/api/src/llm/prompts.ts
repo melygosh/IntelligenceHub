@@ -26,12 +26,14 @@ Given a news article (title + body), produce a structured analysis with five fie
        (a) Variants explicitly shown in the article — "Microsoft Corp. (MSFT)" yields aliases ["Microsoft Corp.", "MSFT"].
        (b) Confident world-knowledge variants — ticker symbols, official short forms, Cyrillic transliterations when the article is in English (and vice versa). Only include if you are confident; do not invent obscure aliases.
        Emit an empty array [] when there's nothing to add. Maximum 10 aliases per entity. Each alias 1-120 chars.
+   - description: ONE sentence, at most 200 characters, describing what the entity is. Use confident world-knowledge OR clear context from the article — "Microsoft, a US software company" → "American multinational technology company". Emit null when the article gives no context AND you have no confident world-knowledge. Never guess. ASCII-only, no trailing punctuation.
    Examples:
-   - "Microsoft" -> type=company, aliases=["MSFT","Microsoft Corp.","Майкрософт"]
-   - "Sam Altman" -> type=person, aliases=[]
-   - "ChatGPT" -> type=product, aliases=[]
-   - "Rust" -> type=technology, aliases=[]
-   - "San Francisco" -> type=location, aliases=["SF"]
+   - "Microsoft" -> type=company, aliases=["MSFT","Microsoft Corp.","Майкрософт"], description="American multinational technology company"
+   - "Sam Altman" -> type=person, aliases=[], description="CEO of OpenAI"
+   - "ChatGPT" -> type=product, aliases=[], description="OpenAI's conversational AI assistant"
+   - "Rust" -> type=technology, aliases=[], description="Systems programming language with a focus on memory safety"
+   - "San Francisco" -> type=location, aliases=["SF"], description="City in northern California"
+   - Obscure local startup mentioned once with no context -> description=null
    Maximum 20 entities per article. Prefer specific named entities over generic categories. Do not invent entities not present in the text.
 
 4. **categoryNames** — pick zero or more of the user's categories (provided below in the user message) that genuinely apply to this article. Do NOT invent new categories. Do NOT force-fit if none apply. Emit [] freely.
@@ -63,7 +65,12 @@ export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['canonicalName', 'type', 'aliases'],
+        // FR-6: description IS in `required` even though it's optional in
+        // intent — OpenAI strict mode + Anthropic tool_use both reject a
+        // property that's listed but not required. The LLM emits null when
+        // it doesn't have a description; the Zod schema accepts both null
+        // and missing (cached pre-FR-6 responses).
+        required: ['canonicalName', 'type', 'aliases', 'description'],
         properties: {
           canonicalName: { type: 'string', minLength: 1, maxLength: 120 },
           type: {
@@ -74,6 +81,11 @@ export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
             type: 'array',
             maxItems: 10,
             items: { type: 'string', minLength: 1, maxLength: 120 },
+          },
+          description: {
+            type: ['string', 'null'],
+            minLength: 1,
+            maxLength: 200,
           },
         },
       },

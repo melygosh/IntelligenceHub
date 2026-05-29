@@ -13,6 +13,17 @@ import type {
   TimelineBucket,
 } from '@intelligencehub/shared';
 
+/** FR-6: entity timestamps serialize as Unix seconds (integer). Accepts both
+ * Date (typed Drizzle selects) and string (raw db.execute path used by the
+ * list endpoint, where pg returns timestamps as strings). Returns null on
+ * missing / unparseable values so the schema's nullable contract holds. */
+function toUnixSeconds(value: Date | string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.floor(date.getTime() / 1000);
+}
+
 @Injectable()
 export class EntitiesService {
   constructor(@Inject(DB) private readonly db: Db) {}
@@ -124,12 +135,8 @@ export class EntitiesService {
       canonicalName: r.canonical_name,
       type: r.type as EntityKind,
       mentionCount: r.mention_count,
-      firstSeenTs: r.first_seen_ts
-        ? new Date(r.first_seen_ts).toISOString()
-        : null,
-      lastSeenTs: r.last_seen_ts
-        ? new Date(r.last_seen_ts).toISOString()
-        : null,
+      firstSeen: toUnixSeconds(r.first_seen_ts),
+      lastSeen: toUnixSeconds(r.last_seen_ts),
     }));
     return { items, total };
   }
@@ -140,6 +147,7 @@ export class EntitiesService {
         id: entities.id,
         canonicalName: entities.canonicalName,
         type: entities.type,
+        description: entities.description,
       })
       .from(entities)
       .where(and(eq(entities.id, id), eq(entities.userId, userId)))
@@ -173,8 +181,12 @@ export class EntitiesService {
       .orderBy(desc(articles.ts));
 
     const mentionCount = mentioningRows.length;
-    const lastSeenTs = mentioningRows[0]?.ts.toISOString() ?? null;
-    const firstSeenTs = mentioningRows.at(-1)?.ts.toISOString() ?? null;
+    // mentioningRows are ordered DESC by ts → first index is most-recent,
+    // last is oldest. Convert to Unix seconds for FR-6.
+    const lastSeen = toUnixSeconds(mentioningRows[0]?.ts ?? null);
+    const firstSeen = toUnixSeconds(mentioningRows.at(-1)?.ts ?? null);
+    // FR-6: flat ID list, same order as mentioningArticles.
+    const mentionArticleIds = mentioningRows.map((m) => m.id);
 
     const relatedEntities = await this.relatedFor(userId, id);
     const timelineBuckets = await this.timelineFor(userId, id);
@@ -184,9 +196,11 @@ export class EntitiesService {
       canonicalName: e.canonicalName,
       type: e.type as EntityKind,
       aliases: aliasRows.map((a) => a.aliasOriginal),
+      description: e.description,
       mentionCount,
-      firstSeenTs,
-      lastSeenTs,
+      firstSeen,
+      lastSeen,
+      mentionArticleIds,
       mentioningArticles: mentioningRows.map(
         (m): MentioningArticleSummary => ({
           id: m.id,

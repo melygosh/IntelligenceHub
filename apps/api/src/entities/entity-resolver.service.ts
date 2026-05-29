@@ -113,13 +113,18 @@ export class EntityResolverService {
       }
     }
 
-    // Step 4 — insert new entity (preserve original casing in canonical_name)
+    // Step 4 — insert new entity (preserve original casing in canonical_name).
+    // FR-6: description is set ONLY here, on first-seen. The exact / alias /
+    // fuzzy branches above all return without UPDATE, so the first article
+    // to surface this entity pins both its canonicalName AND its description.
+    // Subsequent mentions just add aliases.
     const [inserted] = await this.db
       .insert(entities)
       .values({
         userId,
         canonicalName: llmEntity.canonicalName,
         type: llmEntity.type,
+        description: llmEntity.description ?? null,
       })
       .returning({ id: entities.id });
 

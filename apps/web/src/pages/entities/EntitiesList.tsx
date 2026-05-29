@@ -98,9 +98,9 @@ function FilterMenu<T extends string>({
   );
 }
 
-function fmtRelative(iso: string | null): string {
-  if (!iso) return '—';
-  const ms = Date.now() - new Date(iso).getTime();
+function fmtRelative(unixSeconds: number | null): string {
+  if (unixSeconds === null) return '—';
+  const ms = Date.now() - unixSeconds * 1000;
   if (ms < 0) return 'now';
   const sec = Math.floor(ms / 1000);
   if (sec < 60) return `${sec}s ago`;
@@ -258,8 +258,15 @@ export default function EntitiesList() {
                       {e.mentionCount} mention{e.mentionCount === 1 ? '' : 's'}
                     </span>
                     <Sep />
-                    <span className="tnum" title={e.lastSeenTs ?? undefined}>
-                      {fmtRelative(e.lastSeenTs)}
+                    <span
+                      className="tnum"
+                      title={
+                        e.lastSeen !== null
+                          ? new Date(e.lastSeen * 1000).toISOString()
+                          : undefined
+                      }
+                    >
+                      {fmtRelative(e.lastSeen)}
                     </span>
                   </div>
                 </div>

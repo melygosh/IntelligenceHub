@@ -117,6 +117,10 @@ export const entities = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     canonicalName: text('canonical_name').notNull(),
     type: text('type').notNull(),
+    // FR-6 / US-10: short LLM-generated description, set on first-seen.
+    // Nullable — most rows pre-dating this column stay null until a
+    // regeneration cache-misses and re-runs the LLM.
+    description: text('description'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

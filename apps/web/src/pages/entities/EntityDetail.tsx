@@ -6,8 +6,12 @@ import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 
-function formatDate(ts: string): string {
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function formatDate(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function TypeBadge({ type }: { type: EntityKind }) {
@@ -79,13 +83,26 @@ export default function EntityDetail() {
         </div>
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 font-mono text-[11.5px]">
           <StatPair label="mentions" value={String(data.mentionCount)} />
-          {data.firstSeenTs ? (
-            <StatPair label="first seen" value={formatDate(data.firstSeenTs)} title={data.firstSeenTs} />
+          {data.firstSeen !== null ? (
+            <StatPair
+              label="first seen"
+              value={formatDate(data.firstSeen)}
+              title={new Date(data.firstSeen * 1000).toISOString()}
+            />
           ) : null}
-          {data.lastSeenTs ? (
-            <StatPair label="last seen" value={formatDate(data.lastSeenTs)} title={data.lastSeenTs} />
+          {data.lastSeen !== null ? (
+            <StatPair
+              label="last seen"
+              value={formatDate(data.lastSeen)}
+              title={new Date(data.lastSeen * 1000).toISOString()}
+            />
           ) : null}
         </div>
+        {data.description ? (
+          <p className="font-serif text-[15.5px] leading-snug text-ink/85">
+            {data.description}
+          </p>
+        ) : null}
       </header>
 
       {data.aliases.length > 0 ? (
