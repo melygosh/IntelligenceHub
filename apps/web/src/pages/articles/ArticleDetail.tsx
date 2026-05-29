@@ -127,12 +127,12 @@ export default function ArticleDetail() {
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Full text</div>
           {sanitizedBody ? (
             <div
-              className="article-body pretty font-serif text-[17px] leading-relaxed text-ink"
+              className="article-body pretty font-serif text-[17px] leading-relaxed text-ink text-justify"
               // sanitizedBody comes from DOMPurify with an explicit ALLOWED_TAGS/_ATTR list
               dangerouslySetInnerHTML={{ __html: sanitizedBody }}
             />
           ) : (
-            <p className="pretty whitespace-pre-wrap font-serif text-[17px] leading-relaxed text-ink">
+            <p className="pretty whitespace-pre-wrap font-serif text-[17px] leading-relaxed text-ink text-justify">
               {data.body}
             </p>
           )}
