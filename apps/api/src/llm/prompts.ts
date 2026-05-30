@@ -22,9 +22,10 @@ Given a news article (title + body), produce a structured analysis with five fie
 3. **entities** — named entities explicitly mentioned in the title or body. For each:
    - canonicalName: the standard form of the entity name (e.g. "Microsoft", not "MSFT" or "Microsoft Corp.")
    - type: exactly one of "company", "person", "product", "technology", "location"
-   - aliases: other ways this same entity is written. Sources for aliases:
+   - aliases: other ways this SAME entity is written — alternate spellings, abbreviations, ticker symbols, official short forms, and transliterations (e.g. Cyrillic <-> Latin). Sources:
        (a) Variants explicitly shown in the article — "Microsoft Corp. (MSFT)" yields aliases ["Microsoft Corp.", "MSFT"].
-       (b) Confident world-knowledge variants — ticker symbols, official short forms, Cyrillic transliterations when the article is in English (and vice versa). Only include if you are confident; do not invent obscure aliases.
+       (b) Confident world-knowledge variants. Only include if you are confident; do not invent obscure aliases.
+       Aliases are NOT related-but-distinct entities. Do NOT list a company's products, services, subsidiaries, parent company, divisions, or headquarters city as aliases — each of those is its own entity (emit it separately if the article mentions it). For example, for "Microsoft" do not add "Azure", "Microsoft Excel", "Redmond", or "MSRC"; for "Google" do not add "Alphabet", "DeepMind", or "Google Cloud". An alias must denote the exact same real-world thing as the canonical name, just written differently.
        Emit an empty array [] when there's nothing to add. Maximum 10 aliases per entity. Each alias 1-120 chars.
    - description: ONE sentence, at most 200 characters, describing what the entity is. Use confident world-knowledge OR clear context from the article — "Microsoft, a US software company" → "American multinational technology company". Emit null when the article gives no context AND you have no confident world-knowledge. Never guess. ASCII-only, no trailing punctuation.
    Examples:

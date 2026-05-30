@@ -56,7 +56,7 @@ export class LlmService implements ILlmService {
       input.contentHash,
       this.provider,
       this.activeModel,
-      'analyze_article_v3',
+      'analyze_article_v4',
       input.configHash,
     );
     if (cached) {
@@ -270,7 +270,7 @@ export class LlmService implements ILlmService {
             input.contentHash,
             this.provider,
             result.model,
-            'analyze_article_v3',
+            'analyze_article_v4',
             input.configHash,
             result.data,
           );
@@ -390,7 +390,7 @@ export class LlmService implements ILlmService {
         model: result.model,
         status: 'success',
         telemetry: result.telemetry,
-        operation: 'analyze_article_v3',
+        operation: 'analyze_article_v4',
         provider,
         failoverReason,
       });
@@ -399,7 +399,7 @@ export class LlmService implements ILlmService {
           input.contentHash,
           provider,
           result.model,
-          'analyze_article_v3',
+          'analyze_article_v4',
           input.configHash,
           result.data,
         );
@@ -430,7 +430,7 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: 'analyze_article_v3',
+        operation: 'analyze_article_v4',
         provider,
         failoverReason,
         errorMessage: msg,
@@ -540,7 +540,7 @@ export class LlmService implements ILlmService {
       articleId: args.articleId,
       provider: args.provider ?? this.provider,
       model: args.model,
-      operation: args.operation ?? 'analyze_article_v3',
+      operation: args.operation ?? 'analyze_article_v4',
       status: args.status,
       inputTokens: args.telemetry.inputTokens,
       outputTokens: args.telemetry.outputTokens,
