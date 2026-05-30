@@ -341,7 +341,8 @@ commits for verification.
   before the model. The deterministic pre-filter and exact-dedup pipeline
   gate the queue so junk and duplicates never reach the LLM at all.
   `LLM_CONCURRENCY` caps parallelism; every call lands in `llm_calls` with
-  tokens and latency and aggregates at `/telemetry` with computed USD cost.
+  tokens and latency and aggregates at `/telemetry` (token counts as the cost
+  proxy; no USD figure).
 - **Alternatives.** No cache (every re-pull or regen re-bills). Per-user
   cache only (identical configs across users wouldn't share). Cache by raw
   URL (would miss content-identical cross-source copies).
@@ -412,10 +413,10 @@ commits for verification.
 - **Trade-offs.** pgvector extension on Postgres (drop-in
   `pgvector/pgvector:pg16` image), ~10 KB per article of vector data,
   one extra provider dependency, and the FR-10 line drawn carefully —
-  embeddings are vectorisation, not the `lookupPricing`-tracked
-  semantic-LLM operations. In return, O(log n) semantic recall, zero
-  cost when disabled, and a clean separation between deterministic
-  exact dedup and probabilistic semantic similarity.
+  embeddings are vectorisation, recorded in the same `llm_calls` token
+  telemetry as the semantic-LLM operations. In return, O(log n) semantic
+  recall, zero cost when disabled, and a clean separation between
+  deterministic exact dedup and probabilistic semantic similarity.
 
 ## Should / Could status (§9.5)
 
