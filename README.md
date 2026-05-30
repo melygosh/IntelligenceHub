@@ -420,6 +420,53 @@ commits for verification.
   recall, zero cost when disabled, and a clean separation between
   deterministic exact dedup and probabilistic semantic similarity.
 
+### ADR-8 — Single-process backend: workers and Bull Board in the `api` service (Principle 3, FR-1)
+
+- **Context.** §7 lists workers as a component and the launch section
+  («Склад запуску») requires "один або кілька воркерів", but neither mandates
+  that workers run as *separate* containers/services. P3 only requires that
+  expensive work stays off the request path; NFR-1 sizes the test run at ≤10
+  feeds per user.
+- **Decision.** One backend image and process (the `api` compose service). All
+  BullMQ workers are NestJS `@Processor` classes (`FeedPull`,
+  `ArticleAnalyze`, `Regeneration`, `RetagArticle`, `DemoSeeder`,
+  `DigestBuilder`, `EmbedBackfill`) registered by `WorkersModule` and run
+  in-process; Bull Board mounts on the same process. `docker compose` runs four
+  services — `postgres`, `redis`, `api`, `web`. Throughput is bounded by
+  per-queue concurrency (`LLM_CONCURRENCY` et al.), not by process count, so the
+  queue — not the topology — is what keeps HTTP handlers responsive (P3).
+- **Alternatives.** A second container that shares the image with a
+  worker-only entrypoint; a dedicated Bull Board service. Both add compose
+  services and orchestration for no benefit at MVP scale.
+- **Trade-offs.** Workers can't be scaled or restarted independently of the
+  HTTP server, and a fatal worker crash takes the API process with it. In
+  return: one image to build and run, workers share DI / config / `packages/shared`
+  types with zero duplication, and `docker compose up` stays a single command.
+  Splitting workers onto a second entrypoint is a config change, not a rewrite,
+  if scale ever demands it.
+
+### ADR-9 — Bull Board access: basic-auth as the gate, no per-user admin role (US-12, NFR-3)
+
+- **Context.** US-12 wants Bull Board behind basic-auth from env, with the app
+  showing an "Open queues" link "for admin". The app is flat multi-tenant —
+  each user owns only their own data and there is no shared-admin or
+  cross-tenant role anywhere in the schema or auth layer.
+- **Decision.** Bull Board mounts at `/admin/queues`, gated by a constant-time
+  HTTP basic-auth middleware (`BULL_BOARD_USER` / `BULL_BOARD_PASS`, both
+  required at boot by the Zod env schema) applied before the route resolves and
+  excluded from the global `api` prefix. The frontend surfaces the "Open queues"
+  link to every authenticated user; **the credentials are the access boundary** —
+  anyone without them hits the browser auth prompt and sees nothing.
+- **Alternatives.** A per-user `isAdmin` flag gating the link — adds a role
+  column, a migration, and an admin-provisioning story for one observability
+  link the flat-tenant model otherwise never needs. Hiding the link entirely —
+  worse operator DX and security-by-obscurity, since the route stays reachable.
+- **Trade-offs.** The link is visible to users who can't open it (a cosmetic
+  mismatch with the "for admin" wording). In return: no speculative role
+  infrastructure, the security boundary is a real auth wall rather than a hidden
+  UI element, and operators get queue visibility from a single env-configured
+  credential pair.
+
 ## Should / Could status (§9.5)
 
 Honest snapshot of the optional tiers. The mandatory features are described
