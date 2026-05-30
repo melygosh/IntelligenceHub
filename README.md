@@ -312,7 +312,11 @@ commits for verification.
   job retries with fixed backoff (`ANALYZE_MAX_ATTEMPTS`,
   `ANALYZE_BACKOFF_SECONDS`); the row lands at `status='failed'` only
   after the budget is spent and the retries are visible in Bull Board's
-  `delayed` set. *(2)* Optional cross-provider failover: if
+  `delayed` set. Each adapter's SDK client carries an explicit
+  `LLM_TIMEOUT_MS` per-request timeout with `maxRetries: 0`, so a hung
+  provider surfaces promptly (it can't hold an `LLM_CONCURRENCY` slot for
+  the SDK's ~10-minute default) and this BullMQ layer — not the SDK — is
+  the single retry authority. *(2)* Optional cross-provider failover: if
   `LLM_FALLBACK_PROVIDER` is set, the secondary adapter retries the call
   once after the primary's retries exhaust; both attempts persist their
   own `llm_calls` row and the fallback row carries `failover_reason`

@@ -51,7 +51,6 @@ export type LlmOperation =
   | 'analyze_article'
   | 'analyze_article_v2'
   | 'analyze_article_v3'
-  | 'match_entities'
   | 'build_digest_v1'
   | 'build_digest_v2';
 

@@ -70,6 +70,16 @@ const EnvSchema = z
       .int()
       .positive()
       .default(4000),
+    // Per-request timeout (ms) applied to both adapters' SDK clients. Bounds a
+    // hung provider so it can't hold an LLM_CONCURRENCY slot for the SDK's
+    // ~10-minute default (NFR-1). On timeout the call surfaces, is classified
+    // `timeout`, and hands off to failover (if configured) or the BullMQ job
+    // retry — see ADR-3. SDK-internal retries are disabled (maxRetries: 0) so
+    // this bound is predictable and our layer owns all retry.
+    LLM_TIMEOUT_MS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(60000),
+    ),
     // Article-analyze queue (async LLM analysis). A job retries up to
     // ANALYZE_MAX_ATTEMPTS times with a fixed ANALYZE_BACKOFF_SECONDS delay
     // between attempts (sitting in the queue's `delayed` set), then lands in

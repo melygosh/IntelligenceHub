@@ -4,11 +4,14 @@ import {
   ArticleAnalysisResult,
   BuildDigestLlmResult,
   type ArticleAnalysisInput,
-  type ArticleAnalysisResult as ArticleAnalysisResultType,
   type BuildDigestLlmInput,
-  type BuildDigestLlmResult as BuildDigestLlmResultType,
 } from '@intelligencehub/shared';
 import { loadEnv, resolveProviderEnv } from '../common/config/env';
+import type {
+  LlmAdapter,
+  LlmAnalyzeResult,
+  LlmDigestResult,
+} from './llm-adapter.interface';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
@@ -17,43 +20,26 @@ import {
   userPromptFor,
 } from './prompts';
 
-export type OpenAiCallTelemetry = {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheCreationTokens: number;
-  latencyMs: number;
-};
-
-export type OpenAiCallResult = {
-  data: ArticleAnalysisResultType;
-  telemetry: OpenAiCallTelemetry;
-  model: string;
-};
-
-export type OpenAiDigestResult = {
-  result: BuildDigestLlmResultType;
-  telemetry: { inputTokens: number; outputTokens: number };
-  model: string;
-};
-
 @Injectable()
-export class OpenAiAdapter {
+export class OpenAiAdapter implements LlmAdapter {
   // Lazy: only constructed if/when this adapter is actually used, so a missing
   // API key does not crash boot when openai is neither primary nor fallback.
   private client: OpenAI | undefined;
   readonly model: string;
   private readonly apiKey: string;
   private readonly maxTokens: number;
+  private readonly timeoutMs: number;
 
   constructor() {
     const { apiKey, model } = resolveProviderEnv('openai');
+    const env = loadEnv();
     this.apiKey = apiKey;
     this.model = model;
-    this.maxTokens = loadEnv().LLM_TOKEN_LIMIT_PER_ARTICLE;
+    this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
+    this.timeoutMs = env.LLM_TIMEOUT_MS;
   }
 
-  async analyzeArticle(input: ArticleAnalysisInput): Promise<OpenAiCallResult> {
+  async analyzeArticle(input: ArticleAnalysisInput): Promise<LlmAnalyzeResult> {
     const client = this.getClient();
     const t0 = Date.now();
     const body = this.truncateForBudget(input.body);
@@ -120,7 +106,7 @@ export class OpenAiAdapter {
     };
   }
 
-  async buildDigest(input: BuildDigestLlmInput): Promise<OpenAiDigestResult> {
+  async buildDigest(input: BuildDigestLlmInput): Promise<LlmDigestResult> {
     const client = this.getClient();
 
     const response = await client.chat.completions.create({
@@ -198,7 +184,14 @@ export class OpenAiAdapter {
           'LLM_FALLBACK_PROVIDER_API_KEY (if LLM_FALLBACK_PROVIDER=openai).',
       );
     }
-    this.client = new OpenAI({ apiKey: this.apiKey });
+    // Explicit per-request timeout (FR-3); maxRetries: 0 so our retry/failover/
+    // BullMQ layer is the single retry authority and the timeout bound is
+    // predictable (see ADR-3).
+    this.client = new OpenAI({
+      apiKey: this.apiKey,
+      timeout: this.timeoutMs,
+      maxRetries: 0,
+    });
     return this.client;
   }
 }

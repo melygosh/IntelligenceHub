@@ -13,15 +13,12 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { llmCalls } from '../db/schema';
 import { loadEnv } from '../common/config/env';
-import {
-  AnthropicAdapter,
-  type AnthropicCallResult,
-} from './anthropic.adapter';
-import { OpenAiAdapter, type OpenAiCallResult } from './openai.adapter';
+import { AnthropicAdapter } from './anthropic.adapter';
+import { OpenAiAdapter } from './openai.adapter';
+import type { LlmCallTelemetry } from './llm-adapter.interface';
 import { LlmResponseCacheService } from './llm-cache.service';
 
-type AdapterResult = AnthropicCallResult | OpenAiCallResult;
-type TelemetryPayload = AdapterResult['telemetry'];
+type TelemetryPayload = LlmCallTelemetry;
 
 @Injectable()
 export class LlmService implements ILlmService {
@@ -204,8 +201,9 @@ export class LlmService implements ILlmService {
               }),
             );
             // Retry only on validation failure (likely transient model wobble).
-            // Rate limit / timeout / network errors are not retried here — the SDK already
-            // auto-retries those once or twice with backoff.
+            // Rate limit / timeout / network errors break out here and hand off
+            // to failover (if configured) or the BullMQ job retry — the SDK does
+            // not retry (maxRetries: 0), so our layer owns all retry.
             if (status !== 'invalid_response') break;
           }
         }
@@ -307,8 +305,9 @@ export class LlmService implements ILlmService {
           errorMessage: (err as Error).message,
         });
         // Retry only on validation failure (likely transient model wobble).
-        // Rate limit / timeout / network errors are not retried here — the SDK already
-        // auto-retries those once or twice with backoff.
+        // Rate limit / timeout / network errors break out here and hand off to
+        // failover (if configured) or the BullMQ job retry — the SDK does not
+        // retry (maxRetries: 0), so our layer owns all retry.
         if (status !== 'invalid_response') break;
         this.log.warn(
           JSON.stringify({
