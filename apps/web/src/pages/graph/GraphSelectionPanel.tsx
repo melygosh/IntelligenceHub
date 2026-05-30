@@ -86,39 +86,39 @@ export function GraphSelectionPanel({
   );
 
   // Connecting items auto-join the canvas selection; Related stay opt-in. The
-  // panel owns this so the canvas and sidebar can never disagree.
+  // panel owns this so the canvas and sidebar can't disagree. TWO effects, one
+  // per dimension, each keyed ONLY on its own `*Sections` — which depend on the
+  // PRIMARY selection, not the secondary one being mutated. That's what lets a
+  // manual deselect of a Connecting item stick: toggling the secondary set
+  // recomputes the *other* dimension's sections, but not the one this effect
+  // watches, so it doesn't re-fire and re-add what the user just removed.
   useEffect(() => {
-    if (dimension === 'entity') {
-      if (!articleSections.active) return;
-      const ids = new Set(selectedArticleIds);
-      let changed = false;
-      for (const a of articleSections.connecting)
-        if (!ids.has(a.id)) {
-          ids.add(a.id);
-          changed = true;
-        }
-      if (changed) onChangeArticles(ids);
-    } else {
-      if (!entitySections.active) return;
-      const ids = new Set(selectedEntityIds);
-      let changed = false;
-      for (const e of entitySections.connecting)
-        if (!ids.has(e.id)) {
-          ids.add(e.id);
-          changed = true;
-        }
-      if (changed) onChangeEntities(ids);
-    }
-    // `*Sections` are memoized on (list, primary selection) — NOT on the
-    // secondary selection — so unioning into the secondary set can't change a
-    // dep, and the `changed` guard makes re-runs idempotent: stabilises after
-    // one pass (no loop). Omitted deps are intentional:
-    //   selectedArticleIds / selectedEntityIds — read only to seed a new Set;
-    //     the `changed`/`ids.has` guard keeps re-runs idempotent.
-    //   onChangeArticles / onChangeEntities — React guarantees state-setter
-    //     identity is stable across renders (GraphPage passes the setters).
+    if (dimension !== 'entity' || !articleSections.active) return;
+    const ids = new Set(selectedArticleIds);
+    let changed = false;
+    for (const a of articleSections.connecting)
+      if (!ids.has(a.id)) {
+        ids.add(a.id);
+        changed = true;
+      }
+    if (changed) onChangeArticles(ids);
+    // selectedArticleIds (secondary) + the stable setter are intentionally
+    // omitted — see the note above; including them would re-fight deselects.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dimension, articleSections, entitySections]);
+  }, [dimension, articleSections]);
+
+  useEffect(() => {
+    if (dimension !== 'article' || !entitySections.active) return;
+    const ids = new Set(selectedEntityIds);
+    let changed = false;
+    for (const e of entitySections.connecting)
+      if (!ids.has(e.id)) {
+        ids.add(e.id);
+        changed = true;
+      }
+    if (changed) onChangeEntities(ids);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dimension, entitySections]);
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
