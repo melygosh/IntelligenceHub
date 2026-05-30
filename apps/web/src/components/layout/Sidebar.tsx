@@ -164,6 +164,18 @@ export default function Sidebar() {
         </div>
 
         <div className="mt-auto flex flex-col gap-px border-t border-border py-2">
+          <a
+            href="/admin/queues"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open queues (Bull Board)"
+            className="group relative mx-auto flex h-9 w-10 items-center justify-center border-l-2 border-transparent text-mute2 hover:bg-paper hover:text-ink"
+          >
+            <span>{ICONS.bolt()}</span>
+            <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap bg-ink px-1.5 py-0.5 font-mono text-[10.5px] text-paper opacity-0 transition-opacity group-hover:opacity-100">
+              Open queues
+            </span>
+          </a>
           <button
             type="button"
             onClick={() => setCompact(false)}
@@ -219,6 +231,25 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* US-12: admin entry point to Bull Board. Served by the API at
+          /admin/queues behind HTTP basic-auth (BULL_BOARD_USER/PASS); the
+          Vite dev proxy forwards /admin/queues. Opens in a new tab rather
+          than routing inside the SPA — the credentials are the access gate. */}
+      <div className="mt-auto border-t border-border">
+        <div className={eyebrowClass}>Admin</div>
+        <a
+          href="/admin/queues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={itemClass({ isActive: false })}
+        >
+          <span className="text-mute2 group-hover:text-ink">{ICONS.bolt()}</span>
+          <span className="flex-1 text-left">Open queues</span>
+          <span aria-hidden="true" className="text-mute2">
+            ↗
+          </span>
+        </a>
+      </div>
     </aside>
   );
 }
