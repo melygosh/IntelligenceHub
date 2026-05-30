@@ -385,13 +385,15 @@ export default function GraphPage() {
       <PageHeader eyebrow="Graph" title="Relationships" />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
-        <PeriodChips value={period} onChange={updatePeriod} />
-        <SearchInput
-          value={graphQuery}
-          onChange={setGraphQuery}
-          placeholder="search graph…"
-          widthClass="md:w-56"
-        />
+        <PeriodChips value={period} onChange={updatePeriod} showLabel={false} />
+        <div className="min-w-0 flex-1">
+          <SearchInput
+            value={graphQuery}
+            onChange={setGraphQuery}
+            placeholder="search graph…"
+            widthClass=""
+          />
+        </div>
         <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
           <label
             className="flex items-center gap-1.5 hover:text-ink"

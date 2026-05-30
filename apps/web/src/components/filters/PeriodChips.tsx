@@ -18,13 +18,15 @@ const LABELS: Record<GraphPeriod, string> = {
 export function PeriodChips({
   value,
   onChange,
+  showLabel = true,
 }: {
   value: GraphPeriod;
   onChange: (next: GraphPeriod) => void;
+  showLabel?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2 font-mono text-[13.5px] text-muted">
-      <span>period:</span>
+      {showLabel ? <span>period:</span> : null}
       <div className="flex border border-border">
         {PERIODS.map((p) => {
           const active = value === p;
