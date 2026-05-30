@@ -36,7 +36,7 @@ export function PeriodChips({
               type="button"
               onClick={() => onChange(p)}
               className={
-                'px-2 py-1 text-[13.5px] ' +
+                'px-2.5 py-1.5 text-[13.5px] ' +
                 (active
                   ? 'bg-ink text-paper'
                   : 'bg-paper text-ink hover:bg-paper2')
