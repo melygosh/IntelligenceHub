@@ -266,6 +266,33 @@ export const api = createApi({
       },
       providesTags: ['Entity'],
     }),
+    // Cached infinite-scroll entity list for the graph topbar dropdown.
+    // Pages accumulate in the RTK cache keyed by {q, sort}, so closing and
+    // reopening the dropdown reuses them (5-min keepUnusedDataFor) instead of
+    // refetching. pageParam is the 1-based page number.
+    getEntities: build.infiniteQuery<
+      EntityListResponse,
+      { q?: string; sort?: EntitySort },
+      number
+    >({
+      infiniteQueryOptions: {
+        initialPageParam: 1,
+        getNextPageParam: (lastPage, allPages, lastPageParam) => {
+          const loaded = allPages.reduce((n, p) => n + p.entities.length, 0);
+          return loaded < lastPage.total ? lastPageParam + 1 : undefined;
+        },
+      },
+      query: ({ queryArg, pageParam }) => {
+        const params = new URLSearchParams();
+        if (queryArg.q) params.set('q', queryArg.q);
+        params.set('sort', queryArg.sort ?? 'mentions');
+        params.set('page', String(pageParam));
+        params.set('pageSize', '50');
+        return `/entities?${params.toString()}`;
+      },
+      keepUnusedDataFor: 300,
+      providesTags: ['Entity'],
+    }),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
       providesTags: ['Categories'],
@@ -371,6 +398,7 @@ export const {
   useGetEntityQuery,
   useGetRecentEntitiesQuery,
   useGetEntityListQuery,
+  useGetEntitiesInfiniteQuery,
   useGetGraphQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
