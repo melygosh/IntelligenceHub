@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   type BuildDigestRequest,
@@ -10,6 +10,7 @@ import {
 import {
   useGetCategoriesQuery,
   useGetDigestsQuery,
+  useGetEntityListQuery,
   useGetRecentEntitiesQuery,
   useStartDigestMutation,
 } from '../../store/api';
@@ -58,15 +59,19 @@ function EntityPicker({
   selectedIds: string[];
   onToggle: (id: string) => void;
 }) {
-  const { data, isLoading } = useGetRecentEntitiesQuery();
   const [q, setQ] = useState('');
+  // Typeahead against the full entity index (server-side ?q= search), not a
+  // client-side filter of the pre-fetched top entities. With an empty query
+  // the endpoint returns the top entities by mention count, which is the
+  // sensible default list. pageSize caps the suggestion count.
+  const trimmed = q.trim();
+  const { data, isLoading, isFetching } = useGetEntityListQuery({
+    sort: 'mentions',
+    q: trimmed || undefined,
+    pageSize: 50,
+  });
 
-  const filtered = useMemo(() => {
-    const ents = data?.entities ?? [];
-    const needle = q.trim().toLowerCase();
-    if (!needle) return ents;
-    return ents.filter((e) => e.canonicalName.toLowerCase().includes(needle));
-  }, [data, q]);
+  const entities = data?.entities ?? [];
 
   return (
     <div className="space-y-2">
@@ -74,13 +79,15 @@ function EntityPicker({
 
       {isLoading ? (
         <div className="font-mono text-[12.5px] text-mute2">Loading entities…</div>
-      ) : filtered.length === 0 ? (
+      ) : entities.length === 0 ? (
         <div className="font-mono text-[12.5px] text-mute2">
-          {q ? `No matches for "${q}".` : 'No entities yet — analyze a few articles first.'}
+          {trimmed
+            ? `No matches for "${trimmed}".`
+            : 'No entities yet — analyze a few articles first.'}
         </div>
       ) : (
         <div className="flex flex-wrap gap-1.5">
-          {filtered.map((e) => {
+          {entities.map((e) => {
             const on = selectedIds.includes(e.id);
             return (
               <button
@@ -105,8 +112,9 @@ function EntityPicker({
       )}
 
       <div className="pretty font-mono text-[12.5px] text-mute2">
-        Showing recently-mentioned entities. The real flow has typeahead against the full
-        entity index.
+        {trimmed
+          ? `Searching the full entity index${isFetching ? '…' : ''}`
+          : 'Showing top entities by mentions — type to search the full index.'}
       </div>
     </div>
   );
@@ -310,15 +318,20 @@ function DigestForm() {
   // Nvidia"). Falls back to "all" when nothing specific is selected.
   let scopeSummary: string;
   if (scopeKind === 'entity') {
-    if (selectedEnts.length === 0) {
+    // Count is authoritative from scopeFilterIds (a searched entity may not be
+    // in the recent list); names are resolved opportunistically from it.
+    const count = scopeFilterIds.length;
+    const names = selectedEnts.map((e) => e.canonicalName);
+    if (count === 0) {
       scopeSummary = 'all entities';
-    } else if (selectedEnts.length <= 3) {
-      scopeSummary = `${selectedEnts.length} entit${selectedEnts.length === 1 ? 'y' : 'ies'}: ${selectedEnts.map((e) => e.canonicalName).join(', ')}`;
-    } else {
-      scopeSummary = `${selectedEnts.length} entities: ${selectedEnts
+    } else if (count <= 3 && names.length === count) {
+      scopeSummary = `${count} entit${count === 1 ? 'y' : 'ies'}: ${names.join(', ')}`;
+    } else if (names.length > 0) {
+      scopeSummary = `${count} entit${count === 1 ? 'y' : 'ies'}: ${names
         .slice(0, 3)
-        .map((e) => e.canonicalName)
-        .join(', ')} +${selectedEnts.length - 3} more`;
+        .join(', ')}${count > names.slice(0, 3).length ? ` +${count - names.slice(0, 3).length} more` : ''}`;
+    } else {
+      scopeSummary = `${count} entit${count === 1 ? 'y' : 'ies'}`;
     }
   } else if (selectedCats.length === 0) {
     scopeSummary = 'all categories';
