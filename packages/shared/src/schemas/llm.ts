@@ -40,6 +40,10 @@ export type ArticleAnalysisInput = {
   userCategories: string[];
   userAxes: { name: string; values: string[] }[];
   configHash: string;
+  // What triggered this call — used as the telemetry operation label so the
+  // regeneration path is reported separately from initial processing (FR-10).
+  // Defaults to 'analyze_article_v4'. Does NOT affect the cache key.
+  operationTrigger?: LlmOperation;
 };
 
 export interface LlmService {
@@ -52,6 +56,11 @@ export type LlmOperation =
   | 'analyze_article_v2'
   | 'analyze_article_v3'
   | 'analyze_article_v4'
+  // Telemetry-only label for the regeneration path (FR-10 wants process vs
+  // regeneration distinguishable). NOTE: this is NOT used as the LLM
+  // response-cache key — regeneration shares the 'analyze_article_v4' cache so
+  // it can hit results created during initial processing (FR-9 cache reuse).
+  | 'regenerate_article_v4'
   | 'build_digest_v1'
   | 'build_digest_v2';
 

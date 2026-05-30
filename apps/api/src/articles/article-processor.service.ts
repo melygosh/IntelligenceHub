@@ -328,6 +328,10 @@ export class ArticleProcessor {
         userCategories: configSnapshot.categories,
         userAxes: configSnapshot.axes,
         configHash: configSnapshot.hash,
+        // Report regeneration calls separately in telemetry (FR-10). Cache key
+        // is unaffected — still shares the 'analyze_article_v4' cache so a
+        // regen hits results created during initial processing (FR-9).
+        operationTrigger: 'regenerate_article_v4',
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

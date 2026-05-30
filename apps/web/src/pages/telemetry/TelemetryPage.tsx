@@ -24,10 +24,24 @@ function fmtDate(iso: string): string {
   });
 }
 
+// Friendly labels for the raw `operation` keys (FR-10 buckets: processing /
+// regeneration / digest). Unknown/legacy keys fall back to the raw string.
+const OPERATION_LABEL: Record<string, string> = {
+  analyze_article: 'Processing',
+  analyze_article_v2: 'Processing',
+  analyze_article_v3: 'Processing',
+  analyze_article_v4: 'Processing',
+  regenerate_article_v4: 'Regeneration',
+  build_digest_v1: 'Digest',
+  build_digest_v2: 'Digest',
+};
+
 function TelemetryTableRow({ r }: { r: TelemetryRow }) {
   return (
     <tr className="border-t border-border">
-      <td className="py-2 pr-3 font-mono text-[12.5px] text-ink">{r.operation}</td>
+      <td className="py-2 pr-3 font-mono text-[12.5px] text-ink" title={r.operation}>
+        {OPERATION_LABEL[r.operation] ?? r.operation}
+      </td>
       <td className="py-2 pr-3 font-mono text-[12.5px] text-muted">{r.provider}</td>
       <td className="py-2 pr-3 font-mono text-[12.5px] text-muted">{r.model}</td>
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-ink">{r.callCount}</td>

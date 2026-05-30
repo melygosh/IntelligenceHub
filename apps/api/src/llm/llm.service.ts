@@ -264,6 +264,7 @@ export class LlmService implements ILlmService {
           model: result.model,
           status: 'success',
           telemetry: result.telemetry,
+          operation: input.operationTrigger ?? 'analyze_article_v4',
         });
         try {
           await this.cache.write(
@@ -302,6 +303,7 @@ export class LlmService implements ILlmService {
             cacheCreationTokens: 0,
             latencyMs: 0,
           },
+          operation: input.operationTrigger ?? 'analyze_article_v4',
           errorMessage: (err as Error).message,
         });
         // Retry only on validation failure (likely transient model wobble).
@@ -390,7 +392,7 @@ export class LlmService implements ILlmService {
         model: result.model,
         status: 'success',
         telemetry: result.telemetry,
-        operation: 'analyze_article_v4',
+        operation: input.operationTrigger ?? 'analyze_article_v4',
         provider,
         failoverReason,
       });
@@ -430,7 +432,7 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: 'analyze_article_v4',
+        operation: input.operationTrigger ?? 'analyze_article_v4',
         provider,
         failoverReason,
         errorMessage: msg,
