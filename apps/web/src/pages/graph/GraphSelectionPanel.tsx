@@ -1,19 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useGetArticlesQuery,
   useGetEntityListQuery,
 } from '../../store/api';
 import { SearchInput } from '../../components/filters/SearchInput';
 import {
-  partitionByRelation,
+  connectingArticleIdSet,
+  connectingEntityIdSet,
   relatedArticleIdSet,
   relatedEntityIdSet,
-  type HasId,
+  splitConnectingRelated,
+  pinSelectedFirst,
+  type ConnectingGroups,
 } from './relation';
 
-type Tab = 'entities' | 'articles';
+export type GraphDimension = 'entity' | 'article';
 
 export function GraphSelectionPanel({
+  dimension,
+  onChangeDimension,
   selectedEntityIds,
   selectedArticleIds,
   onChangeEntities,
@@ -22,6 +27,8 @@ export function GraphSelectionPanel({
   onClose,
   cap,
 }: {
+  dimension: GraphDimension;
+  onChangeDimension: (d: GraphDimension) => void;
   selectedEntityIds: ReadonlySet<string>;
   selectedArticleIds: ReadonlySet<string>;
   onChangeEntities: (ids: Set<string>) => void;
@@ -32,7 +39,6 @@ export function GraphSelectionPanel({
   // panel refuses to push the API past 400 with a long URL.
   cap: number;
 }) {
-  const [tab, setTab] = useState<Tab>('entities');
   const [entityQ, setEntityQ] = useState('');
   const [articleQ, setArticleQ] = useState('');
 
@@ -49,61 +55,64 @@ export function GraphSelectionPanel({
     pageSize: 500,
   });
 
-  // Snapshot the "pinned" set when the list refreshes (panel open or new
-  // search results) — NOT on every toggle. This keeps an item in its Related
-  // group when the user unchecks it, so it doesn't jump to Others mid-click.
-  // Uses React's "adjust state during render" pattern (compare prev vs new in
-  // render, sync via setState) — avoids the useEffect cascading-render warning
-  // and re-pins synchronously on data change.
-  const [pinnedEntities, setPinnedEntities] = useState<ReadonlySet<string>>(
-    () => new Set(selectedEntityIds),
+  // Pinned checklist of the active dimension (selected first).
+  const entityRows = useMemo(
+    () => pinSelectedFirst(entityList?.entities ?? [], selectedEntityIds),
+    [entityList, selectedEntityIds],
   );
-  const [prevEntityList, setPrevEntityList] = useState(entityList);
-  if (prevEntityList !== entityList) {
-    setPrevEntityList(entityList);
-    setPinnedEntities(new Set(selectedEntityIds));
-  }
-  const [pinnedArticles, setPinnedArticles] = useState<ReadonlySet<string>>(
-    () => new Set(selectedArticleIds),
-  );
-  const [prevArticleList, setPrevArticleList] = useState(articleList);
-  if (prevArticleList !== articleList) {
-    setPrevArticleList(articleList);
-    setPinnedArticles(new Set(selectedArticleIds));
-  }
-
-  // Cross-dimension relationship. Each article carries its entity ids, so we
-  // derive both directions from the loaded article list (no extra request):
-  //   - articles related to the selected entities (Articles tab grouping)
-  //   - entities mentioned by the selected articles (Entities tab grouping)
-  // Null when the other tab has no selection → the list renders flat.
-  const relatedArticleIds = useMemo(
-    () => relatedArticleIdSet(articleList?.articles ?? [], selectedEntityIds),
-    [articleList, selectedEntityIds],
-  );
-  const relatedEntityIds = useMemo(
-    () => relatedEntityIdSet(articleList?.articles ?? [], selectedArticleIds),
+  const articleRows = useMemo(
+    () => pinSelectedFirst(articleList?.articles ?? [], selectedArticleIds),
     [articleList, selectedArticleIds],
   );
 
-  const entityGroups = useMemo(
+  // Connecting/Related of the OTHER dimension, relative to the active selection.
+  const articleSections = useMemo(
     () =>
-      partitionByRelation(
-        entityList?.entities ?? [],
-        pinnedEntities,
-        relatedEntityIds,
-      ),
-    [entityList, pinnedEntities, relatedEntityIds],
-  );
-  const articleGroups = useMemo(
-    () =>
-      partitionByRelation(
+      splitConnectingRelated(
         articleList?.articles ?? [],
-        pinnedArticles,
-        relatedArticleIds,
+        connectingArticleIdSet(articleList?.articles ?? [], selectedEntityIds),
+        relatedArticleIdSet(articleList?.articles ?? [], selectedEntityIds),
       ),
-    [articleList, pinnedArticles, relatedArticleIds],
+    [articleList, selectedEntityIds],
   );
+  const entitySections = useMemo(
+    () =>
+      splitConnectingRelated(
+        entityList?.entities ?? [],
+        connectingEntityIdSet(articleList?.articles ?? [], selectedArticleIds),
+        relatedEntityIdSet(articleList?.articles ?? [], selectedArticleIds),
+      ),
+    [entityList, articleList, selectedArticleIds],
+  );
+
+  // Connecting items auto-join the canvas selection; Related stay opt-in. The
+  // panel owns this so the canvas and sidebar can never disagree.
+  useEffect(() => {
+    if (dimension === 'entity') {
+      if (!articleSections.active) return;
+      const ids = new Set(selectedArticleIds);
+      let changed = false;
+      for (const a of articleSections.connecting)
+        if (!ids.has(a.id)) {
+          ids.add(a.id);
+          changed = true;
+        }
+      if (changed) onChangeArticles(ids);
+    } else {
+      if (!entitySections.active) return;
+      const ids = new Set(selectedEntityIds);
+      let changed = false;
+      for (const e of entitySections.connecting)
+        if (!ids.has(e.id)) {
+          ids.add(e.id);
+          changed = true;
+        }
+      if (changed) onChangeEntities(ids);
+    }
+    // `*Sections` are memoized on (list, primary selection) — NOT on the
+    // secondary selection — so this stabilises after one pass (no loop).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dimension, articleSections, entitySections]);
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
@@ -178,136 +187,107 @@ export function GraphSelectionPanel({
       </header>
 
       <div className="flex border-b border-border">
-        <TabButton
-          label="Entities"
-          count={selectedEntityIds.size}
-          active={tab === 'entities'}
-          onClick={() => setTab('entities')}
+        <DimButton
+          label="Entity"
+          active={dimension === 'entity'}
+          onClick={() => onChangeDimension('entity')}
         />
-        <TabButton
-          label="Articles"
-          count={selectedArticleIds.size}
-          active={tab === 'articles'}
-          onClick={() => setTab('articles')}
+        <DimButton
+          label="Article"
+          active={dimension === 'article'}
+          onClick={() => onChangeDimension('article')}
         />
       </div>
 
-      {tab === 'entities' ? (
-        <ListBody
-          q={entityQ}
-          onQ={setEntityQ}
-          placeholder="search entities…"
-          onSelectAll={selectAllVisibleEntities}
-          onClearAll={() => onChangeEntities(new Set())}
-          selectedCount={selectedEntityIds.size}
-          visibleCount={entityVisible}
-          cap={cap}
-        >
-          <GroupedRows
-            groups={entityGroups}
-            relatedLabel={`mentioned by the ${selectedArticleIds.size} selected article${selectedArticleIds.size === 1 ? '' : 's'}`}
-            renderRow={(e) => {
-              const isChecked = selectedEntityIds.has(e.id);
-              return (
-                <Row
-                  key={e.id}
-                  checked={isChecked}
-                  disabled={!isChecked && entitiesAtCap}
-                  onToggle={() => toggleEntity(e.id)}
-                  primary={e.canonicalName}
-                  secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
-                />
-              );
-            }}
+      {dimension === 'entity' ? (
+        <>
+          <ListBody
+            q={entityQ}
+            onQ={setEntityQ}
+            placeholder="search entities…"
+            onSelectAll={selectAllVisibleEntities}
+            onClearAll={() => onChangeEntities(new Set())}
+            selectedCount={selectedEntityIds.size}
+            visibleCount={entityVisible}
+            cap={cap}
+          >
+            {entityRows.map((e) => (
+              <Row
+                key={e.id}
+                checked={selectedEntityIds.has(e.id)}
+                disabled={!selectedEntityIds.has(e.id) && entitiesAtCap}
+                onToggle={() => toggleEntity(e.id)}
+                primary={e.canonicalName}
+                secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
+              />
+            ))}
+          </ListBody>
+          <ConnectingRelated
+            groups={articleSections}
+            connectingLabel={`mention all ${selectedEntityIds.size}`}
+            isChecked={(a) => selectedArticleIds.has(a.id)}
+            onToggle={(a) => toggleArticle(a.id)}
+            primary={(a) => a.title}
+            secondary={(a) =>
+              new Date(a.ts).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })
+            }
+            disabled={(a) => !selectedArticleIds.has(a.id) && articlesAtCap}
           />
-        </ListBody>
+        </>
       ) : (
-        <ListBody
-          q={articleQ}
-          onQ={setArticleQ}
-          placeholder="search articles…"
-          onSelectAll={selectAllVisibleArticles}
-          onClearAll={() => onChangeArticles(new Set())}
-          selectedCount={selectedArticleIds.size}
-          visibleCount={articleVisible}
-          cap={cap}
-        >
-          <GroupedRows
-            groups={articleGroups}
-            relatedLabel={`mention the ${selectedEntityIds.size} selected entit${selectedEntityIds.size === 1 ? 'y' : 'ies'}`}
-            renderRow={(a) => {
-              const isChecked = selectedArticleIds.has(a.id);
-              return (
-                <Row
-                  key={a.id}
-                  checked={isChecked}
-                  disabled={!isChecked && articlesAtCap}
-                  onToggle={() => toggleArticle(a.id)}
-                  primary={a.title}
-                  secondary={new Date(a.ts).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                />
-              );
-            }}
+        <>
+          <ListBody
+            q={articleQ}
+            onQ={setArticleQ}
+            placeholder="search articles…"
+            onSelectAll={selectAllVisibleArticles}
+            onClearAll={() => onChangeArticles(new Set())}
+            selectedCount={selectedArticleIds.size}
+            visibleCount={articleVisible}
+            cap={cap}
+          >
+            {articleRows.map((a) => (
+              <Row
+                key={a.id}
+                checked={selectedArticleIds.has(a.id)}
+                disabled={!selectedArticleIds.has(a.id) && articlesAtCap}
+                onToggle={() => toggleArticle(a.id)}
+                primary={a.title}
+                secondary={new Date(a.ts).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              />
+            ))}
+          </ListBody>
+          <ConnectingRelated
+            groups={entitySections}
+            connectingLabel={`mention all ${selectedArticleIds.size}`}
+            isChecked={(e) => selectedEntityIds.has(e.id)}
+            onToggle={(e) => toggleEntity(e.id)}
+            primary={(e) => e.canonicalName}
+            secondary={(e) =>
+              `${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`
+            }
+            disabled={(e) => !selectedEntityIds.has(e.id) && entitiesAtCap}
           />
-        </ListBody>
+        </>
       )}
     </aside>
   );
 }
 
-function GroupHeader({ label }: { label: string }) {
-  return (
-    <li className="sticky top-0 z-[1] border-b border-border bg-paper2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
-      {label}
-    </li>
-  );
-}
-
-// Renders the Related / Others split when there's a cross-dimension selection,
-// or a single flat list when there isn't (groups.split === false).
-function GroupedRows<T extends HasId>({
-  groups,
-  relatedLabel,
-  renderRow,
-}: {
-  groups: { related: T[]; others: T[]; split: boolean };
-  // Human phrase completing "Related — items that {relatedLabel}".
-  relatedLabel: string;
-  renderRow: (item: T) => React.ReactNode;
-}) {
-  if (!groups.split) {
-    return <>{groups.others.map(renderRow)}</>;
-  }
-  return (
-    <>
-      <GroupHeader label={`Related · ${relatedLabel}`} />
-      {groups.related.length > 0 ? (
-        groups.related.map(renderRow)
-      ) : (
-        <li className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</li>
-      )}
-      <GroupHeader label="Others" />
-      {groups.others.length > 0 ? (
-        groups.others.map(renderRow)
-      ) : (
-        <li className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</li>
-      )}
-    </>
-  );
-}
-
-function TabButton({
+function DimButton({
   label,
-  count,
   active,
   onClick,
 }: {
   label: string;
-  count: number;
   active: boolean;
   onClick: () => void;
 }) {
@@ -315,17 +295,86 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={
         'flex-1 px-3 py-2 font-mono text-[12.5px] ' +
         (active
           ? 'border-b-2 border-ink text-ink'
           : 'border-b-2 border-transparent text-muted hover:text-ink')
       }
-      aria-pressed={active}
     >
-      {label}{' '}
-      <span className="text-mute2">({count})</span>
+      {label}
     </button>
+  );
+}
+
+function ConnectingRelated<T extends { id: string }>({
+  groups,
+  connectingLabel,
+  isChecked,
+  onToggle,
+  primary,
+  secondary,
+  disabled,
+}: {
+  groups: ConnectingGroups<T>;
+  connectingLabel: string;
+  isChecked: (item: T) => boolean;
+  onToggle: (item: T) => void;
+  primary: (item: T) => string;
+  secondary: (item: T) => string;
+  disabled: (item: T) => boolean;
+}) {
+  if (!groups.active) return null;
+  const render = (item: T) => (
+    <Row
+      key={item.id}
+      checked={isChecked(item)}
+      disabled={disabled(item)}
+      onToggle={() => onToggle(item)}
+      primary={primary(item)}
+      secondary={secondary(item)}
+    />
+  );
+  return (
+    <div className="border-t border-border">
+      <SectionHeader
+        tone="and"
+        label={`Connecting · ${connectingLabel} · ${groups.connecting.length}`}
+      />
+      {groups.connecting.length > 0 ? (
+        groups.connecting.map(render)
+      ) : (
+        <p className="px-3 py-2 font-mono text-[11.5px] italic text-mute2">
+          none — no single item ties all of them
+        </p>
+      )}
+      <SectionHeader
+        tone="or"
+        label={`Related · mention any · ${groups.related.length}`}
+      />
+      {groups.related.length > 0 ? (
+        groups.related.map(render)
+      ) : (
+        <p className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</p>
+      )}
+    </div>
+  );
+}
+
+function SectionHeader({ tone, label }: { tone: 'and' | 'or'; label: string }) {
+  const cls =
+    tone === 'and'
+      ? 'bg-accent-light text-accent-deep'
+      : 'bg-paper2 text-muted';
+  return (
+    <div
+      className={
+        'px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ' + cls
+      }
+    >
+      {label}
+    </div>
   );
 }
 
