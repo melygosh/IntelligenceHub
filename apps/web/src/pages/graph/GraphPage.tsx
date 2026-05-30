@@ -49,6 +49,47 @@ function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
 }
 
+/** CSV → trimmed, non-empty string[]. */
+function parseCsv(v: string | null): string[] {
+  return (v ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/** Order-insensitive equality of two id lists (used for category compare). */
+function sameIdList(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((x) => set.has(x));
+}
+
+/** Equality of two selection sets, treating null (untouched) distinctly. */
+function sameSel(
+  a: ReadonlySet<string> | null,
+  b: ReadonlySet<string> | null,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
+// The committed params that actually drive the /graph fetch. The builder edits
+// a separate draft; clicking Build copies draft → built (one fetch).
+type BuiltParams = {
+  categoryIds: string[];
+  period: GraphPeriod;
+  from?: string;
+  to?: string;
+  entitySel: Set<string> | null;
+  articleIds: Set<string>;
+  // Carried only for the initial auto-build (anchored from EntityDetail). A
+  // manual Build / reset drops it.
+  anchorEntityId?: string;
+};
+
 function toReactFlowNodes(
   graphNodes: GraphNode[],
   positions: Map<string, { x: number; y: number }>,
@@ -149,65 +190,94 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
 
 export default function GraphPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const categoryParam = searchParams.get('category') ?? '';
-  const categoryIds = useMemo(
-    () =>
-      categoryParam
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0),
-    [categoryParam],
-  );
-  const periodParam = searchParams.get('period');
-  const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
-  const from = searchParams.get('from') ?? undefined;
-  const to = searchParams.get('to') ?? undefined;
-  const animateRequested = searchParams.get('animate') === '1';
   const location = useLocation();
   const anchorEntityId = (location.state as { anchorEntityId?: string } | null)
     ?.anchorEntityId;
+  // `animate` stays URL-backed + instant — it's a client-only render toggle
+  // (no fetch), unaffected by the build flow.
+  const animateRequested = searchParams.get('animate') === '1';
 
-  // Primary selection: entities (topbar dropdown) + articles (sidebar
-  // checkboxes). Empty sets => default top-N entity overview; any non-empty =>
-  // explicit-set canvas (picked entities + picked articles + edges among them).
-  // In-memory only — reloading resets to top-N, as designed.
-  // null = untouched: the canvas shows the default top-N and the entity
-  // dropdown pre-checks those (display-only, see checkedEntityIds) WITHOUT
-  // committing them — so opening the dropdown fires no graph refetch. A
-  // non-null set is an explicit selection that drives the canvas query.
-  const [entitySel, setEntitySel] = useState<Set<string> | null>(null);
-  const [articleIds, setArticleIds] = useState<Set<string>>(new Set());
+  // --- Draft: what the builder edits. Changing these fetches NOTHING; they
+  // only take effect when the user clicks Build. Seeded once from the URL so
+  // existing /graph?category=…&period=… links still open as expected.
+  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>(() =>
+    parseCsv(searchParams.get('category')),
+  );
+  const [draftPeriod, setDraftPeriod] = useState<GraphPeriod>(() => {
+    const p = searchParams.get('period');
+    return isGraphPeriod(p) ? p : DEFAULT_PERIOD;
+  });
+  const [draftFrom, setDraftFrom] = useState<string | undefined>(
+    () => searchParams.get('from') ?? undefined,
+  );
+  const [draftTo, setDraftTo] = useState<string | undefined>(
+    () => searchParams.get('to') ?? undefined,
+  );
+  // null = untouched (the dropdown pre-checks the on-canvas top-N display-only);
+  // a non-null set is an explicit entity pick.
+  const [draftEntitySel, setDraftEntitySel] = useState<Set<string> | null>(null);
+  const [draftArticleIds, setDraftArticleIds] = useState<Set<string>>(new Set());
+
+  // --- Built: the committed params that actually drive the /graph fetch.
+  // Initialised = draft defaults (+ any anchor) so the canvas auto-builds the
+  // top-N on first load. Only Build / reset reassign this.
+  const [built, setBuilt] = useState<BuiltParams>(() => {
+    const p = searchParams.get('period');
+    return {
+      categoryIds: parseCsv(searchParams.get('category')),
+      period: isGraphPeriod(p) ? p : DEFAULT_PERIOD,
+      from: searchParams.get('from') ?? undefined,
+      to: searchParams.get('to') ?? undefined,
+      entitySel: null,
+      articleIds: new Set<string>(),
+      anchorEntityId,
+    };
+  });
+
   const [articlesOpen, setArticlesOpen] = useState(false);
-  // Canvas-level text search: dims non-matching nodes by label. In-memory.
+  // Canvas-level text search: dims non-matching nodes by label. In-memory,
+  // client-only — operates on the already-built graph, no fetch.
   const [graphQuery, setGraphQuery] = useState('');
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
-  const explicitMode = entitySel !== null || articleIds.size > 0;
+  const explicitMode = built.entitySel !== null || built.articleIds.size > 0;
 
-  const { data, isLoading } = useGetGraphQuery({
-    categoryIds,
-    period,
-    from,
-    to,
-    anchorEntityId: explicitMode ? undefined : anchorEntityId,
+  const { data, isLoading, isFetching } = useGetGraphQuery({
+    categoryIds: built.categoryIds,
+    period: built.period,
+    from: built.from,
+    to: built.to,
+    anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
     selectedEntityIds:
-      entitySel && entitySel.size > 0 ? Array.from(entitySel) : undefined,
-    selectedArticleIds: articleIds.size > 0 ? Array.from(articleIds) : undefined,
+      built.entitySel && built.entitySel.size > 0
+        ? Array.from(built.entitySel)
+        : undefined,
+    selectedArticleIds:
+      built.articleIds.size > 0 ? Array.from(built.articleIds) : undefined,
   });
+
+  // Draft differs from what's currently built → Build is "pending" (glows).
+  const pending =
+    !sameIdList(draftCategoryIds, built.categoryIds) ||
+    draftPeriod !== built.period ||
+    draftFrom !== built.from ||
+    draftTo !== built.to ||
+    !sameSel(draftEntitySel, built.entitySel) ||
+    !sameSel(draftArticleIds, built.articleIds);
 
   const [selected, setSelected] = useState<SelectedNode | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  // Entity ids currently on the canvas. When untouched (entitySel === null)
-  // this is the default top-N; the dropdown pre-checks these so it reflects
-  // what's shown. Once the user commits a selection, that explicit set wins.
+  // Entity ids currently on the canvas (from the BUILT graph). When the draft
+  // entity selection is untouched, the dropdown pre-checks these so it reflects
+  // what's shown; once the user picks, the draft set wins.
   const canvasEntityIds = useMemo(() => {
     const s = new Set<string>();
     if (data) for (const n of data.nodes) if (n.kind === 'entity') s.add(n.id);
     return s;
   }, [data]);
-  const checkedEntityIds = entitySel ?? canvasEntityIds;
+  const checkedEntityIds = draftEntitySel ?? canvasEntityIds;
 
   // Default canvas shows the top-N entities only; once a selection exists we
   // show both kinds so connecting article nodes + their edges appear.
@@ -251,26 +321,54 @@ export default function GraphPage() {
     [filtered, focus, animateEffective],
   );
 
-  function updateParam(key: string, value: string | undefined): void {
+  function setAnimate(on: boolean): void {
     const next = new URLSearchParams(searchParams);
-    if (value === undefined || value === '') next.delete(key);
-    else next.set(key, value);
+    if (on) next.set('animate', '1');
+    else next.delete('animate');
     setSearchParams(next, { replace: true, state: location.state });
   }
 
-  function updateCategoryIds(ids: string[]): void {
-    updateParam('category', ids.length > 0 ? ids.join(',') : undefined);
+  function onDraftPeriod(p: GraphPeriod): void {
+    setDraftPeriod(p);
+    if (p !== 'custom') {
+      setDraftFrom(undefined);
+      setDraftTo(undefined);
+    }
+  }
+
+  // Commit the draft → the canvas refetches once. A manual build drops the
+  // incoming anchor (the user is driving now).
+  function build(): void {
+    if (!pending && !isFetching) return;
+    setBuilt({
+      categoryIds: draftCategoryIds,
+      period: draftPeriod,
+      from: draftFrom,
+      to: draftTo,
+      entitySel: draftEntitySel ? new Set(draftEntitySel) : null,
+      articleIds: new Set(draftArticleIds),
+      anchorEntityId: undefined,
+    });
     setSelected(null);
   }
-  function updatePeriod(next: GraphPeriod): void {
-    const params = new URLSearchParams(searchParams);
-    if (next === DEFAULT_PERIOD) params.delete('period');
-    else params.set('period', next);
-    if (next !== 'custom') {
-      params.delete('from');
-      params.delete('to');
-    }
-    setSearchParams(params, { replace: true, state: location.state });
+
+  // Clear draft AND build back to the default top-N overview.
+  function reset(): void {
+    setDraftCategoryIds([]);
+    setDraftPeriod(DEFAULT_PERIOD);
+    setDraftFrom(undefined);
+    setDraftTo(undefined);
+    setDraftEntitySel(null);
+    setDraftArticleIds(new Set());
+    setBuilt({
+      categoryIds: [],
+      period: DEFAULT_PERIOD,
+      from: undefined,
+      to: undefined,
+      entitySel: null,
+      articleIds: new Set(),
+      anchorEntityId: undefined,
+    });
     setSelected(null);
   }
 
@@ -285,29 +383,40 @@ export default function GraphPage() {
     setSelected(null);
   }
 
-  function reset(): void {
-    setEntitySel(null);
-    setArticleIds(new Set());
-    setSelected(null);
-  }
-
   return (
     <div className="flex h-full flex-col gap-3">
       <PageHeader eyebrow="Graph" title="Relationships" />
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
+      <div className="border border-border bg-paper px-3 py-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+            build
+          </span>
+          <CategoryDropdown
+            selected={draftCategoryIds}
+            onChange={setDraftCategoryIds}
+          />
           <EntityPickerDropdown
             selectedIds={checkedEntityIds}
-            onChange={(next) => {
-              // First toggle commits the (previously display-only) set as an
-              // explicit selection.
-              setEntitySel(next);
-              setSelected(null);
-            }}
+            onChange={setDraftEntitySel}
             cap={selectionCap}
           />
-          <PeriodChips value={period} onChange={updatePeriod} showLabel={false} />
+          <PeriodChips value={draftPeriod} onChange={onDraftPeriod} showLabel={false} />
+          <button
+            type="button"
+            onClick={() => setArticlesOpen((v) => !v)}
+            className={
+              'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
+              (articlesOpen || draftArticleIds.size > 0
+                ? 'bg-paper2 text-ink'
+                : 'bg-paper text-muted hover:text-ink')
+            }
+            title="Open the article picker"
+          >
+            Articles
+            {draftArticleIds.size > 0 ? (
+              <span className="text-[11px]">({draftArticleIds.size})</span>
+            ) : null}
+          </button>
           <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
             <label
               className="flex items-center gap-1.5 hover:text-ink"
@@ -316,7 +425,7 @@ export default function GraphPage() {
               <input
                 type="checkbox"
                 checked={animateRequested}
-                onChange={(e) => updateParam('animate', e.target.checked ? '1' : undefined)}
+                onChange={(e) => setAnimate(e.target.checked)}
                 className="h-3 w-3 accent-ink"
               />
               animate
@@ -328,12 +437,12 @@ export default function GraphPage() {
               getCanvasRoot={() => canvasRef.current}
               graph={filtered}
               filters={{
-                period,
-                from,
-                to,
+                period: built.period,
+                from: built.from,
+                to: built.to,
                 nodeKind: 'both',
-                categoryIds,
-                anchorEntityId: explicitMode ? undefined : anchorEntityId,
+                categoryIds: built.categoryIds,
+                anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
               }}
             />
             <span className="text-border" aria-hidden="true">
@@ -341,36 +450,39 @@ export default function GraphPage() {
             </span>
             <button
               type="button"
-              onClick={() => setArticlesOpen((v) => !v)}
-              className={
-                'inline-flex items-center gap-1.5 hover:text-ink ' +
-                (articlesOpen || articleIds.size > 0 ? 'text-ink' : '')
-              }
-              title="Toggle the Articles sidebar"
+              onClick={reset}
+              className="border border-transparent px-2.5 py-1.5 font-mono text-[12.5px] text-muted hover:border-border hover:text-ink"
+              title="Reset to defaults and rebuild"
             >
-              Articles
-              {articleIds.size > 0 ? (
-                <span className="text-[11px]">({articleIds.size})</span>
-              ) : null}
+              reset
             </button>
-            {explicitMode ? (
-              <button
-                type="button"
-                onClick={reset}
-                className="hover:text-ink"
-                title="Restore the default top-N selection"
-              >
-                reset
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={build}
+              disabled={!pending && !isFetching}
+              title={pending ? 'Apply changes to the canvas' : 'Canvas is up to date'}
+              className={
+                'inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[12.5px] transition-colors ' +
+                (isFetching
+                  ? 'cursor-wait border-border bg-paper2 text-mute2'
+                  : pending
+                    ? 'border-accent bg-accent text-paper hover:border-accent-deep hover:bg-accent-deep'
+                    : 'cursor-not-allowed border-border bg-paper2 text-mute2')
+              }
+            >
+              {isFetching ? 'Building…' : 'Build'}
+              {!isFetching ? <span aria-hidden="true">→</span> : null}
+            </button>
           </div>
         </div>
-        <SearchInput
-          value={graphQuery}
-          onChange={setGraphQuery}
-          placeholder="search graph…"
-          widthClass="w-full"
-        />
+        <div className="mt-2">
+          <SearchInput
+            value={graphQuery}
+            onChange={setGraphQuery}
+            placeholder="search graph…"
+            widthClass="w-full"
+          />
+        </div>
       </div>
       <div className="flex min-h-[440px] flex-1 gap-0">
         <div ref={canvasRef} className="min-w-0 flex-1 border border-border bg-surface">
@@ -392,7 +504,17 @@ export default function GraphPage() {
               />
               <button
                 type="button"
-                onClick={() => updatePeriod('all')}
+                onClick={() => {
+                  setDraftPeriod('all');
+                  setDraftFrom(undefined);
+                  setDraftTo(undefined);
+                  setBuilt((b) => ({
+                    ...b,
+                    period: 'all',
+                    from: undefined,
+                    to: undefined,
+                  }));
+                }}
                 className="mt-3 border border-border bg-paper px-3 py-1 font-mono text-[12px] text-ink hover:bg-paper2"
               >
                 Use period=all
@@ -428,16 +550,16 @@ export default function GraphPage() {
         ) : null}
         {articlesOpen ? (
           <ArticlesPanel
-            selectedEntityIds={entitySel ?? new Set()}
-            selectedArticleIds={articleIds}
-            onChangeArticles={setArticleIds}
+            selectedEntityIds={draftEntitySel ?? new Set()}
+            selectedArticleIds={draftArticleIds}
+            onChangeArticles={setDraftArticleIds}
             onReset={reset}
             onClose={() => setArticlesOpen(false)}
             cap={selectionCap}
-            period={period}
-            from={from}
-            to={to}
-            categoryIds={categoryIds}
+            period={draftPeriod}
+            from={draftFrom}
+            to={draftTo}
+            categoryIds={draftCategoryIds}
           />
         ) : null}
       </div>
