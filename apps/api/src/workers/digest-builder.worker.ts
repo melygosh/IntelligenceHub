@@ -341,9 +341,10 @@ export class DigestBuilderWorker extends WorkerHost {
   // Top-N articles for the LLM prose prompt, ordered by importance then
   // recency. Unlike pickKeyArticles this keeps `summary` (the prompt needs it)
   // and returns the raw rows rather than the UI DigestKeyArticle shape.
-  private pickPromptArticles<
-    T extends { ts: Date; importance: string | null },
-  >(inScope: T[], limit: number): T[] {
+  private pickPromptArticles<T extends { ts: Date; importance: string | null }>(
+    inScope: T[],
+    limit: number,
+  ): T[] {
     const importanceRank = (i: string | null): number => {
       if (i === 'high') return 0;
       if (i === 'normal') return 1;
