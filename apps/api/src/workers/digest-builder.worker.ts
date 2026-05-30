@@ -25,6 +25,7 @@ import {
 import { LlmService } from '../llm/llm.service';
 // value import required for Nest DI metadata
 import { EventsService } from '../events/events.service';
+import { loadEnv } from '../common/config/env';
 
 type JobData = { digestRunId: string };
 
@@ -115,11 +116,24 @@ export class DigestBuilderWorker extends WorkerHost {
         topCategories,
         topEntities,
       );
+      // Cap the prose-summary prompt: a wide "month" digest can hold hundreds
+      // of in-scope articles, and sending them all blows up prompt size + cost
+      // for no editorial gain. Feed the LLM the top-N by importance then
+      // recency (same ordering as the key-articles pick). Aggregations above
+      // still ran over the full in-scope set, so the deterministic outputs are
+      // unaffected — only the summary input is bounded.
+      const promptArticles = this.pickPromptArticles(
+        inScope,
+        loadEnv().DIGEST_MAX_LLM_ARTICLES,
+      );
       const llmInput = {
         userId: run.userId,
         period: run.period as DigestPeriod,
         scopeLabel,
-        articles: inScope.map((a) => ({ title: a.title, summary: a.summary })),
+        articles: promptArticles.map((a) => ({
+          title: a.title,
+          summary: a.summary,
+        })),
       };
       const llmResult = await this.llm.buildDigest(llmInput);
 
@@ -322,6 +336,27 @@ export class DigestBuilderWorker extends WorkerHost {
       .orderBy(sql`COUNT(${articleCategory.articleId}) DESC`)
       .limit(10);
     return rows;
+  }
+
+  // Top-N articles for the LLM prose prompt, ordered by importance then
+  // recency. Unlike pickKeyArticles this keeps `summary` (the prompt needs it)
+  // and returns the raw rows rather than the UI DigestKeyArticle shape.
+  private pickPromptArticles<
+    T extends { ts: Date; importance: string | null },
+  >(inScope: T[], limit: number): T[] {
+    const importanceRank = (i: string | null): number => {
+      if (i === 'high') return 0;
+      if (i === 'normal') return 1;
+      if (i === 'junk') return 2;
+      return 3;
+    };
+    return [...inScope]
+      .sort((a, b) => {
+        const r = importanceRank(a.importance) - importanceRank(b.importance);
+        if (r !== 0) return r;
+        return b.ts.getTime() - a.ts.getTime();
+      })
+      .slice(0, limit);
   }
 
   private pickKeyArticles(

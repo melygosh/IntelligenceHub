@@ -103,6 +103,15 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(5),
     ),
+    // Digest builder: max articles fed to the LLM per digest. Aggregation
+    // (top entities / categories / key articles) still runs over the full
+    // in-scope set deterministically; only the prose-summary prompt is capped,
+    // prioritising by importance then recency. Bounds prompt size + cost on a
+    // wide "month" digest without changing the deterministic outputs.
+    DIGEST_MAX_LLM_ARTICLES: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(40),
+    ),
     // Graph customize-canvas selection cap (per kind). UUID + comma is ~37
     // chars, so 100 * 2 = ~7.4KB query string — well under Node's default
     // 16KB max-http-header-size. Surfaced to the frontend via /api/config
