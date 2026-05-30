@@ -373,7 +373,7 @@ export default function GraphPage() {
           value={graphQuery}
           onChange={setGraphQuery}
           placeholder="search graph…"
-          widthClass="w-44"
+          widthClass="md:w-56"
         />
         <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
           <label
