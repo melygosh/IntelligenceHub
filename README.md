@@ -152,6 +152,22 @@ duplicate row (the cross-source similar-articles anchor); same-feed
 re-pulls and pending/failed siblings are skipped silently to avoid
 inflating the "N similar" counter.
 
+*What counts as a duplicate vs. similar* (FR-5 asks this be stated):
+
+- **Duplicate** — an exact re-publication: same normalised URL *or* SHA-256
+  content hash as an existing article for that user. Deduplicated so identical
+  content is never re-analysed — a same-feed re-pull is dropped, and a
+  cross-feed copy is stored `status='duplicate'` with a `duplicate_of` pointer,
+  inheriting the original's analysis rather than spending its own LLM call.
+- **Similar** ("N in other sources") — the cross-source view of those exact
+  matches: how many *other* feeds carry the same URL/hash content
+  (`feed_id IS DISTINCT FROM` the article's own feed). Derived at read time and
+  surfaced as the badge + list in the feed (US-7) and card (US-8); never stored.
+- **Related (semantic)** — optional (ADR-7): pgvector kNN over per-article
+  embeddings finds same-event / different-text articles, explicitly excluding
+  exact URL/hash matches, under its own "Related (semantic)" section. The
+  probabilistic level, kept separate from the two deterministic ones.
+
 **Entities** (FR-6) are dedup'd via LLM-emitted aliases plus a deterministic
 resolver. The analysis call returns aliases alongside entities, so dedup
 costs zero extra LLM calls. `EntityResolver` normalises the canonical name
