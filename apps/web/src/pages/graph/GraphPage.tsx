@@ -31,6 +31,7 @@ import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
 import { GraphSelectionPanel, type GraphDimension } from './GraphSelectionPanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
+import { SearchInput } from '../../components/filters/SearchInput';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -46,6 +47,27 @@ const DEFAULT_PERIOD: GraphPeriod = '7d';
 
 function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
+}
+
+/** Small settings/gear glyph for the "customize" action. Inline SVG +
+ * currentColor, matching the app's hand-rolled icon convention. */
+function GearIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-3.5 w-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="2.2" />
+      <path
+        d="M8 1.5v2 M8 12.5v2 M1.5 8h2 M12.5 8h2 M3.4 3.4l1.4 1.4 M11.2 11.2l1.4 1.4 M12.6 3.4l-1.4 1.4 M4.8 11.2l-1.4 1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 function toReactFlowNodes(
@@ -196,6 +218,9 @@ export default function GraphPage() {
   );
   const [dimension, setDimension] = useState<GraphDimension>('entity');
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  // Canvas-level text search. Client-side: dims non-matching nodes by label
+  // (the graph query has no text filter). In-memory, like the customize picks.
+  const [graphQuery, setGraphQuery] = useState('');
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
@@ -246,11 +271,22 @@ export default function GraphPage() {
   // the current top-N selection) — without this guard, computeFocusSet would
   // return a singleton set the canvas can't match, dimming everything.
   const focus = useMemo(() => {
-    if (!filtered || !selected) return null;
+    if (!filtered) return null;
+    // A graph search overrides selection focus: highlight nodes whose label
+    // matches, dim the rest (an empty match set dims everything → "no hits").
+    const q = graphQuery.trim().toLowerCase();
+    if (q) {
+      return new Set(
+        filtered.nodes
+          .filter((n) => n.label.toLowerCase().includes(q))
+          .map((n) => n.id),
+      );
+    }
+    if (!selected) return null;
     const onCanvas = filtered.nodes.some((n) => n.id === selected.id);
     if (!onCanvas) return null;
     return computeFocusSet(selected.id, filtered.edges);
-  }, [filtered, selected]);
+  }, [filtered, selected, graphQuery]);
 
   const nodes = useMemo(
     () => (filtered ? toReactFlowNodes(filtered.nodes, positions, focus) : []),
@@ -331,51 +367,32 @@ export default function GraphPage() {
     <div className="flex h-full flex-col gap-3">
       <PageHeader eyebrow="Graph" title="Relationships" />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <PeriodChips value={period} onChange={updatePeriod} />
         <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
-        <button
-          type="button"
-          onClick={openCustomize}
-          className={
-            'inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[13.5px] transition-colors ' +
-            (explicitMode
-              ? 'border-ink bg-ink text-paper'
-              : 'border-border bg-paper text-ink hover:bg-paper2')
-          }
-          title="Open the customize-canvas panel"
-        >
-          Customize…
-          {explicitMode ? (
-            <span className="text-[11.5px]">
-              ({(pickedEntityIds?.size ?? 0) + (pickedArticleIds?.size ?? 0)})
-            </span>
-          ) : null}
-        </button>
-        {explicitMode ? (
-          <button
-            type="button"
-            onClick={resetCustomize}
-            className="font-mono text-[12.5px] text-muted hover:text-ink"
-            title="Restore the default top-N selection"
+        <PeriodChips value={period} onChange={updatePeriod} />
+        <SearchInput
+          value={graphQuery}
+          onChange={setGraphQuery}
+          placeholder="search graph…"
+          widthClass="w-44"
+        />
+        <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
+          <label
+            className="flex items-center gap-1.5 hover:text-ink"
+            title="Animate mentions edges in chronological direction (article → entity)"
           >
-            reset to top-N
-          </button>
-        ) : null}
-        <label
-          className="flex items-center gap-1.5 font-mono text-[12.5px] text-muted hover:text-ink"
-          title="Animate mentions edges in chronological direction (article → entity)"
-        >
-          <input
-            type="checkbox"
-            checked={animateRequested}
-            onChange={(e) =>
-              updateParam('animate', e.target.checked ? '1' : undefined)
-            }
-            className="h-3 w-3 accent-ink"
-          />
-          animate edges
-        </label>
-        <div className="ml-auto">
+            <input
+              type="checkbox"
+              checked={animateRequested}
+              onChange={(e) =>
+                updateParam('animate', e.target.checked ? '1' : undefined)
+              }
+              className="h-3 w-3 accent-ink"
+            />
+            animate
+          </label>
+          <span className="text-border" aria-hidden="true">
+            ·
+          </span>
           <GraphExportMenu
             getCanvasRoot={() => canvasRef.current}
             graph={filtered}
@@ -388,6 +405,36 @@ export default function GraphPage() {
               anchorEntityId: explicitMode ? undefined : anchorEntityId,
             }}
           />
+          <span className="text-border" aria-hidden="true">
+            ·
+          </span>
+          <button
+            type="button"
+            onClick={openCustomize}
+            className={
+              'inline-flex items-center gap-1.5 hover:text-ink ' +
+              (explicitMode || customizeOpen ? 'text-ink' : '')
+            }
+            title="Open the customize-canvas panel"
+          >
+            <GearIcon />
+            customize
+            {explicitMode ? (
+              <span className="text-[11px]">
+                ({(pickedEntityIds?.size ?? 0) + (pickedArticleIds?.size ?? 0)})
+              </span>
+            ) : null}
+          </button>
+          {explicitMode ? (
+            <button
+              type="button"
+              onClick={resetCustomize}
+              className="hover:text-ink"
+              title="Restore the default top-N selection"
+            >
+              reset
+            </button>
+          ) : null}
         </div>
       </div>
       <SummaryBand

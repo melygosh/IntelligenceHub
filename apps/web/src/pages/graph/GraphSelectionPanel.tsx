@@ -159,6 +159,32 @@ export function GraphSelectionPanel({
     }
     onChangeArticles(next);
   }
+  // Group-level bulk toggle for a Connecting/Related section. Adds (up to the
+  // cap) or removes every id in the section at once.
+  function toggleEntityGroup(ids: string[], select: boolean): void {
+    const next = new Set(selectedEntityIds);
+    for (const id of ids) {
+      if (select) {
+        if (next.size >= cap) break;
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+    }
+    onChangeEntities(next);
+  }
+  function toggleArticleGroup(ids: string[], select: boolean): void {
+    const next = new Set(selectedArticleIds);
+    for (const id of ids) {
+      if (select) {
+        if (next.size >= cap) break;
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+    }
+    onChangeArticles(next);
+  }
 
   const entitiesAtCap = selectedEntityIds.size >= cap;
   const articlesAtCap = selectedArticleIds.size >= cap;
@@ -233,6 +259,7 @@ export function GraphSelectionPanel({
             connectingLabel={`mention all ${selectedEntityIds.size}`}
             isChecked={(a) => selectedArticleIds.has(a.id)}
             onToggle={(a) => toggleArticle(a.id)}
+            onToggleGroup={toggleArticleGroup}
             primary={(a) => a.title}
             secondary={(a) =>
               new Date(a.ts).toLocaleDateString(undefined, {
@@ -276,6 +303,7 @@ export function GraphSelectionPanel({
             connectingLabel={`mention all ${selectedArticleIds.size}`}
             isChecked={(e) => selectedEntityIds.has(e.id)}
             onToggle={(e) => toggleEntity(e.id)}
+            onToggleGroup={toggleEntityGroup}
             primary={(e) => e.canonicalName}
             secondary={(e) =>
               `${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`
@@ -319,6 +347,7 @@ function ConnectingRelated<T extends { id: string }>({
   connectingLabel,
   isChecked,
   onToggle,
+  onToggleGroup,
   primary,
   secondary,
   disabled,
@@ -327,6 +356,7 @@ function ConnectingRelated<T extends { id: string }>({
   connectingLabel: string;
   isChecked: (item: T) => boolean;
   onToggle: (item: T) => void;
+  onToggleGroup: (ids: string[], select: boolean) => void;
   primary: (item: T) => string;
   secondary: (item: T) => string;
   disabled: (item: T) => boolean;
@@ -342,11 +372,29 @@ function ConnectingRelated<T extends { id: string }>({
       secondary={secondary(item)}
     />
   );
+  // Group select-state for the header checkbox: all / some / none selected.
+  const groupState = (items: T[]) => {
+    const selected = items.filter(isChecked).length;
+    return { all: items.length > 0 && selected === items.length, any: selected > 0 };
+  };
+  const c = groupState(groups.connecting);
+  const r = groupState(groups.related);
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-t border-border">
       <SectionHeader
         tone="and"
         label={`Connecting · ${connectingLabel} · ${groups.connecting.length}`}
+        allSelected={c.all}
+        anySelected={c.any}
+        onToggleAll={
+          groups.connecting.length > 0
+            ? () =>
+                onToggleGroup(
+                  groups.connecting.map((i) => i.id),
+                  !c.all,
+                )
+            : undefined
+        }
       />
       {groups.connecting.length > 0 ? (
         <ul className="list-none">{groups.connecting.map(render)}</ul>
@@ -358,6 +406,17 @@ function ConnectingRelated<T extends { id: string }>({
       <SectionHeader
         tone="or"
         label={`Related · mention any · ${groups.related.length}`}
+        allSelected={r.all}
+        anySelected={r.any}
+        onToggleAll={
+          groups.related.length > 0
+            ? () =>
+                onToggleGroup(
+                  groups.related.map((i) => i.id),
+                  !r.all,
+                )
+            : undefined
+        }
       />
       {groups.related.length > 0 ? (
         <ul className="list-none">{groups.related.map(render)}</ul>
@@ -368,7 +427,19 @@ function ConnectingRelated<T extends { id: string }>({
   );
 }
 
-function SectionHeader({ tone, label }: { tone: 'and' | 'or'; label: string }) {
+function SectionHeader({
+  tone,
+  label,
+  allSelected,
+  anySelected,
+  onToggleAll,
+}: {
+  tone: 'and' | 'or';
+  label: string;
+  allSelected?: boolean;
+  anySelected?: boolean;
+  onToggleAll?: () => void;
+}) {
   const cls =
     tone === 'and'
       ? 'bg-accent-light text-accent-deep'
@@ -376,11 +447,24 @@ function SectionHeader({ tone, label }: { tone: 'and' | 'or'; label: string }) {
   return (
     <div
       className={
-        'sticky top-0 z-[1] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ' +
+        'sticky top-0 z-[1] flex items-center gap-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ' +
         cls
       }
     >
-      {label}
+      {onToggleAll ? (
+        <input
+          type="checkbox"
+          checked={!!allSelected}
+          ref={(el) => {
+            if (el) el.indeterminate = !!anySelected && !allSelected;
+          }}
+          onChange={onToggleAll}
+          className="h-3 w-3 accent-ink"
+          title={allSelected ? 'Deselect all in this group' : 'Select all in this group'}
+          aria-label={allSelected ? 'Deselect all in group' : 'Select all in group'}
+        />
+      ) : null}
+      <span>{label}</span>
     </div>
   );
 }
