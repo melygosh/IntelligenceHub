@@ -134,7 +134,8 @@ export function connectingEntityIdSet(
     if (acc === null) {
       acc = ents;
     } else {
-      for (const id of [...acc]) if (!ents.has(id)) acc.delete(id);
+      // Deleting from a Set during its own for…of is spec-safe.
+      for (const id of acc) if (!ents.has(id)) acc.delete(id);
     }
   }
   return acc ?? new Set<string>();

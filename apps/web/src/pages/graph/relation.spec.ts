@@ -71,6 +71,11 @@ describe('splitConnectingRelated', () => {
       active: false,
     });
   });
+  it('inactive when either set is null', () => {
+    const some = new Set(['a1']);
+    expect(splitConnectingRelated(items, some, null).active).toBe(false);
+    expect(splitConnectingRelated(items, null, some).active).toBe(false);
+  });
   it('splits into connecting (all) and related (any-but-not-all), disjoint, order-preserving', () => {
     const connecting = new Set(['a1', 'a3']); // mention all
     const any = new Set(['a1', 'a2', 'a3']); // mention any
