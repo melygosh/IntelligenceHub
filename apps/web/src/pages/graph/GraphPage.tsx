@@ -221,10 +221,18 @@ export default function GraphPage() {
   // legend strip below it), so the export shows exactly the canvas content.
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  const filtered: GraphResponse | null = useMemo(
-    () => (data ? filterGraph(data, 'both') : null),
-    [data],
-  );
+  // Default/empty canvas shows just the active dimension's nodes (a clean top-N
+  // overview, per spec); once the user builds a cross-dimension selection we
+  // show both kinds so the connecting nodes + their edges appear.
+  const filtered: GraphResponse | null = useMemo(() => {
+    if (!data) return null;
+    const kind = explicitMode
+      ? 'both'
+      : dimension === 'entity'
+        ? 'entities'
+        : 'articles';
+    return filterGraph(data, kind);
+  }, [data, explicitMode, dimension]);
   const positions = useMemo(
     () =>
       filtered
