@@ -110,7 +110,12 @@ export function GraphSelectionPanel({
       if (changed) onChangeEntities(ids);
     }
     // `*Sections` are memoized on (list, primary selection) — NOT on the
-    // secondary selection — so this stabilises after one pass (no loop).
+    // secondary selection — so unioning into the secondary set can't change a
+    // dep, and the `changed` guard makes re-runs idempotent: stabilises after
+    // one pass (no loop). Omitted deps are intentional:
+    //   selectedArticleIds / selectedEntityIds — read only to seed a new Set;
+    //     the `changed`/`ids.has` guard keeps re-runs idempotent.
+    //   onChangeArticles / onChangeEntities — stable (useCallback in GraphPage).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dimension, articleSections, entitySections]);
 
@@ -343,7 +348,7 @@ function ConnectingRelated<T extends { id: string }>({
         label={`Connecting · ${connectingLabel} · ${groups.connecting.length}`}
       />
       {groups.connecting.length > 0 ? (
-        groups.connecting.map(render)
+        <ul className="list-none">{groups.connecting.map(render)}</ul>
       ) : (
         <p className="px-3 py-2 font-mono text-[11.5px] italic text-mute2">
           none — no single item ties all of them
@@ -354,7 +359,7 @@ function ConnectingRelated<T extends { id: string }>({
         label={`Related · mention any · ${groups.related.length}`}
       />
       {groups.related.length > 0 ? (
-        groups.related.map(render)
+        <ul className="list-none">{groups.related.map(render)}</ul>
       ) : (
         <p className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</p>
       )}
