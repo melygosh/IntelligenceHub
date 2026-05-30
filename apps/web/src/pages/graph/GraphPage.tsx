@@ -28,8 +28,8 @@ import { ArticleGraphNode } from './ArticleGraphNode';
 import { EntityGraphNode } from './EntityGraphNode';
 import { computeFocusSet } from './focus';
 import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
-import { GraphSelectionPanel, type GraphDimension } from './GraphSelectionPanel';
-import { SummaryBand } from './SummaryBand';
+import { ArticlesPanel } from './ArticlesPanel';
+import { EntityPickerDropdown } from './EntityPickerDropdown';
 import { PeriodChips } from '../../components/filters/PeriodChips';
 import { SearchInput } from '../../components/filters/SearchInput';
 import { LoadingHint } from '../../components/ui/LoadingHint';
@@ -47,27 +47,6 @@ const DEFAULT_PERIOD: GraphPeriod = '7d';
 
 function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
-}
-
-/** Small settings/gear glyph for the "customize" action. Inline SVG +
- * currentColor, matching the app's hand-rolled icon convention. */
-function GearIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-      aria-hidden="true"
-    >
-      <circle cx="8" cy="8" r="2.2" />
-      <path
-        d="M8 1.5v2 M8 12.5v2 M1.5 8h2 M12.5 8h2 M3.4 3.4l1.4 1.4 M11.2 11.2l1.4 1.4 M12.6 3.4l-1.4 1.4 M4.8 11.2l-1.4 1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 function toReactFlowNodes(
@@ -109,10 +88,9 @@ function toReactFlowNodes(
   });
 }
 
-// Above this many `mentions` edges in view the animation auto-disables —
-// flowing dashes on every edge turn the canvas into a strobe. Empirically
-// readable at ~80; above that the cap takes over and the page surfaces a
-// hint so the user knows why their toggle didn't visually change anything.
+// Above this many `mentions` edges in view the animation auto-disables — flowing
+// dashes on every edge turn the canvas into a strobe. Readable at ~80; above
+// that the cap takes over and the page surfaces a hint.
 const ANIMATE_EDGE_CAP = 80;
 
 function toReactFlowEdges(
@@ -127,8 +105,6 @@ function toReactFlowEdges(
       source: e.from,
       target: e.to,
       type: 'default',
-      // Only mentions edges (article → entity) carry timestamp direction.
-      // co_mention is symmetric; similar (if used) is also direction-less.
       animated: animateMentions && e.kind === 'mentions',
       style: {
         stroke: 'var(--color-mute2)',
@@ -162,12 +138,7 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
         <span key={p.id} className="flex items-center gap-1">
           <span
             aria-hidden
-            style={{
-              display: 'inline-block',
-              width: 9,
-              height: 9,
-              background: colourFor(p.id),
-            }}
+            style={{ display: 'inline-block', width: 9, height: 9, background: colourFor(p.id) }}
           />
           {p.name}
         </span>
@@ -179,8 +150,6 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
 export default function GraphPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') ?? '';
-  // CSV → string[]. Empty string + filter out blanks so trailing commas
-  // don't surface as empty UUID values.
   const categoryIds = useMemo(
     () =>
       categoryParam
@@ -193,38 +162,24 @@ export default function GraphPage() {
   const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
-  // Could-tier bonus: animate mentions edges in chronological direction
-  // (article → entity). URL-backed via ?animate=1 so the toggle survives
-  // reload and is sharable. Off by default — animation on a busy graph
-  // looks like a strobe; the cap below auto-disables when there's too
-  // much going on, but starting off means the reviewer opts in.
   const animateRequested = searchParams.get('animate') === '1';
-  // Anchor mode rides in via React Router navigation state from EntityDetail's
-  // "view in graph" link — not persisted in the URL, so reloading the page
-  // drops back to top-N. Matches the same in-memory-only choice as the
-  // customize-canvas selection.
   const location = useLocation();
   const anchorEntityId = (location.state as { anchorEntityId?: string } | null)
     ?.anchorEntityId;
 
-  // Explicit-set mode: null means "use top-N defaults". Once the user
-  // diverges via the customize panel, these become the source of truth.
-  // In-memory only — refreshing the page resets to top-N as designed.
-  const [pickedEntityIds, setPickedEntityIds] = useState<Set<string> | null>(
-    null,
-  );
-  const [pickedArticleIds, setPickedArticleIds] = useState<Set<string> | null>(
-    null,
-  );
-  const [dimension, setDimension] = useState<GraphDimension>('entity');
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  // Canvas-level text search. Client-side: dims non-matching nodes by label
-  // (the graph query has no text filter). In-memory, like the customize picks.
+  // Primary selection: entities (topbar dropdown) + articles (sidebar
+  // checkboxes). Empty sets => default top-N entity overview; any non-empty =>
+  // explicit-set canvas (picked entities + picked articles + edges among them).
+  // In-memory only — reloading resets to top-N, as designed.
+  const [entityIds, setEntityIds] = useState<Set<string>>(new Set());
+  const [articleIds, setArticleIds] = useState<Set<string>>(new Set());
+  const [articlesOpen, setArticlesOpen] = useState(false);
+  // Canvas-level text search: dims non-matching nodes by label. In-memory.
   const [graphQuery, setGraphQuery] = useState('');
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
-  const explicitMode = pickedEntityIds !== null || pickedArticleIds !== null;
+  const explicitMode = entityIds.size > 0 || articleIds.size > 0;
 
   const { data, isLoading } = useGetGraphQuery({
     categoryIds,
@@ -232,32 +187,19 @@ export default function GraphPage() {
     from,
     to,
     anchorEntityId: explicitMode ? undefined : anchorEntityId,
-    selectedEntityIds: pickedEntityIds
-      ? Array.from(pickedEntityIds)
-      : undefined,
-    selectedArticleIds: pickedArticleIds
-      ? Array.from(pickedArticleIds)
-      : undefined,
+    selectedEntityIds: entityIds.size > 0 ? Array.from(entityIds) : undefined,
+    selectedArticleIds: articleIds.size > 0 ? Array.from(articleIds) : undefined,
   });
 
   const [selected, setSelected] = useState<SelectedNode | null>(null);
-
-  // Snapshot target for PNG / SVG export. Wraps the ReactFlow canvas (not the
-  // legend strip below it), so the export shows exactly the canvas content.
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  // Default/empty canvas shows just the active dimension's nodes (a clean top-N
-  // overview, per spec); once the user builds a cross-dimension selection we
-  // show both kinds so the connecting nodes + their edges appear.
+  // Default canvas shows the top-N entities only; once a selection exists we
+  // show both kinds so connecting article nodes + their edges appear.
   const filtered: GraphResponse | null = useMemo(() => {
     if (!data) return null;
-    const kind = explicitMode
-      ? 'both'
-      : dimension === 'entity'
-        ? 'entities'
-        : 'articles';
-    return filterGraph(data, kind);
-  }, [data, explicitMode, dimension]);
+    return filterGraph(data, explicitMode ? 'both' : 'entities');
+  }, [data, explicitMode]);
   const positions = useMemo(
     () =>
       filtered
@@ -266,20 +208,12 @@ export default function GraphPage() {
     [filtered],
   );
 
-  // Only apply focus when the selected node is actually on the canvas. A band
-  // click can select a node that isn't in `filtered.nodes` (e.g. an item not in
-  // the current top-N selection) — without this guard, computeFocusSet would
-  // return a singleton set the canvas can't match, dimming everything.
   const focus = useMemo(() => {
     if (!filtered) return null;
-    // A graph search overrides selection focus: highlight nodes whose label
-    // matches, dim the rest (an empty match set dims everything → "no hits").
     const q = graphQuery.trim().toLowerCase();
     if (q) {
       return new Set(
-        filtered.nodes
-          .filter((n) => n.label.toLowerCase().includes(q))
-          .map((n) => n.id),
+        filtered.nodes.filter((n) => n.label.toLowerCase().includes(q)).map((n) => n.id),
       );
     }
     if (!selected) return null;
@@ -295,21 +229,13 @@ export default function GraphPage() {
   const mentionsEdgeCount = filtered
     ? filtered.edges.filter((e) => e.kind === 'mentions').length
     : 0;
-  const animateCapped =
-    animateRequested && mentionsEdgeCount > ANIMATE_EDGE_CAP;
+  const animateCapped = animateRequested && mentionsEdgeCount > ANIMATE_EDGE_CAP;
   const animateEffective = animateRequested && !animateCapped;
   const edges = useMemo(
-    () =>
-      filtered
-        ? toReactFlowEdges(filtered.edges, focus, animateEffective)
-        : [],
+    () => (filtered ? toReactFlowEdges(filtered.edges, focus, animateEffective) : []),
     [filtered, focus, animateEffective],
   );
 
-  // All filter changes preserve location.state so the entity anchor (which
-  // rides in via state from EntityDetail) survives every chip click. Without
-  // this, React Router defaults the new entry's state to undefined and the
-  // anchor gets dropped on the first filter interaction.
   function updateParam(key: string, value: string | undefined): void {
     const next = new URLSearchParams(searchParams);
     if (value === undefined || value === '') next.delete(key);
@@ -321,16 +247,7 @@ export default function GraphPage() {
     updateParam('category', ids.length > 0 ? ids.join(',') : undefined);
     setSelected(null);
   }
-  function onChangeDimension(d: GraphDimension): void {
-    setDimension(d);
-    setPickedEntityIds(null);
-    setPickedArticleIds(null);
-    setSelected(null);
-  }
   function updatePeriod(next: GraphPeriod): void {
-    // Build a single URLSearchParams so multiple setSearchParams calls don't
-    // overwrite each other (each updateParam call reads from the same stale
-    // searchParams snapshot, so doing three separate calls loses the first two).
     const params = new URLSearchParams(searchParams);
     if (next === DEFAULT_PERIOD) params.delete('period');
     else params.set('period', next);
@@ -353,119 +270,93 @@ export default function GraphPage() {
     setSelected(null);
   }
 
-  function openCustomize(): void {
-    // First open: pre-check whatever is currently on the canvas so the sidebar
-    // reflects the visible graph (the user then narrows/expands from there).
-    // Seed from the *displayed* nodes (`filtered`), not the raw response, so
-    // hidden article nodes in the default entities-only view aren't dragged in.
-    if (pickedEntityIds === null && pickedArticleIds === null && filtered) {
-      const ents = new Set<string>();
-      const arts = new Set<string>();
-      for (const n of filtered.nodes) {
-        if (n.kind === 'entity') {
-          if (ents.size < selectionCap) ents.add(n.id);
-        } else if (arts.size < selectionCap) {
-          arts.add(n.id);
-        }
-      }
-      setPickedEntityIds(ents);
-      setPickedArticleIds(arts);
-    }
-    setCustomizeOpen(true);
-  }
-
-  function resetCustomize(): void {
-    setPickedEntityIds(null);
-    setPickedArticleIds(null);
-    setDimension('entity');
+  function reset(): void {
+    setEntityIds(new Set());
+    setArticleIds(new Set());
+    setSelected(null);
   }
 
   return (
     <div className="flex h-full flex-col gap-3">
       <PageHeader eyebrow="Graph" title="Relationships" />
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
-        <PeriodChips value={period} onChange={updatePeriod} showLabel={false} />
-        <div className="min-w-0 flex-1">
-          <SearchInput
-            value={graphQuery}
-            onChange={setGraphQuery}
-            placeholder="search graph…"
-            widthClass=""
-          />
-        </div>
-        <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
-          <label
-            className="flex items-center gap-1.5 hover:text-ink"
-            title="Animate mentions edges in chronological direction (article → entity)"
-          >
-            <input
-              type="checkbox"
-              checked={animateRequested}
-              onChange={(e) =>
-                updateParam('animate', e.target.checked ? '1' : undefined)
-              }
-              className="h-3 w-3 accent-ink"
-            />
-            animate
-          </label>
-          <span className="text-border" aria-hidden="true">
-            ·
-          </span>
-          <GraphExportMenu
-            getCanvasRoot={() => canvasRef.current}
-            graph={filtered}
-            filters={{
-              period,
-              from,
-              to,
-              nodeKind: 'both',
-              categoryIds,
-              anchorEntityId: explicitMode ? undefined : anchorEntityId,
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
+          <EntityPickerDropdown
+            selectedIds={entityIds}
+            onChange={(next) => {
+              setEntityIds(next);
+              setSelected(null);
             }}
+            cap={selectionCap}
           />
-          <span className="text-border" aria-hidden="true">
-            ·
-          </span>
-          <button
-            type="button"
-            onClick={openCustomize}
-            className={
-              'inline-flex items-center gap-1.5 hover:text-ink ' +
-              (explicitMode || customizeOpen ? 'text-ink' : '')
-            }
-            title="Open the customize-canvas panel"
-          >
-            <GearIcon />
-            customize
-            {explicitMode ? (
-              <span className="text-[11px]">
-                ({(pickedEntityIds?.size ?? 0) + (pickedArticleIds?.size ?? 0)})
-              </span>
-            ) : null}
-          </button>
-          {explicitMode ? (
+          <PeriodChips value={period} onChange={updatePeriod} showLabel={false} />
+          <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
+            <label
+              className="flex items-center gap-1.5 hover:text-ink"
+              title="Animate mentions edges in chronological direction (article → entity)"
+            >
+              <input
+                type="checkbox"
+                checked={animateRequested}
+                onChange={(e) => updateParam('animate', e.target.checked ? '1' : undefined)}
+                className="h-3 w-3 accent-ink"
+              />
+              animate
+            </label>
+            <span className="text-border" aria-hidden="true">
+              ·
+            </span>
+            <GraphExportMenu
+              getCanvasRoot={() => canvasRef.current}
+              graph={filtered}
+              filters={{
+                period,
+                from,
+                to,
+                nodeKind: 'both',
+                categoryIds,
+                anchorEntityId: explicitMode ? undefined : anchorEntityId,
+              }}
+            />
+            <span className="text-border" aria-hidden="true">
+              ·
+            </span>
             <button
               type="button"
-              onClick={resetCustomize}
-              className="hover:text-ink"
-              title="Restore the default top-N selection"
+              onClick={() => setArticlesOpen((v) => !v)}
+              className={
+                'inline-flex items-center gap-1.5 hover:text-ink ' +
+                (articlesOpen || articleIds.size > 0 ? 'text-ink' : '')
+              }
+              title="Toggle the Articles sidebar"
             >
-              reset
+              Articles
+              {articleIds.size > 0 ? (
+                <span className="text-[11px]">({articleIds.size})</span>
+              ) : null}
             </button>
-          ) : null}
+            {explicitMode ? (
+              <button
+                type="button"
+                onClick={reset}
+                className="hover:text-ink"
+                title="Restore the default top-N selection"
+              >
+                reset
+              </button>
+            ) : null}
+          </div>
         </div>
+        <SearchInput
+          value={graphQuery}
+          onChange={setGraphQuery}
+          placeholder="search graph…"
+          widthClass="w-full"
+        />
       </div>
-      <SummaryBand
-        data={filtered}
-        selected={selected}
-        onSelect={setSelected}
-      />
       <div className="flex min-h-[440px] flex-1 gap-0">
-        <div
-          ref={canvasRef}
-          className="min-w-0 flex-1 border border-border bg-surface"
-        >
+        <div ref={canvasRef} className="min-w-0 flex-1 border border-border bg-surface">
           {isLoading ? (
             <LoadingHint className="p-6" />
           ) : !filtered || filtered.nodes.length === 0 ? (
@@ -509,8 +400,8 @@ export default function GraphPage() {
             <CategoryLegend data={filtered} />
             {animateCapped ? (
               <p className="mt-1 font-mono text-[11px] text-mute2">
-                Animation off — {mentionsEdgeCount} mentions edges in view
-                exceeds the cap of {ANIMATE_EDGE_CAP}.
+                Animation off — {mentionsEdgeCount} mentions edges in view exceeds the cap of{' '}
+                {ANIMATE_EDGE_CAP}.
               </p>
             ) : null}
           </div>
@@ -518,17 +409,18 @@ export default function GraphPage() {
         {selected ? (
           <GraphSidePanel selected={selected} onClose={() => setSelected(null)} />
         ) : null}
-        {customizeOpen ? (
-          <GraphSelectionPanel
-            dimension={dimension}
-            onChangeDimension={onChangeDimension}
-            selectedEntityIds={pickedEntityIds ?? new Set()}
-            selectedArticleIds={pickedArticleIds ?? new Set()}
-            onChangeEntities={setPickedEntityIds}
-            onChangeArticles={setPickedArticleIds}
-            onReset={resetCustomize}
-            onClose={() => setCustomizeOpen(false)}
+        {articlesOpen ? (
+          <ArticlesPanel
+            selectedEntityIds={entityIds}
+            selectedArticleIds={articleIds}
+            onChangeArticles={setArticleIds}
+            onReset={reset}
+            onClose={() => setArticlesOpen(false)}
             cap={selectionCap}
+            period={period}
+            from={from}
+            to={to}
+            categoryIds={categoryIds}
           />
         ) : null}
       </div>

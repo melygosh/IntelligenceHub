@@ -1,7 +1,7 @@
-// Pure relation helpers for the customize-canvas panel. Kept UI-free so they
-// can be unit-tested without React. Each article carries the ids of the
-// entities it mentions, which lets us derive the cross-dimension relationship
-// in both directions from the already-loaded article list (no extra request).
+// Pure relation helpers for the graph Articles sidebar. UI-free so they can be
+// unit-tested without React. Each article carries the ids of the entities it
+// mentions, which lets us bucket it against the selected-entity set with no
+// extra request.
 
 /** Minimal shape we need from an article-list item. */
 export interface ArticleRelation {
@@ -9,125 +9,48 @@ export interface ArticleRelation {
   entities: ReadonlyArray<{ id: string }>;
 }
 
-/** Anything with a stable `id` — entities or articles. */
+/** Anything with a stable `id`. */
 export interface HasId {
   id: string;
 }
 
 /**
- * Ids of articles that mention at least one of the selected entities. Returns
- * `null` when no entity is selected — callers treat null as "no relationship
- * constraint", so the list renders flat (no Related/Others split).
+ * Three-way split of `articles` relative to the selected entities:
+ *  - connecting: mentions EVERY selected entity (AND / intersection)
+ *  - related:    mentions SOME (>=1) selected entity, but not all
+ *  - others:     mentions NONE of the selected entities
+ * `active` is false when no entity is selected — the caller then renders a flat
+ * list (everything lands in `others`, no group headers). Order-preserving.
  */
-export function relatedArticleIdSet(
-  articles: ReadonlyArray<ArticleRelation>,
-  selectedEntityIds: ReadonlySet<string>,
-): Set<string> | null {
-  if (selectedEntityIds.size === 0) return null;
-  const ids = new Set<string>();
-  for (const a of articles) {
-    if (a.entities.some((e) => selectedEntityIds.has(e.id))) ids.add(a.id);
-  }
-  return ids;
-}
-
-/**
- * Ids of entities mentioned by at least one of the selected articles. Returns
- * `null` when no article is selected (see {@link relatedArticleIdSet}).
- */
-export function relatedEntityIdSet(
-  articles: ReadonlyArray<ArticleRelation>,
-  selectedArticleIds: ReadonlySet<string>,
-): Set<string> | null {
-  if (selectedArticleIds.size === 0) return null;
-  const ids = new Set<string>();
-  for (const a of articles) {
-    if (!selectedArticleIds.has(a.id)) continue;
-    for (const e of a.entities) ids.add(e.id);
-  }
-  return ids;
-}
-
-/**
- * Ids of articles that mention EVERY selected entity (AND / intersection — the
- * "Connecting" set). `null` when nothing is selected, so the caller hides the
- * Connecting/Related sections entirely.
- */
-export function connectingArticleIdSet(
-  articles: ReadonlyArray<ArticleRelation>,
-  selectedEntityIds: ReadonlySet<string>,
-): Set<string> | null {
-  if (selectedEntityIds.size === 0) return null;
-  const ids = new Set<string>();
-  for (const a of articles) {
-    const ents = new Set(a.entities.map((e) => e.id));
-    let all = true;
-    for (const sel of selectedEntityIds) {
-      if (!ents.has(sel)) {
-        all = false;
-        break;
-      }
-    }
-    if (all) ids.add(a.id);
-  }
-  return ids;
-}
-
-/**
- * Entity ids mentioned by EVERY selected article (AND / intersection). `null`
- * when nothing is selected. The symmetric counterpart for "by article" mode.
- */
-export function connectingEntityIdSet(
-  articles: ReadonlyArray<ArticleRelation>,
-  selectedArticleIds: ReadonlySet<string>,
-): Set<string> | null {
-  if (selectedArticleIds.size === 0) return null;
-  let acc: Set<string> | null = null;
-  for (const a of articles) {
-    if (!selectedArticleIds.has(a.id)) continue;
-    const ents = new Set(a.entities.map((e) => e.id));
-    if (acc === null) {
-      acc = ents;
-    } else {
-      // Deleting from a Set during its own for…of is spec-safe.
-      for (const id of acc) if (!ents.has(id)) acc.delete(id);
-    }
-  }
-  return acc ?? new Set<string>();
-}
-
-export interface ConnectingGroups<T> {
-  /** Items related to ALL selected (the intersection). */
+export interface ArticleGroups<T> {
   connecting: T[];
-  /** Items related to ANY selected but not all (disjoint from connecting). */
   related: T[];
-  /** false when there's no active selection — caller hides both sections. */
+  others: T[];
   active: boolean;
 }
 
-/**
- * Split `items` into Connecting (in the AND set) and Related (in the ANY set
- * but not the AND set). Order-preserving. Inactive when either set is null.
- */
-export function splitConnectingRelated<T extends HasId>(
-  items: ReadonlyArray<T>,
-  connecting: ReadonlySet<string> | null,
-  anyRelated: ReadonlySet<string> | null,
-): ConnectingGroups<T> {
-  if (connecting === null || anyRelated === null) {
-    return { connecting: [], related: [], active: false };
+export function partitionArticles<T extends ArticleRelation>(
+  articles: ReadonlyArray<T>,
+  selectedEntityIds: ReadonlySet<string>,
+): ArticleGroups<T> {
+  if (selectedEntityIds.size === 0) {
+    return { connecting: [], related: [], others: [...articles], active: false };
   }
-  const c: T[] = [];
-  const r: T[] = [];
-  for (const item of items) {
-    if (connecting.has(item.id)) c.push(item);
-    else if (anyRelated.has(item.id)) r.push(item);
+  const connecting: T[] = [];
+  const related: T[] = [];
+  const others: T[] = [];
+  for (const a of articles) {
+    const ents = new Set(a.entities.map((e) => e.id));
+    let matched = 0;
+    for (const sel of selectedEntityIds) if (ents.has(sel)) matched++;
+    if (matched === 0) others.push(a);
+    else if (matched === selectedEntityIds.size) connecting.push(a);
+    else related.push(a);
   }
-  return { connecting: c, related: r, active: true };
+  return { connecting, related, others, active: true };
 }
 
-/** Selected items first (original order), then the rest — keeps a user's
- * picks visible at the top of the checklist while they search/scroll. */
+/** Selected items first (original order), then the rest. */
 export function pinSelectedFirst<T extends HasId>(
   items: ReadonlyArray<T>,
   selected: ReadonlySet<string>,

@@ -1,102 +1,64 @@
 import { describe, it, expect } from 'vitest';
-import {
-  connectingArticleIdSet,
-  connectingEntityIdSet,
-  splitConnectingRelated,
-  pinSelectedFirst,
-  type ArticleRelation,
-} from './relation';
+import { partitionArticles, pinSelectedFirst, type ArticleRelation } from './relation';
 
 const A = (id: string, ents: string[]): ArticleRelation => ({
   id,
   entities: ents.map((e) => ({ id: e })),
 });
 
-// a1: {e1,e2}  a2: {e1}  a3: {e1,e2,e3}  a4: {e4}
+// a1: {e1,e2}  a2: {e1}  a3: {e1,e2,e3}  a4: {e4}  a5: {} (no entities)
 const articles: ArticleRelation[] = [
   A('a1', ['e1', 'e2']),
   A('a2', ['e1']),
   A('a3', ['e1', 'e2', 'e3']),
   A('a4', ['e4']),
+  A('a5', []),
 ];
 
-describe('connectingArticleIdSet (mention ALL selected entities)', () => {
-  it('returns null when nothing is selected', () => {
-    expect(connectingArticleIdSet(articles, new Set())).toBeNull();
+describe('partitionArticles', () => {
+  it('is inactive (everything in others) when no entity is selected', () => {
+    const g = partitionArticles(articles, new Set());
+    expect(g.active).toBe(false);
+    expect(g.connecting).toEqual([]);
+    expect(g.related).toEqual([]);
+    expect(g.others.map((a) => a.id)).toEqual(['a1', 'a2', 'a3', 'a4', 'a5']);
   });
-  it('single selection = every article mentioning it', () => {
-    expect(connectingArticleIdSet(articles, new Set(['e1']))).toEqual(
-      new Set(['a1', 'a2', 'a3']),
-    );
-  });
-  it('multi selection = only articles mentioning ALL of them', () => {
-    expect(connectingArticleIdSet(articles, new Set(['e1', 'e2']))).toEqual(
-      new Set(['a1', 'a3']),
-    );
-  });
-  it('empties when no single article ties all selected', () => {
-    expect(connectingArticleIdSet(articles, new Set(['e1', 'e4']))).toEqual(
-      new Set(),
-    );
-  });
-});
 
-describe('connectingEntityIdSet (entities mentioned by ALL selected articles)', () => {
-  it('returns null when nothing is selected', () => {
-    expect(connectingEntityIdSet(articles, new Set())).toBeNull();
+  it('splits connecting (mentions ALL) / related (mentions SOME) / others (NONE)', () => {
+    const g = partitionArticles(articles, new Set(['e1', 'e2']));
+    expect(g.active).toBe(true);
+    expect(g.connecting.map((a) => a.id)).toEqual(['a1', 'a3']);
+    expect(g.related.map((a) => a.id)).toEqual(['a2']);
+    expect(g.others.map((a) => a.id)).toEqual(['a4', 'a5']);
   });
-  it('single article = its entities', () => {
-    expect(connectingEntityIdSet(articles, new Set(['a1']))).toEqual(
-      new Set(['e1', 'e2']),
-    );
-  });
-  it('multi article = intersection of their entity sets', () => {
-    expect(connectingEntityIdSet(articles, new Set(['a1', 'a3']))).toEqual(
-      new Set(['e1', 'e2']),
-    );
-  });
-  it('empties when articles share no entity', () => {
-    expect(connectingEntityIdSet(articles, new Set(['a1', 'a4']))).toEqual(
-      new Set(),
-    );
-  });
-});
 
-describe('splitConnectingRelated', () => {
-  const items = [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }, { id: 'a4' }];
-  it('inactive (both null) → empty groups, active=false', () => {
-    expect(splitConnectingRelated(items, null, null)).toEqual({
-      connecting: [],
-      related: [],
-      active: false,
-    });
+  it('treats a single selected entity as connecting when present', () => {
+    const g = partitionArticles(articles, new Set(['e1']));
+    expect(g.connecting.map((a) => a.id)).toEqual(['a1', 'a2', 'a3']);
+    expect(g.related).toEqual([]);
+    expect(g.others.map((a) => a.id)).toEqual(['a4', 'a5']);
   });
-  it('inactive when either set is null', () => {
-    const some = new Set(['a1']);
-    expect(splitConnectingRelated(items, some, null).active).toBe(false);
-    expect(splitConnectingRelated(items, null, some).active).toBe(false);
-  });
-  it('splits into connecting (all) and related (any-but-not-all), disjoint, order-preserving', () => {
-    const connecting = new Set(['a1', 'a3']); // mention all
-    const any = new Set(['a1', 'a2', 'a3']); // mention any
-    expect(splitConnectingRelated(items, connecting, any)).toEqual({
-      connecting: [{ id: 'a1' }, { id: 'a3' }],
-      related: [{ id: 'a2' }],
-      active: true,
-    });
+
+  it('preserves input order within each group', () => {
+    const g = partitionArticles(articles, new Set(['e3']));
+    expect(g.connecting.map((a) => a.id)).toEqual(['a3']);
+    expect(g.others.map((a) => a.id)).toEqual(['a1', 'a2', 'a4', 'a5']);
   });
 });
 
 describe('pinSelectedFirst', () => {
-  const items = [{ id: 'x' }, { id: 'y' }, { id: 'z' }];
-  it('returns a copy in original order when nothing selected', () => {
+  it('returns a copy unchanged when nothing selected', () => {
+    const items = [{ id: 'x' }, { id: 'y' }];
     expect(pinSelectedFirst(items, new Set())).toEqual(items);
   });
-  it('moves selected items to the front, preserving order within each group', () => {
-    expect(pinSelectedFirst(items, new Set(['z', 'x']))).toEqual([
-      { id: 'x' },
-      { id: 'z' },
-      { id: 'y' },
+
+  it('moves selected items to the front, preserving relative order', () => {
+    const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+    expect(pinSelectedFirst(items, new Set(['b', 'd'])).map((i) => i.id)).toEqual([
+      'b',
+      'd',
+      'a',
+      'c',
     ]);
   });
 });
