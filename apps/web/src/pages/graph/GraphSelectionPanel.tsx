@@ -4,6 +4,12 @@ import {
   useGetEntityListQuery,
 } from '../../store/api';
 import { SearchInput } from '../../components/filters/SearchInput';
+import {
+  partitionByRelation,
+  relatedArticleIdSet,
+  relatedEntityIdSet,
+  type HasId,
+} from './relation';
 
 type Tab = 'entities' | 'articles';
 
@@ -43,12 +49,12 @@ export function GraphSelectionPanel({
     pageSize: 500,
   });
 
-  // Snapshot the "pinned to top" set when the list refreshes (panel open or
-  // new search results) — NOT on every toggle. This keeps items in place
-  // when the user unchecks one, so they don't jump away mid-click.
-  // Uses React's "adjust state during render" pattern (compare prev vs new
-  // in render, sync via setState) — avoids the useEffect cascading-render
-  // warning and re-pins synchronously on data change.
+  // Snapshot the "pinned" set when the list refreshes (panel open or new
+  // search results) — NOT on every toggle. This keeps an item in its Related
+  // group when the user unchecks it, so it doesn't jump to Others mid-click.
+  // Uses React's "adjust state during render" pattern (compare prev vs new in
+  // render, sync via setState) — avoids the useEffect cascading-render warning
+  // and re-pins synchronously on data change.
   const [pinnedEntities, setPinnedEntities] = useState<ReadonlySet<string>>(
     () => new Set(selectedEntityIds),
   );
@@ -66,46 +72,38 @@ export function GraphSelectionPanel({
     setPinnedArticles(new Set(selectedArticleIds));
   }
 
-  const entityItems = useMemo(() => {
-    const items = entityList?.entities ?? [];
-    return [...items].sort((a, b) => {
-      const ac = pinnedEntities.has(a.id) ? 0 : 1;
-      const bc = pinnedEntities.has(b.id) ? 0 : 1;
-      return ac - bc;
-    });
-  }, [entityList, pinnedEntities]);
-  const articleItems = useMemo(() => {
-    const items = articleList?.articles ?? [];
-    return [...items].sort((a, b) => {
-      const ac = pinnedArticles.has(a.id) ? 0 : 1;
-      const bc = pinnedArticles.has(b.id) ? 0 : 1;
-      return ac - bc;
-    });
-  }, [articleList, pinnedArticles]);
-
-  // Cross-relationship dimming. Each article carries its entity ids, so we
+  // Cross-dimension relationship. Each article carries its entity ids, so we
   // derive both directions from the loaded article list (no extra request):
-  //   - articles related to the selected entities (Articles tab dimming)
-  //   - entities mentioned by the selected articles (Entities tab dimming)
-  // When the relevant selection is empty, the set is null → nothing is dimmed,
-  // so every row shows at full opacity.
-  const relatedArticleIds = useMemo<ReadonlySet<string> | null>(() => {
-    if (selectedEntityIds.size === 0) return null;
-    const ids = new Set<string>();
-    for (const a of articleList?.articles ?? []) {
-      if (a.entities.some((e) => selectedEntityIds.has(e.id))) ids.add(a.id);
-    }
-    return ids;
-  }, [articleList, selectedEntityIds]);
-  const relatedEntityIds = useMemo<ReadonlySet<string> | null>(() => {
-    if (selectedArticleIds.size === 0) return null;
-    const ids = new Set<string>();
-    for (const a of articleList?.articles ?? []) {
-      if (!selectedArticleIds.has(a.id)) continue;
-      for (const e of a.entities) ids.add(e.id);
-    }
-    return ids;
-  }, [articleList, selectedArticleIds]);
+  //   - articles related to the selected entities (Articles tab grouping)
+  //   - entities mentioned by the selected articles (Entities tab grouping)
+  // Null when the other tab has no selection → the list renders flat.
+  const relatedArticleIds = useMemo(
+    () => relatedArticleIdSet(articleList?.articles ?? [], selectedEntityIds),
+    [articleList, selectedEntityIds],
+  );
+  const relatedEntityIds = useMemo(
+    () => relatedEntityIdSet(articleList?.articles ?? [], selectedArticleIds),
+    [articleList, selectedArticleIds],
+  );
+
+  const entityGroups = useMemo(
+    () =>
+      partitionByRelation(
+        entityList?.entities ?? [],
+        pinnedEntities,
+        relatedEntityIds,
+      ),
+    [entityList, pinnedEntities, relatedEntityIds],
+  );
+  const articleGroups = useMemo(
+    () =>
+      partitionByRelation(
+        articleList?.articles ?? [],
+        pinnedArticles,
+        relatedArticleIds,
+      ),
+    [articleList, pinnedArticles, relatedArticleIds],
+  );
 
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
@@ -132,7 +130,7 @@ export function GraphSelectionPanel({
   // more than `cap` IDs to the API.
   function selectAllVisibleEntities(): void {
     const next = new Set(selectedEntityIds);
-    for (const e of entityItems) {
+    for (const e of entityList?.entities ?? []) {
       if (next.size >= cap) break;
       next.add(e.id);
     }
@@ -140,7 +138,7 @@ export function GraphSelectionPanel({
   }
   function selectAllVisibleArticles(): void {
     const next = new Set(selectedArticleIds);
-    for (const a of articleItems) {
+    for (const a of articleList?.articles ?? []) {
       if (next.size >= cap) break;
       next.add(a.id);
     }
@@ -149,6 +147,8 @@ export function GraphSelectionPanel({
 
   const entitiesAtCap = selectedEntityIds.size >= cap;
   const articlesAtCap = selectedArticleIds.size >= cap;
+  const entityVisible = entityList?.entities.length ?? 0;
+  const articleVisible = articleList?.articles.length ?? 0;
 
   return (
     <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-paper">
@@ -200,32 +200,26 @@ export function GraphSelectionPanel({
           onSelectAll={selectAllVisibleEntities}
           onClearAll={() => onChangeEntities(new Set())}
           selectedCount={selectedEntityIds.size}
-          visibleCount={entityItems.length}
+          visibleCount={entityVisible}
           cap={cap}
-          relationHint={
-            relatedEntityIds !== null
-              ? `dimmed entities aren’t mentioned by the ${selectedArticleIds.size} selected article${selectedArticleIds.size === 1 ? '' : 's'}`
-              : undefined
-          }
         >
-          {entityItems.map((e) => {
-            const isChecked = selectedEntityIds.has(e.id);
-            const dimmed =
-              relatedEntityIds !== null &&
-              !isChecked &&
-              !relatedEntityIds.has(e.id);
-            return (
-              <Row
-                key={e.id}
-                checked={isChecked}
-                disabled={!isChecked && entitiesAtCap}
-                dimmed={dimmed}
-                onToggle={() => toggleEntity(e.id)}
-                primary={e.canonicalName}
-                secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
-              />
-            );
-          })}
+          <GroupedRows
+            groups={entityGroups}
+            relatedLabel={`mentioned by the ${selectedArticleIds.size} selected article${selectedArticleIds.size === 1 ? '' : 's'}`}
+            renderRow={(e) => {
+              const isChecked = selectedEntityIds.has(e.id);
+              return (
+                <Row
+                  key={e.id}
+                  checked={isChecked}
+                  disabled={!isChecked && entitiesAtCap}
+                  onToggle={() => toggleEntity(e.id)}
+                  primary={e.canonicalName}
+                  secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
+                />
+              );
+            }}
+          />
         </ListBody>
       ) : (
         <ListBody
@@ -235,39 +229,74 @@ export function GraphSelectionPanel({
           onSelectAll={selectAllVisibleArticles}
           onClearAll={() => onChangeArticles(new Set())}
           selectedCount={selectedArticleIds.size}
-          visibleCount={articleItems.length}
+          visibleCount={articleVisible}
           cap={cap}
-          relationHint={
-            relatedArticleIds !== null
-              ? `dimmed articles don’t mention the ${selectedEntityIds.size} selected entit${selectedEntityIds.size === 1 ? 'y' : 'ies'}`
-              : undefined
-          }
         >
-          {articleItems.map((a) => {
-            const isChecked = selectedArticleIds.has(a.id);
-            const dimmed =
-              relatedArticleIds !== null &&
-              !isChecked &&
-              !relatedArticleIds.has(a.id);
-            return (
-              <Row
-                key={a.id}
-                checked={isChecked}
-                disabled={!isChecked && articlesAtCap}
-                dimmed={dimmed}
-                onToggle={() => toggleArticle(a.id)}
-                primary={a.title}
-                secondary={new Date(a.ts).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              />
-            );
-          })}
+          <GroupedRows
+            groups={articleGroups}
+            relatedLabel={`mention the ${selectedEntityIds.size} selected entit${selectedEntityIds.size === 1 ? 'y' : 'ies'}`}
+            renderRow={(a) => {
+              const isChecked = selectedArticleIds.has(a.id);
+              return (
+                <Row
+                  key={a.id}
+                  checked={isChecked}
+                  disabled={!isChecked && articlesAtCap}
+                  onToggle={() => toggleArticle(a.id)}
+                  primary={a.title}
+                  secondary={new Date(a.ts).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                />
+              );
+            }}
+          />
         </ListBody>
       )}
     </aside>
+  );
+}
+
+function GroupHeader({ label }: { label: string }) {
+  return (
+    <li className="sticky top-0 z-[1] border-b border-border bg-paper2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+      {label}
+    </li>
+  );
+}
+
+// Renders the Related / Others split when there's a cross-dimension selection,
+// or a single flat list when there isn't (groups.split === false).
+function GroupedRows<T extends HasId>({
+  groups,
+  relatedLabel,
+  renderRow,
+}: {
+  groups: { related: T[]; others: T[]; split: boolean };
+  // Human phrase completing "Related — items that {relatedLabel}".
+  relatedLabel: string;
+  renderRow: (item: T) => React.ReactNode;
+}) {
+  if (!groups.split) {
+    return <>{groups.others.map(renderRow)}</>;
+  }
+  return (
+    <>
+      <GroupHeader label={`Related · ${relatedLabel}`} />
+      {groups.related.length > 0 ? (
+        groups.related.map(renderRow)
+      ) : (
+        <li className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</li>
+      )}
+      <GroupHeader label="Others" />
+      {groups.others.length > 0 ? (
+        groups.others.map(renderRow)
+      ) : (
+        <li className="px-3 py-2 font-mono text-[11.5px] text-mute2">none</li>
+      )}
+    </>
   );
 }
 
@@ -309,7 +338,6 @@ function ListBody({
   selectedCount,
   visibleCount,
   cap,
-  relationHint,
   children,
 }: {
   q: string;
@@ -320,9 +348,6 @@ function ListBody({
   selectedCount: number;
   visibleCount: number;
   cap: number;
-  // One-line explanation of why some rows are faded (cross-dimension
-  // relationship). Undefined when nothing in the other tab is selected.
-  relationHint?: string;
   children: React.ReactNode;
 }) {
   const atCap = selectedCount >= cap;
@@ -368,11 +393,6 @@ function ListBody({
             Cap of {cap} reached — uncheck an item to add a different one.
           </p>
         ) : null}
-        {relationHint ? (
-          <p className="mt-1.5 font-mono text-[11px] text-mute2">
-            {relationHint}
-          </p>
-        ) : null}
       </div>
       <ul className="flex-1 overflow-y-auto">{children}</ul>
     </>
@@ -382,17 +402,12 @@ function ListBody({
 function Row({
   checked,
   disabled = false,
-  dimmed = false,
   onToggle,
   primary,
   secondary,
 }: {
   checked: boolean;
   disabled?: boolean;
-  // Faded because it isn't related to the cross-dimension selection (e.g. an
-  // article that doesn't mention any selected entity). Still fully clickable —
-  // this is a visual hint, not a filter.
-  dimmed?: boolean;
   onToggle: () => void;
   primary: string;
   secondary: string;
@@ -405,9 +420,8 @@ function Row({
         disabled={disabled}
         title={disabled ? 'selection cap reached' : undefined}
         className={
-          'flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left transition-opacity ' +
-          (disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-paper2') +
-          (dimmed && !disabled ? ' opacity-40' : '')
+          'flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left ' +
+          (disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-paper2')
         }
       >
         <span
