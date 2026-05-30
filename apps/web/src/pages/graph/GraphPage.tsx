@@ -399,24 +399,24 @@ export default function GraphPage() {
           cap={selectionCap}
         />
         <PeriodChips value={draftPeriod} onChange={onDraftPeriod} showLabel={false} />
+        <button
+          type="button"
+          onClick={() => setArticlesOpen((v) => !v)}
+          className={
+            'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
+            (articlesOpen || draftArticleIds.size > 0
+              ? 'bg-paper2 text-ink'
+              : 'bg-paper text-muted hover:text-ink')
+          }
+          title="Open the article picker (opens on the right)"
+        >
+          Articles
+          {draftArticleIds.size > 0 ? (
+            <span className="text-[11px]">({draftArticleIds.size})</span>
+          ) : null}
+          <span aria-hidden="true" className="text-mute2">›</span>
+        </button>
         <div className="ml-auto flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setArticlesOpen((v) => !v)}
-            className={
-              'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
-              (articlesOpen || draftArticleIds.size > 0
-                ? 'bg-paper2 text-ink'
-                : 'bg-paper text-muted hover:text-ink')
-            }
-            title="Open the article picker (opens on the right)"
-          >
-            Articles
-            {draftArticleIds.size > 0 ? (
-              <span className="text-[11px]">({draftArticleIds.size})</span>
-            ) : null}
-            <span aria-hidden="true" className="text-mute2">›</span>
-          </button>
           <button
             type="button"
             onClick={reset}
