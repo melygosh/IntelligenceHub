@@ -46,24 +46,27 @@ export const GraphResponse = z.object({
 });
 export type GraphResponse = z.infer<typeof GraphResponse>;
 
-// Request shape for `GET /api/graph`. `from`/`to` are required only when
-// `period === 'custom'` (enforced server-side). When `anchor` is set, the
-// canvas shows [that entity + its top-`top` co-mentioned neighbours in
-// scope] instead of the top-`top` global entities; `top` still caps the
-// neighbour count.
-export const GetGraphQuery = z.object({
-  // CSV of category UUIDs. Backend matches any (OR). Single value remains
-  // valid. Matches GetArticlesQuery.category for cross-page parity.
-  category: z.string().optional(),
+// Request body for `POST /api/graph`. POST (not GET) so that explicit
+// entity/article selections — up to the GRAPH_SELECTION_CAP, which can be
+// 100+ UUIDs each — ride in the JSON body instead of a long query string.
+// `from`/`to` are required only when `period === 'custom'` (enforced
+// server-side). When `anchorEntityId` is set, the canvas shows [that entity +
+// its top-`top` co-mentioned neighbours in scope] instead of the top-`top`
+// global entities; `top` still caps the neighbour count. The per-list length
+// cap (against GRAPH_SELECTION_CAP) is enforced server-side, not here, because
+// the value is environment-driven.
+export const GraphRequest = z.object({
+  // Category UUIDs. Backend matches any (OR semantics).
+  categoryIds: z.array(z.string().uuid()).optional(),
   period: GraphPeriod.optional(), // default '7d' applied server-side
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
-  top: z.coerce.number().int().positive().max(200).optional(), // default 20
-  anchor: z.string().uuid().optional(),
-  // CSVs of explicit entity/article UUIDs. When either is non-empty the
-  // server skips top-N and renders exactly the union of these IDs (plus the
-  // edges among them). Used by the customize-canvas side panel.
-  entityIds: z.string().optional(),
-  articleIds: z.string().optional(),
+  top: z.number().int().positive().max(200).optional(), // default 20
+  anchorEntityId: z.string().uuid().optional(),
+  // Explicit entity/article UUIDs. When either is non-empty the server skips
+  // top-N and renders exactly the union of these IDs (plus the edges among
+  // them). Driven by the entity dropdown + article sidebar.
+  selectedEntityIds: z.array(z.string().uuid()).optional(),
+  selectedArticleIds: z.array(z.string().uuid()).optional(),
 });
-export type GetGraphQuery = z.infer<typeof GetGraphQuery>;
+export type GraphRequest = z.infer<typeof GraphRequest>;

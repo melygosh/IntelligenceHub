@@ -1,14 +1,16 @@
 import {
   BadRequestException,
+  Body,
   Controller,
-  Get,
-  Query,
+  HttpCode,
+  Post,
   UseGuards,
 } from '@nestjs/common';
-import { GetGraphQuery, type GraphPeriod } from '@intelligencehub/shared';
+import { GraphRequest } from '@intelligencehub/shared';
 import { DEFAULT_TOP, GraphService } from './graph.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import {
   CurrentUser,
   type AuthUserContext,
@@ -20,104 +22,48 @@ import { loadEnv } from '../common/config/env';
 export class GraphController {
   constructor(private readonly graph: GraphService) {}
 
-  @Get()
-  async get(
+  // POST (not GET): explicit entity/article selections can be 100+ UUIDs each,
+  // too large for a query string, so they ride in the JSON body. It stays a
+  // read-only query semantically; HttpCode(200) keeps it from defaulting to 201.
+  @Post()
+  @HttpCode(200)
+  async build(
     @CurrentUser() user: AuthUserContext,
-    @Query() raw: Record<string, string | undefined>,
+    @Body(new ZodValidationPipe(GraphRequest)) body: GraphRequest,
   ) {
-    const q = parseGraphQuery(raw);
+    const period = body.period ?? '7d';
+    if (period === 'custom' && !body.from) {
+      throw new BadRequestException('period=custom requires `from`');
+    }
+    const cap = loadEnv().GRAPH_SELECTION_CAP;
+    const selectedEntityIds = capList(body.selectedEntityIds, 'selectedEntityIds', cap);
+    const selectedArticleIds = capList(
+      body.selectedArticleIds,
+      'selectedArticleIds',
+      cap,
+    );
     return this.graph.buildMine(user.userId, {
-      period: q.period,
-      from: q.from,
-      to: q.to,
-      top: q.top ?? DEFAULT_TOP,
-      categoryIds: q.categoryIds,
-      anchorEntityId: q.anchor,
-      selectedEntityIds: q.selectedEntityIds,
-      selectedArticleIds: q.selectedArticleIds,
+      period,
+      from: body.from ? new Date(body.from) : undefined,
+      to: body.to ? new Date(body.to) : undefined,
+      top: body.top ?? DEFAULT_TOP,
+      categoryIds: body.categoryIds ?? [],
+      anchorEntityId: body.anchorEntityId,
+      selectedEntityIds,
+      selectedArticleIds,
     });
   }
 }
 
-type ParsedGraphQuery = {
-  period: GraphPeriod;
-  from?: Date;
-  to?: Date;
-  top?: number;
-  categoryIds: string[];
-  anchor?: string;
-  selectedEntityIds: string[];
-  selectedArticleIds: string[];
-};
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Cap on entityIds / articleIds list length (per kind). Each UUID + comma is
-// ~37 chars, so the default 100 = ~3.7KB per list — well under Node's default
-// 16KB max-http-header-size. Sourced from env (GRAPH_SELECTION_CAP) so it
-// matches whatever value the frontend learns via GET /api/config.
-function getGraphIdCap(): number {
-  return loadEnv().GRAPH_SELECTION_CAP;
-}
-
-function csvToUuidList(
-  raw: string | undefined,
-  paramName: string,
-  maxCount?: number,
-): string[] {
-  if (!raw) return [];
-  const ids = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  if (maxCount !== undefined && ids.length > maxCount) {
+// UUID shape is already validated by the Zod schema; here we only enforce the
+// environment-driven per-list length cap (GRAPH_SELECTION_CAP), which Zod can't
+// express statically.
+function capList(ids: string[] | undefined, paramName: string, max: number): string[] {
+  const list = ids ?? [];
+  if (list.length > max) {
     throw new BadRequestException(
-      `${paramName} accepts at most ${maxCount} IDs (got ${ids.length})`,
+      `${paramName} accepts at most ${max} IDs (got ${list.length})`,
     );
   }
-  for (const id of ids) {
-    if (!UUID_RE.test(id)) {
-      throw new BadRequestException(`invalid ${paramName} UUID: ${id}`);
-    }
-  }
-  return ids;
-}
-
-/**
- * Parse + validate /graph query params. Mirrors ZodValidationPipe's error-body
- * shape ({message: 'Validation failed', errors}). Also enforces the cross-field
- * rule that Zod can't express on its own: period=custom requires `from`.
- */
-function parseGraphQuery(
-  raw: Record<string, string | undefined>,
-): ParsedGraphQuery {
-  const parsed = GetGraphQuery.safeParse(raw);
-  if (!parsed.success) {
-    throw new BadRequestException({
-      message: 'Validation failed',
-      errors: parsed.error.format(),
-    });
-  }
-  const q = parsed.data;
-  const period: GraphPeriod = q.period ?? '7d';
-  if (period === 'custom' && !q.from) {
-    throw new BadRequestException('period=custom requires `from`');
-  }
-  // CSV → string[]. Empty string + filter out blanks so trailing commas
-  // ('a,b,') don't produce empty UUID values.
-  const categoryIds = csvToUuidList(q.category, 'category');
-  const cap = getGraphIdCap();
-  const selectedEntityIds = csvToUuidList(q.entityIds, 'entityIds', cap);
-  const selectedArticleIds = csvToUuidList(q.articleIds, 'articleIds', cap);
-  return {
-    period,
-    from: q.from ? new Date(q.from) : undefined,
-    to: q.to ? new Date(q.to) : undefined,
-    top: q.top,
-    categoryIds,
-    anchor: q.anchor,
-    selectedEntityIds,
-    selectedArticleIds,
-  };
+  return list;
 }

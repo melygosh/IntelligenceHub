@@ -211,22 +211,33 @@ export const api = createApi({
         selectedArticleIds?: string[];
       } | void
     >({
-      query: (arg) => {
-        const params = new URLSearchParams();
-        if (arg?.categoryIds && arg.categoryIds.length > 0)
-          params.set('category', arg.categoryIds.join(','));
-        if (arg?.period) params.set('period', arg.period);
-        if (arg?.from) params.set('from', arg.from);
-        if (arg?.to) params.set('to', arg.to);
-        if (arg?.top !== undefined) params.set('top', String(arg.top));
-        if (arg?.anchorEntityId) params.set('anchor', arg.anchorEntityId);
-        if (arg?.selectedEntityIds && arg.selectedEntityIds.length > 0)
-          params.set('entityIds', arg.selectedEntityIds.join(','));
-        if (arg?.selectedArticleIds && arg.selectedArticleIds.length > 0)
-          params.set('articleIds', arg.selectedArticleIds.join(','));
-        const qs = params.toString();
-        return `/graph${qs ? `?${qs}` : ''}`;
-      },
+      // POST (not GET): explicit entity/article selections can exceed 100 UUIDs
+      // each — too long for a query string — so they ride in the JSON body.
+      // Still a cached query: RTK keys the cache by the arg object regardless
+      // of HTTP method.
+      query: (arg) => ({
+        url: '/graph',
+        method: 'POST',
+        body: {
+          categoryIds:
+            arg?.categoryIds && arg.categoryIds.length > 0
+              ? arg.categoryIds
+              : undefined,
+          period: arg?.period,
+          from: arg?.from,
+          to: arg?.to,
+          top: arg?.top,
+          anchorEntityId: arg?.anchorEntityId,
+          selectedEntityIds:
+            arg?.selectedEntityIds && arg.selectedEntityIds.length > 0
+              ? arg.selectedEntityIds
+              : undefined,
+          selectedArticleIds:
+            arg?.selectedArticleIds && arg.selectedArticleIds.length > 0
+              ? arg.selectedArticleIds
+              : undefined,
+        },
+      }),
       // Provide both: existing mutations + SSE handlers that invalidate
       // 'Articles' (feed pull, regen, axis/category updates) still keep the
       // graph in sync; future graph-only invalidations can target 'Graph'.
