@@ -467,6 +467,63 @@ commits for verification.
   UI element, and operators get queue visibility from a single env-configured
   credential pair.
 
+### ADR-10 — Heuristic pre-filter at ingest, not in the analyze worker (FR-2, FR-4, FR-10)
+
+- **Context.** The FR-2 diagram draws the heuristic pre-filter *inside* the
+  article-processing worker, after `load raw article`. FR-4 requires a
+  deterministic pre-filter (length / emptiness / spam, env-tuned thresholds)
+  whose rejects are stored `status='filtered'` and never sent to the LLM. FR-10
+  names the pre-filter the "перша лінія економії" — junk must never reach the
+  model. The diagram fixes the goal; FR-2 explicitly leaves the step *placement*
+  to us ("відновити послідовність кроків і спроєктувати їхню реалізацію ваша
+  задача").
+- **Decision.** `runPreFilter` (`pre-filter.ts`) runs in the **feed-pull worker**
+  (`feed-pull.worker.ts:284`), *before* the `article.analyze` job is enqueued. A
+  rejected item is written `status='filtered'` with `filterReason` at pull time
+  and never enters the analyze queue; only passing items become `pending` and get
+  an analyze job. The analyze worker (`analyzePending`) therefore contains no
+  pre-filter — by the time it runs, the row is already known-good.
+- **Alternatives.** Pre-filter inside the analyze worker exactly as the diagram
+  draws it: enqueue every article, load it, then maybe reject. It works, but
+  spends a queue slot, a DB load, and a full job lifecycle on guaranteed junk.
+- **Trade-offs.** The verdict is fixed at pull time, so changing a threshold
+  (env) does not retroactively re-filter already-pulled rows — acceptable, since
+  thresholds are set at deploy and a re-pull re-evaluates. The literal step order
+  differs from the diagram. In return, junk costs zero queue / worker / LLM
+  resources — the strongest reading of FR-10 — while the constraint the diagram
+  actually encodes (filtered ⇒ `status='filtered'`, no LLM call) holds
+  identically, and filtered rows stay queryable for the US-7 status filter.
+
+### ADR-11 — On-read graph projection, no materialized graph deltas (FR-2, FR-7, Principle 1, NFR-1)
+
+- **Context.** The FR-2 diagram shows a "Graph Builder" that persists graph
+  deltas (nodes / edges) after each analysis. FR-7 fixes the node/edge *shapes*
+  and mandates filter-by-node-type-and-category, but not a storage form.
+  Principle 1 lists "побудова графових структур з уже розмічених даних" as
+  deterministic code. NFR-1 sizes the graph at ≤10 feeds per user and only
+  requires it to render and filter without visible lag at that volume.
+- **Decision.** No `graph_nodes` / `graph_edges` tables. The graph is a
+  **read-time projection**: `GraphService.buildMine` (`graph.service.ts:55`)
+  derives nodes (top-N entities by mention count plus their connected articles)
+  and edges (`mentions` from `article_entity`; `co_mention` computed at request
+  time via `buildCoMentionEdges`) directly from the already-marked-up `articles`
+  + `article_entity` tables, scoped to the user and the active filters. The
+  analyze worker persists only articles, entities, and `article_entity` (step 9
+  of FR-2) — the graph falls out of those deterministically on demand.
+- **Alternatives.** Materialized `graph_nodes` / `graph_edges` updated by a Graph
+  Builder step after each analyze job (the literal diagram). It buys nothing at
+  MVP scale and adds write-amplification on every analyze, a delta-sync invariant
+  to keep correct, and an explicit rebuild path after axis regeneration and
+  entity-dedup merges — all to cache a query that is already fast at ≤10 feeds.
+- **Trade-offs.** Each `/graph` request recomputes the projection (bounded by a
+  node cap + indexed mention joins, well under the NFR-1 bar at test volume), and
+  the projection logic lives in the read path rather than a worker. In return:
+  no graph state to keep in sync with articles / entities, regeneration and
+  entity merges are reflected instantly with no rebuild step, and "the graph is a
+  deterministic function of marked-up data" (P1) is enforced structurally rather
+  than by a sync routine. If volume ever outgrew on-read, `buildMine` is already
+  the materialisation function.
+
 ## Should / Could status (§9.5)
 
 Honest snapshot of the optional tiers. The mandatory features are described
