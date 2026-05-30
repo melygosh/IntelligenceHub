@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Shell from './components/layout/Shell';
 import AuthGuard from './components/layout/AuthGuard';
 import { ToastProvider } from './components/toast/ToastHost';
+import { ConfirmProvider } from './components/confirm/ConfirmProvider';
 import { PageTitleProvider } from './components/layout/PageTitleContext';
 import { DocumentTitle } from './components/layout/DocumentTitle';
 import Register from './pages/auth/Register';
@@ -24,10 +25,12 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 export default function App() {
   return (
     <ToastProvider>
-      <PageTitleProvider>
-        <DocumentTitle />
-        <AppRoutes />
-      </PageTitleProvider>
+      <ConfirmProvider>
+        <PageTitleProvider>
+          <DocumentTitle />
+          <AppRoutes />
+        </PageTitleProvider>
+      </ConfirmProvider>
     </ToastProvider>
   );
 }

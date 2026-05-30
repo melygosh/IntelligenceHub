@@ -8,6 +8,7 @@ import {
 import type { Axis } from '@intelligencehub/shared';
 import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
 import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
+import { useConfirm } from '../../components/confirm/useConfirm';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export default function AxesPage() {
@@ -82,6 +83,7 @@ export default function AxesPage() {
 }
 
 function AxisRow({ axis }: { axis: Axis }) {
+  const confirm = useConfirm();
   const [updateAxis] = useUpdateAxisMutation();
   const [deleteAxis] = useDeleteAxisMutation();
   const [addValue, setAddValue] = useState('');
@@ -122,9 +124,14 @@ function AxisRow({ axis }: { axis: Axis }) {
         <span className="font-serif text-[18px] text-ink">{axis.name}</span>
         <DeleteIconButton
           label="Delete axis"
-          onClick={() => {
-            if (confirm(`Delete axis "${axis.name}" and all its assignments?`))
-              deleteAxis(axis.id);
+          onClick={async () => {
+            const ok = await confirm({
+              title: 'Delete axis',
+              message: `"${axis.name}" and all its assignments will be permanently removed.`,
+              confirmLabel: 'Delete',
+              tone: 'danger',
+            });
+            if (ok) deleteAxis(axis.id);
           }}
         />
       </div>

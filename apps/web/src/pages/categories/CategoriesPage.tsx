@@ -8,6 +8,7 @@ import {
 import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
 import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
 import { EditIconButton } from '../../components/settings/EditIconButton';
+import { useConfirm } from '../../components/confirm/useConfirm';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export default function CategoriesPage() {
@@ -15,6 +16,7 @@ export default function CategoriesPage() {
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
   const [updateCategory] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
+  const confirm = useConfirm();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -144,8 +146,14 @@ export default function CategoriesPage() {
                   />
                   <DeleteIconButton
                     label="Delete category"
-                    onClick={() => {
-                      if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.id);
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: 'Delete category',
+                        message: `"${c.name}" will be permanently removed from your category list.`,
+                        confirmLabel: 'Delete',
+                        tone: 'danger',
+                      });
+                      if (ok) deleteCategory(c.id);
                     }}
                   />
                 </div>
