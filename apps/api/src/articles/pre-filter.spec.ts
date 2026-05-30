@@ -63,6 +63,27 @@ describe('runPreFilter', () => {
     if (r.filtered) expect(r.detail).toContain('link farm');
   });
 
+  it('flags a markup-only body as having no extractable text', () => {
+    // Raw length well over 200, but zero visible text once tags/&nbsp; go — the
+    // "статті без видобутного тексту" signal. Caught as empty, not too_short.
+    const body = '<div><img src="x.png"/><br>&nbsp;&nbsp;</div>'.repeat(8);
+    const r = runPreFilter({ title: 'Has a title', body }, cfg());
+    expect(r).toMatchObject({ filtered: true, reason: 'empty' });
+    if (r.filtered) expect(r.detail).toContain('no extractable text');
+  });
+
+  it('keeps a short HTML excerpt (real text < 200 but raw >= 200) — not too_short', () => {
+    // Mirrors real excerpt feeds (WIRED/BBC/HN): ~150 chars of prose plus
+    // markup. The raw-length floor must not drop these.
+    const body =
+      '<p>' + 'Real reporting text. '.repeat(9) + '</p><img src="hero.jpg"/>';
+    const r = runPreFilter(
+      { title: 'A genuine short news excerpt', body },
+      cfg(),
+    );
+    expect(r.filtered).toBe(false);
+  });
+
   it('skips checks that are disabled', () => {
     // Empty body would normally be 'empty' / 'too_short'; with both off it passes.
     const r = runPreFilter(

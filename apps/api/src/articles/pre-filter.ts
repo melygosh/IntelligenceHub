@@ -57,13 +57,24 @@ export function runPreFilter(
   const body = input.body.trim();
   const { checks } = config;
 
-  if (checks.empty && (title.length === 0 || body.length === 0)) {
+  // Empty covers "no extractable text" (FR-4): a body can be non-empty raw HTML
+  // yet carry no readable words (markup/whitespace only). We strip to visible
+  // text for the emptiness test so those are caught. The length floor below
+  // stays on the RAW body on purpose — many legitimate feeds (WIRED, BBC,
+  // DeepMind, HN) publish short ~150-char excerpts that clear 200 raw chars but
+  // not 200 stripped; measuring the floor on stripped text would wrongly drop
+  // them. So: strip for "is there any text at all", raw length for "is it long
+  // enough".
+  const hasText = extractableText(body).length > 0;
+  if (checks.empty && (title.length === 0 || !hasText)) {
     const which =
-      title.length === 0 && body.length === 0
+      title.length === 0 && !hasText
         ? 'title and body are both empty'
         : title.length === 0
           ? 'title is empty'
-          : 'body is empty';
+          : body.length === 0
+            ? 'body is empty'
+            : 'body has no extractable text (markup only)';
     return { filtered: true, reason: 'empty', detail: which };
   }
 
@@ -101,6 +112,19 @@ export function runPreFilter(
 
 function pct(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
+}
+
+/**
+ * Visible text remaining after stripping HTML tags and the common blank entity,
+ * with whitespace collapsed. Deterministic (regex only, no parser) — enough to
+ * tell whether a body carries real words or is markup/whitespace padding.
+ */
+function extractableText(body: string): string {
+  return body
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function sumLinkTextChars(body: string): number {
