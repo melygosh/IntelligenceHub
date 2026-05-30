@@ -386,107 +386,100 @@ export default function GraphPage() {
   return (
     <div className="flex h-full flex-col gap-3">
       <PageHeader eyebrow="Graph" title="Relationships" />
-      <div className="border border-border bg-paper px-3 py-2">
-        {/* Row 1 — build inputs (a Build click commits these in one fetch). */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
-            build
-          </span>
-          <CategoryDropdown
-            selected={draftCategoryIds}
-            onChange={setDraftCategoryIds}
-          />
-          <EntityPickerDropdown
-            selectedIds={checkedEntityIds}
-            onChange={setDraftEntitySel}
-            cap={selectionCap}
-          />
-          <PeriodChips value={draftPeriod} onChange={onDraftPeriod} showLabel={false} />
-          <div className="ml-auto flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={reset}
-              className="border border-transparent px-2.5 py-1.5 font-mono text-[12.5px] text-muted hover:border-border hover:text-ink"
-              title="Reset to defaults and rebuild"
-            >
-              reset
-            </button>
-            <button
-              type="button"
-              onClick={build}
-              disabled={!pending && !isFetching}
-              title={pending ? 'Apply changes to the canvas' : 'Canvas is up to date'}
-              className={
-                'inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[12.5px] transition-colors ' +
-                (isFetching
-                  ? 'cursor-wait border-border bg-paper2 text-mute2'
-                  : pending
-                    ? 'border-accent bg-accent text-paper hover:border-accent-deep hover:bg-accent-deep'
-                    : 'cursor-not-allowed border-border bg-paper2 text-mute2')
-              }
-            >
-              {isFetching ? 'Building…' : 'Build'}
-              {!isFetching ? <span aria-hidden="true">→</span> : null}
-            </button>
-          </div>
+      {/* Builder card — build inputs only. A Build click commits these in one
+          /graph fetch. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-border bg-paper px-3 py-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          build
+        </span>
+        <CategoryDropdown selected={draftCategoryIds} onChange={setDraftCategoryIds} />
+        <EntityPickerDropdown
+          selectedIds={checkedEntityIds}
+          onChange={setDraftEntitySel}
+          cap={selectionCap}
+        />
+        <PeriodChips value={draftPeriod} onChange={onDraftPeriod} showLabel={false} />
+        <div className="ml-auto flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setArticlesOpen((v) => !v)}
+            className={
+              'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
+              (articlesOpen || draftArticleIds.size > 0
+                ? 'bg-paper2 text-ink'
+                : 'bg-paper text-muted hover:text-ink')
+            }
+            title="Open the article picker (opens on the right)"
+          >
+            Articles
+            {draftArticleIds.size > 0 ? (
+              <span className="text-[11px]">({draftArticleIds.size})</span>
+            ) : null}
+            <span aria-hidden="true" className="text-mute2">›</span>
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="border border-transparent px-2.5 py-1.5 font-mono text-[12.5px] text-muted hover:border-border hover:text-ink"
+            title="Reset to defaults and rebuild"
+          >
+            reset
+          </button>
+          <button
+            type="button"
+            onClick={build}
+            disabled={!pending && !isFetching}
+            title={pending ? 'Apply changes to the canvas' : 'Canvas is up to date'}
+            className={
+              'inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[12.5px] transition-colors ' +
+              (isFetching
+                ? 'cursor-wait border-border bg-paper2 text-mute2'
+                : pending
+                  ? 'border-accent bg-accent text-paper hover:border-accent-deep hover:bg-accent-deep'
+                  : 'cursor-not-allowed border-border bg-paper2 text-mute2')
+            }
+          >
+            {isFetching ? 'Building…' : 'Build'}
+            {!isFetching ? <span aria-hidden="true">→</span> : null}
+          </button>
         </div>
-        {/* Row 2 — view controls (operate on the built graph; no fetch). */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <SearchInput
-            value={graphQuery}
-            onChange={setGraphQuery}
-            placeholder="search graph…"
-            widthClass="md:w-72"
-          />
-          <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
-            <label
-              className="flex items-center gap-1.5 hover:text-ink"
-              title="Animate mentions edges in chronological direction (article → entity)"
-            >
-              <input
-                type="checkbox"
-                checked={animateRequested}
-                onChange={(e) => setAnimate(e.target.checked)}
-                className="h-3 w-3 accent-ink"
-              />
-              animate
-            </label>
-            <span className="text-border" aria-hidden="true">
-              ·
-            </span>
-            <GraphExportMenu
-              getCanvasRoot={() => canvasRef.current}
-              graph={filtered}
-              filters={{
-                period: built.period,
-                from: built.from,
-                to: built.to,
-                nodeKind: 'both',
-                categoryIds: built.categoryIds,
-                anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
-              }}
+      </div>
+      {/* View controls — operate on the already-built graph (no fetch). */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <SearchInput
+          value={graphQuery}
+          onChange={setGraphQuery}
+          placeholder="search graph…"
+          widthClass="md:w-80"
+        />
+        <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
+          <label
+            className="flex items-center gap-1.5 hover:text-ink"
+            title="Animate mentions edges in chronological direction (article → entity)"
+          >
+            <input
+              type="checkbox"
+              checked={animateRequested}
+              onChange={(e) => setAnimate(e.target.checked)}
+              className="h-3 w-3 accent-ink"
             />
-            <span className="text-border" aria-hidden="true">
-              ·
-            </span>
-            <button
-              type="button"
-              onClick={() => setArticlesOpen((v) => !v)}
-              className={
-                'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[12.5px] transition-colors ' +
-                (articlesOpen || draftArticleIds.size > 0
-                  ? 'bg-paper2 text-ink'
-                  : 'bg-paper text-muted hover:text-ink')
-              }
-              title="Open the article picker (opens on the right)"
-            >
-              Articles
-              {draftArticleIds.size > 0 ? (
-                <span className="text-[11px]">({draftArticleIds.size})</span>
-              ) : null}
-              <span aria-hidden="true" className="text-mute2">›</span>
-            </button>
-          </div>
+            animate
+          </label>
+          <span className="text-border" aria-hidden="true">
+            ·
+          </span>
+          <GraphExportMenu
+            getCanvasRoot={() => canvasRef.current}
+            graph={filtered}
+            filters={{
+              period: built.period,
+              from: built.from,
+              to: built.to,
+              nodeKind: 'both',
+              categoryIds: built.categoryIds,
+              anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
+            }}
+          />
         </div>
       </div>
       <div className="flex min-h-[440px] flex-1 gap-0">
