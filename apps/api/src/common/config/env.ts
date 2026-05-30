@@ -99,9 +99,15 @@ const EnvSchema = z
     // How many feeds are fetched concurrently. Feed pull is network-bound
     // (HTTP fetch + parse), independent of LLM_CONCURRENCY which gates the
     // downstream LLM calls — so raising this never affects LLM cost.
+    // Default 1 (serial): two feeds delivering the same story in parallel can
+    // both pass the "is there an existing sibling?" check before either
+    // inserts, under-counting the cross-source similar counter. Serial pulls
+    // can't interleave, so dedup is exact. Raise it for faster sweeps if you
+    // accept that rare race (article-level dedup still prevents real
+    // duplicates; only the similar-counter can momentarily under-count).
     FEED_PULL_CONCURRENCY: z.preprocess(
       emptyToUndef,
-      z.coerce.number().int().positive().default(5),
+      z.coerce.number().int().positive().default(1),
     ),
     // Digest builder: max articles fed to the LLM per digest. Aggregation
     // (top entities / categories / key articles) still runs over the full

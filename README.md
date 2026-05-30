@@ -115,8 +115,10 @@ enqueues a per-feed pull; manual **Pull now** (single feed or all) enqueues
 the same jobs on demand. Overlapping pulls for the same (user, feed) are
 deduplicated while one is still in flight, so a scheduled tick landing on a
 feed still pulling from the previous tick is skipped rather than piling up,
-and feeds are fetched in parallel up to `FEED_PULL_CONCURRENCY` (default 5;
-network-bound, independent of the LLM concurrency gate). The pull worker
+and feeds are fetched up to `FEED_PULL_CONCURRENCY` at a time (default 1 —
+serial, so cross-source dedup stays exact; network-bound and independent of
+the LLM concurrency gate, so it's safe to raise for faster sweeps). The pull
+worker
 normalises each item's URL (strips tracking params), computes a SHA-256
 content hash, deduplicates against existing articles for the same user, runs
 a deterministic pre-filter (length / emptiness / spam markers / link

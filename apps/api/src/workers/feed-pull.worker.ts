@@ -43,8 +43,10 @@ export const FEED_PULL_SWEEP_JOB = 'sweep';
 
 // Feed pull is network-bound (HTTP fetch + parse); this bounds how many feeds
 // are fetched in parallel. Independent of LLM_CONCURRENCY (the downstream LLM
-// gate), so raising it never affects LLM cost.
-const CONCURRENCY = Number(process.env.FEED_PULL_CONCURRENCY) || 5;
+// gate), so raising it never affects LLM cost. Default 1 (serial) so two feeds
+// carrying the same story can't interleave their dedup check and under-count
+// the cross-source similar counter — see env.ts for the trade-off.
+const CONCURRENCY = Number(process.env.FEED_PULL_CONCURRENCY) || 1;
 
 @Processor(QUEUE_NAMES.FEED_PULL, { concurrency: CONCURRENCY })
 export class FeedPullWorker extends WorkerHost {
