@@ -83,6 +83,30 @@ export function GraphSelectionPanel({
     });
   }, [articleList, pinnedArticles]);
 
+  // Cross-relationship dimming. Each article carries its entity ids, so we
+  // derive both directions from the loaded article list (no extra request):
+  //   - articles related to the selected entities (Articles tab dimming)
+  //   - entities mentioned by the selected articles (Entities tab dimming)
+  // When the relevant selection is empty, the set is null → nothing is dimmed,
+  // so every row shows at full opacity.
+  const relatedArticleIds = useMemo<ReadonlySet<string> | null>(() => {
+    if (selectedEntityIds.size === 0) return null;
+    const ids = new Set<string>();
+    for (const a of articleList?.articles ?? []) {
+      if (a.entities.some((e) => selectedEntityIds.has(e.id))) ids.add(a.id);
+    }
+    return ids;
+  }, [articleList, selectedEntityIds]);
+  const relatedEntityIds = useMemo<ReadonlySet<string> | null>(() => {
+    if (selectedArticleIds.size === 0) return null;
+    const ids = new Set<string>();
+    for (const a of articleList?.articles ?? []) {
+      if (!selectedArticleIds.has(a.id)) continue;
+      for (const e of a.entities) ids.add(e.id);
+    }
+    return ids;
+  }, [articleList, selectedArticleIds]);
+
   function toggleEntity(id: string): void {
     const next = new Set(selectedEntityIds);
     if (next.has(id)) {
@@ -178,14 +202,24 @@ export function GraphSelectionPanel({
           selectedCount={selectedEntityIds.size}
           visibleCount={entityItems.length}
           cap={cap}
+          relationHint={
+            relatedEntityIds !== null
+              ? `dimmed entities aren’t mentioned by the ${selectedArticleIds.size} selected article${selectedArticleIds.size === 1 ? '' : 's'}`
+              : undefined
+          }
         >
           {entityItems.map((e) => {
             const isChecked = selectedEntityIds.has(e.id);
+            const dimmed =
+              relatedEntityIds !== null &&
+              !isChecked &&
+              !relatedEntityIds.has(e.id);
             return (
               <Row
                 key={e.id}
                 checked={isChecked}
                 disabled={!isChecked && entitiesAtCap}
+                dimmed={dimmed}
                 onToggle={() => toggleEntity(e.id)}
                 primary={e.canonicalName}
                 secondary={`${e.mentionCount} mention${e.mentionCount === 1 ? '' : 's'} · ${e.type}`}
@@ -203,14 +237,24 @@ export function GraphSelectionPanel({
           selectedCount={selectedArticleIds.size}
           visibleCount={articleItems.length}
           cap={cap}
+          relationHint={
+            relatedArticleIds !== null
+              ? `dimmed articles don’t mention the ${selectedEntityIds.size} selected entit${selectedEntityIds.size === 1 ? 'y' : 'ies'}`
+              : undefined
+          }
         >
           {articleItems.map((a) => {
             const isChecked = selectedArticleIds.has(a.id);
+            const dimmed =
+              relatedArticleIds !== null &&
+              !isChecked &&
+              !relatedArticleIds.has(a.id);
             return (
               <Row
                 key={a.id}
                 checked={isChecked}
                 disabled={!isChecked && articlesAtCap}
+                dimmed={dimmed}
                 onToggle={() => toggleArticle(a.id)}
                 primary={a.title}
                 secondary={new Date(a.ts).toLocaleDateString(undefined, {
@@ -265,6 +309,7 @@ function ListBody({
   selectedCount,
   visibleCount,
   cap,
+  relationHint,
   children,
 }: {
   q: string;
@@ -275,6 +320,9 @@ function ListBody({
   selectedCount: number;
   visibleCount: number;
   cap: number;
+  // One-line explanation of why some rows are faded (cross-dimension
+  // relationship). Undefined when nothing in the other tab is selected.
+  relationHint?: string;
   children: React.ReactNode;
 }) {
   const atCap = selectedCount >= cap;
@@ -320,6 +368,11 @@ function ListBody({
             Cap of {cap} reached — uncheck an item to add a different one.
           </p>
         ) : null}
+        {relationHint ? (
+          <p className="mt-1.5 font-mono text-[11px] text-mute2">
+            {relationHint}
+          </p>
+        ) : null}
       </div>
       <ul className="flex-1 overflow-y-auto">{children}</ul>
     </>
@@ -329,12 +382,17 @@ function ListBody({
 function Row({
   checked,
   disabled = false,
+  dimmed = false,
   onToggle,
   primary,
   secondary,
 }: {
   checked: boolean;
   disabled?: boolean;
+  // Faded because it isn't related to the cross-dimension selection (e.g. an
+  // article that doesn't mention any selected entity). Still fully clickable —
+  // this is a visual hint, not a filter.
+  dimmed?: boolean;
   onToggle: () => void;
   primary: string;
   secondary: string;
@@ -347,8 +405,9 @@ function Row({
         disabled={disabled}
         title={disabled ? 'selection cap reached' : undefined}
         className={
-          'flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left ' +
-          (disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-paper2')
+          'flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left transition-opacity ' +
+          (disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-paper2') +
+          (dimmed && !disabled ? ' opacity-40' : '')
         }
       >
         <span
