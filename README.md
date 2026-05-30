@@ -231,9 +231,9 @@ the same content + config has been seen, including across users — so a
 config revert during regeneration completes with zero LLM calls. The
 deterministic pre-filter and exact-dedup pipeline gate the queue so junk
 and duplicates never reach the model. `/telemetry` aggregates lifetime
-calls per `(operation, provider, model)` with token totals, computed USD
-cost (from a hardcoded `MODEL_PRICING` table covering current Claude 4.x
-and GPT-4o/5 SKUs), average latency, success rate, and failover count.
+calls per `(operation, provider, model)` with token totals (input/output),
+average latency, success rate, and failover count. Tokens are the cost proxy —
+no USD figure is computed, since the providers don't return per-call pricing.
 
 ### Regeneration on configuration change
 
@@ -429,7 +429,7 @@ under "What the app does" above and verified against §4.1 / §9.4.
   attempts persist to `llm_calls` with `failover_reason`.
 - ✅ **Period digests** — `/digests`; also a Must under §4.1.
 - ✅ **LLM-telemetry aggregate view** — `/telemetry`, per
-  `(operation, provider, model)` with USD cost.
+  `(operation, provider, model)` with token totals (cost proxy; no USD).
 - ✅ **Extended graph filters** — time-window chip group **and** an
   entity-anchor search that re-roots the graph on a specific entity.
 - ✅ **Meaningful unit tests on critical parts** — pure-function tests
