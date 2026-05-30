@@ -22,18 +22,13 @@ import type {
   GraphPeriod,
   GraphResponse,
 } from '@intelligencehub/shared';
-import {
-  filterGraph,
-  isNodeKindFilter,
-  NODE_KIND_FILTERS,
-  type NodeKindFilter,
-} from './filter';
+import { filterGraph } from './filter';
 import { layout } from './layout';
 import { ArticleGraphNode } from './ArticleGraphNode';
 import { EntityGraphNode } from './EntityGraphNode';
 import { computeFocusSet } from './focus';
 import { GraphSidePanel, type SelectedNode } from './GraphSidePanel';
-import { GraphSelectionPanel } from './GraphSelectionPanel';
+import { GraphSelectionPanel, type GraphDimension } from './GraphSelectionPanel';
 import { SummaryBand } from './SummaryBand';
 import { PeriodChips } from '../../components/filters/PeriodChips';
 import { LoadingHint } from '../../components/ui/LoadingHint';
@@ -48,47 +43,11 @@ const nodeTypes = {
 } as const;
 
 const DEFAULT_PERIOD: GraphPeriod = '7d';
-const DEFAULT_NODE_KIND: NodeKindFilter = 'entities'; // hybrid default
 
 function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
 }
 
-
-function NodeKindToggle({
-  selected,
-  onChange,
-}: {
-  selected: NodeKindFilter;
-  onChange: (kind: NodeKindFilter) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2 font-mono text-[13.5px] text-muted">
-      <span>show:</span>
-      <div className="flex border border-border">
-        {NODE_KIND_FILTERS.map((kind) => {
-          const active = selected === kind;
-          return (
-            <button
-              key={kind}
-              type="button"
-              onClick={() => onChange(kind)}
-              className={
-                'px-2 py-1 text-[13.5px] ' +
-                (active
-                  ? 'bg-ink text-paper'
-                  : 'bg-paper text-ink hover:bg-paper2')
-              }
-              aria-pressed={active}
-            >
-              {kind}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function toReactFlowNodes(
   graphNodes: GraphNode[],
@@ -209,10 +168,6 @@ export default function GraphPage() {
         .filter((s) => s.length > 0),
     [categoryParam],
   );
-  const nodeKindParam = searchParams.get('nodeKind');
-  const nodeKind: NodeKindFilter = isNodeKindFilter(nodeKindParam)
-    ? nodeKindParam
-    : DEFAULT_NODE_KIND;
   const periodParam = searchParams.get('period');
   const period: GraphPeriod = isGraphPeriod(periodParam) ? periodParam : DEFAULT_PERIOD;
   const from = searchParams.get('from') ?? undefined;
@@ -240,6 +195,7 @@ export default function GraphPage() {
   const [pickedArticleIds, setPickedArticleIds] = useState<Set<string> | null>(
     null,
   );
+  const [dimension, setDimension] = useState<GraphDimension>('entity');
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
@@ -267,8 +223,8 @@ export default function GraphPage() {
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
   const filtered: GraphResponse | null = useMemo(
-    () => (data ? filterGraph(data, nodeKind) : null),
-    [data, nodeKind],
+    () => (data ? filterGraph(data, 'both') : null),
+    [data],
   );
   const positions = useMemo(
     () =>
@@ -279,8 +235,8 @@ export default function GraphPage() {
   );
 
   // Only apply focus when the selected node is actually on the canvas. A band
-  // click on a top-article with `show: entities` selects an article that
-  // isn't in `filtered.nodes` — without this guard, computeFocusSet would
+  // click can select a node that isn't in `filtered.nodes` (e.g. an item not in
+  // the current top-N selection) — without this guard, computeFocusSet would
   // return a singleton set the canvas can't match, dimming everything.
   const focus = useMemo(() => {
     if (!filtered || !selected) return null;
@@ -322,8 +278,10 @@ export default function GraphPage() {
     updateParam('category', ids.length > 0 ? ids.join(',') : undefined);
     setSelected(null);
   }
-  function updateNodeKind(kind: NodeKindFilter): void {
-    updateParam('nodeKind', kind === DEFAULT_NODE_KIND ? undefined : kind);
+  function onChangeDimension(d: GraphDimension): void {
+    setDimension(d);
+    setPickedEntityIds(null);
+    setPickedArticleIds(null);
     setSelected(null);
   }
   function updatePeriod(next: GraphPeriod): void {
@@ -353,22 +311,6 @@ export default function GraphPage() {
   }
 
   function openCustomize(): void {
-    // Seed the picked sets from the current canvas (top-N) the first time the
-    // panel opens, so the user starts from "everything visible is checked"
-    // rather than an empty canvas. Subsequent opens preserve their picks.
-    if (pickedEntityIds === null && pickedArticleIds === null && data) {
-      const initialEntities = new Set<string>();
-      const initialArticles = new Set<string>();
-      for (const n of data.nodes) {
-        if (n.kind === 'entity') {
-          if (initialEntities.size < selectionCap) initialEntities.add(n.id);
-        } else {
-          if (initialArticles.size < selectionCap) initialArticles.add(n.id);
-        }
-      }
-      setPickedEntityIds(initialEntities);
-      setPickedArticleIds(initialArticles);
-    }
     setCustomizeOpen(true);
   }
 
@@ -382,7 +324,6 @@ export default function GraphPage() {
       <PageHeader eyebrow="Graph" title="Relationships" />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <PeriodChips value={period} onChange={updatePeriod} />
-        <NodeKindToggle selected={nodeKind} onChange={updateNodeKind} />
         <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
         <button
           type="button"
@@ -434,7 +375,7 @@ export default function GraphPage() {
               period,
               from,
               to,
-              nodeKind,
+              nodeKind: 'both',
               categoryIds,
               anchorEntityId: explicitMode ? undefined : anchorEntityId,
             }}
@@ -505,13 +446,15 @@ export default function GraphPage() {
         ) : null}
         {customizeOpen ? (
           <GraphSelectionPanel
+            dimension={dimension}
+            onChangeDimension={onChangeDimension}
             selectedEntityIds={pickedEntityIds ?? new Set()}
             selectedArticleIds={pickedArticleIds ?? new Set()}
-            onChangeEntities={(ids) => setPickedEntityIds(ids)}
-            onChangeArticles={(ids) => setPickedArticleIds(ids)}
+            onChangeEntities={setPickedEntityIds}
+            onChangeArticles={setPickedArticleIds}
             onReset={() => {
-              resetCustomize();
-              setCustomizeOpen(false);
+              setPickedEntityIds(null);
+              setPickedArticleIds(null);
             }}
             onClose={() => setCustomizeOpen(false)}
             cap={selectionCap}
