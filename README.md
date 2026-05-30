@@ -36,8 +36,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The api auto-applies Drizzle migrations and seeds the four default axes on
-first boot. Once all four services are healthy:
+The api auto-applies Drizzle migrations on first boot, and seeds the four
+default categorization axes per user at registration. Once all four services
+are healthy:
 
 1. Open **http://localhost:5174** in a browser.
 2. Register with email + password. Tick **Load demo data** if you want a
