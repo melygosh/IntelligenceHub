@@ -343,7 +343,7 @@ function ConnectingRelated<T extends { id: string }>({
     />
   );
   return (
-    <div className="border-t border-border">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-t border-border">
       <SectionHeader
         tone="and"
         label={`Connecting · ${connectingLabel} · ${groups.connecting.length}`}
@@ -376,7 +376,8 @@ function SectionHeader({ tone, label }: { tone: 'and' | 'or'; label: string }) {
   return (
     <div
       className={
-        'px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ' + cls
+        'sticky top-0 z-[1] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ' +
+        cls
       }
     >
       {label}
@@ -449,7 +450,7 @@ function ListBody({
           </p>
         ) : null}
       </div>
-      <ul className="flex-1 overflow-y-auto">{children}</ul>
+      <ul className="min-h-0 flex-1 overflow-y-auto">{children}</ul>
     </>
   );
 }
