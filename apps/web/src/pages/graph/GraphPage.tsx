@@ -171,7 +171,11 @@ export default function GraphPage() {
   // checkboxes). Empty sets => default top-N entity overview; any non-empty =>
   // explicit-set canvas (picked entities + picked articles + edges among them).
   // In-memory only — reloading resets to top-N, as designed.
-  const [entityIds, setEntityIds] = useState<Set<string>>(new Set());
+  // null = untouched: the canvas shows the default top-N and the entity
+  // dropdown pre-checks those (display-only, see checkedEntityIds) WITHOUT
+  // committing them — so opening the dropdown fires no graph refetch. A
+  // non-null set is an explicit selection that drives the canvas query.
+  const [entitySel, setEntitySel] = useState<Set<string> | null>(null);
   const [articleIds, setArticleIds] = useState<Set<string>>(new Set());
   const [articlesOpen, setArticlesOpen] = useState(false);
   // Canvas-level text search: dims non-matching nodes by label. In-memory.
@@ -179,7 +183,7 @@ export default function GraphPage() {
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
-  const explicitMode = entityIds.size > 0 || articleIds.size > 0;
+  const explicitMode = entitySel !== null || articleIds.size > 0;
 
   const { data, isLoading } = useGetGraphQuery({
     categoryIds,
@@ -187,12 +191,23 @@ export default function GraphPage() {
     from,
     to,
     anchorEntityId: explicitMode ? undefined : anchorEntityId,
-    selectedEntityIds: entityIds.size > 0 ? Array.from(entityIds) : undefined,
+    selectedEntityIds:
+      entitySel && entitySel.size > 0 ? Array.from(entitySel) : undefined,
     selectedArticleIds: articleIds.size > 0 ? Array.from(articleIds) : undefined,
   });
 
   const [selected, setSelected] = useState<SelectedNode | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+
+  // Entity ids currently on the canvas. When untouched (entitySel === null)
+  // this is the default top-N; the dropdown pre-checks these so it reflects
+  // what's shown. Once the user commits a selection, that explicit set wins.
+  const canvasEntityIds = useMemo(() => {
+    const s = new Set<string>();
+    if (data) for (const n of data.nodes) if (n.kind === 'entity') s.add(n.id);
+    return s;
+  }, [data]);
+  const checkedEntityIds = entitySel ?? canvasEntityIds;
 
   // Default canvas shows the top-N entities only; once a selection exists we
   // show both kinds so connecting article nodes + their edges appear.
@@ -271,7 +286,7 @@ export default function GraphPage() {
   }
 
   function reset(): void {
-    setEntityIds(new Set());
+    setEntitySel(null);
     setArticleIds(new Set());
     setSelected(null);
   }
@@ -283,9 +298,11 @@ export default function GraphPage() {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <CategoryDropdown selected={categoryIds} onChange={updateCategoryIds} />
           <EntityPickerDropdown
-            selectedIds={entityIds}
+            selectedIds={checkedEntityIds}
             onChange={(next) => {
-              setEntityIds(next);
+              // First toggle commits the (previously display-only) set as an
+              // explicit selection.
+              setEntitySel(next);
               setSelected(null);
             }}
             cap={selectionCap}
@@ -411,7 +428,7 @@ export default function GraphPage() {
         ) : null}
         {articlesOpen ? (
           <ArticlesPanel
-            selectedEntityIds={entityIds}
+            selectedEntityIds={entitySel ?? new Set()}
             selectedArticleIds={articleIds}
             onChangeArticles={setArticleIds}
             onReset={reset}

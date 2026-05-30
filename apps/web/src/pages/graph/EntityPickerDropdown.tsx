@@ -16,6 +16,10 @@ export function EntityPickerDropdown({
   onChange,
   cap,
 }: {
+  // The set shown as checked + pinned. May be the committed explicit selection
+  // OR (when untouched) the on-canvas top-N — the parent decides. The dropdown
+  // is display-only: toggling proposes the next full set via onChange; merely
+  // opening the dropdown changes nothing (no graph refetch).
   selectedIds: ReadonlySet<string>;
   onChange: (next: Set<string>) => void;
   cap: number;
