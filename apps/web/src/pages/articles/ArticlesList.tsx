@@ -883,12 +883,11 @@ export default function ArticlesList() {
         <div className="flex items-baseline justify-between gap-3 border-b border-border bg-paper2/40 px-5 py-1.5 font-mono text-[12.5px] text-mute2">
           <span>{filterSubtitle}</span>
           <span className="tnum">
-            {q ? 'sort relevance' : 'sort newest first'}
-            {data ? (
+            {data && (
               <>
-                {' '}· <span className="text-ink">{data.total}</span> articles
+                 <span className="text-ink">{data.total}</span> articles
               </>
-            ) : null}
+            )}
           </span>
         </div>
 
