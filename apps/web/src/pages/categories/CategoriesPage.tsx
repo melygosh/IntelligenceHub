@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   useCreateCategoryMutation,
+  useUpdateCategoryMutation,
   useDeleteCategoryMutation,
   useGetCategoriesQuery,
 } from '../../store/api';
@@ -11,9 +12,37 @@ import { LoadingHint } from '../../components/ui/LoadingHint';
 export default function CategoriesPage() {
   const { data, isLoading } = useGetCategoriesQuery();
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
+  const [updateCategory] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function startEdit(id: string, current: string) {
+    setEditingId(id);
+    setDraftName(current);
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setDraftName('');
+    setEditError(null);
+  }
+
+  async function onRename(id: string) {
+    const trimmed = draftName.trim();
+    if (trimmed === '') return;
+    try {
+      await updateCategory({ id, body: { name: trimmed } }).unwrap();
+      cancelEdit();
+    } catch (err) {
+      const code = (err as { data?: { error?: string } }).data?.error;
+      setEditError(code === 'duplicate_name' ? 'Already exists.' : 'Could not rename.');
+    }
+  }
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -66,20 +95,64 @@ export default function CategoriesPage() {
         </p>
       ) : (
         <ul className="space-y-3">
-          {data?.categories.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between border border-border bg-surface p-3"
-            >
-              <span className="font-serif text-[18px] text-ink">{c.name}</span>
-              <DeleteIconButton
-                label="Delete category"
-                onClick={() => {
-                  if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.id);
-                }}
-              />
-            </li>
-          ))}
+          {data?.categories.map((c) =>
+            editingId === c.id ? (
+              <li
+                key={c.id}
+                className="flex flex-col gap-1 border border-border bg-surface p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void onRename(c.id);
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                    autoFocus
+                    maxLength={64}
+                    className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink focus:border-ink focus:outline-none"
+                  />
+                  <button
+                    onClick={() => void onRename(c.id)}
+                    className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="border border-border px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-muted hover:text-ink"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {editError ? (
+                  <p className="font-mono text-[12.5px] text-critical">{editError}</p>
+                ) : null}
+              </li>
+            ) : (
+              <li
+                key={c.id}
+                className="flex items-center justify-between border border-border bg-surface p-3"
+              >
+                <span className="font-serif text-[18px] text-ink">{c.name}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => startEdit(c.id, c.name)}
+                    className="font-mono text-[12px] uppercase tracking-[0.1em] text-mute2 hover:text-ink"
+                  >
+                    Rename
+                  </button>
+                  <DeleteIconButton
+                    label="Delete category"
+                    onClick={() => {
+                      if (confirm(`Delete category "${c.name}"?`)) deleteCategory(c.id);
+                    }}
+                  />
+                </div>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </SettingsScaffold>
