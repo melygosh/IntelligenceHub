@@ -115,7 +115,8 @@ export function GraphSelectionPanel({
     // one pass (no loop). Omitted deps are intentional:
     //   selectedArticleIds / selectedEntityIds — read only to seed a new Set;
     //     the `changed`/`ids.has` guard keeps re-runs idempotent.
-    //   onChangeArticles / onChangeEntities — stable (useCallback in GraphPage).
+    //   onChangeArticles / onChangeEntities — React guarantees state-setter
+    //     identity is stable across renders (GraphPage passes the setters).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dimension, articleSections, entitySections]);
 

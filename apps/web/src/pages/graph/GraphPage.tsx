@@ -48,7 +48,6 @@ function isGraphPeriod(s: string | null): s is GraphPeriod {
   return s === 'all' || s === '24h' || s === '7d' || s === '30d' || s === 'custom';
 }
 
-
 function toReactFlowNodes(
   graphNodes: GraphNode[],
   positions: Map<string, { x: number; y: number }>,
@@ -317,6 +316,7 @@ export default function GraphPage() {
   function resetCustomize(): void {
     setPickedEntityIds(null);
     setPickedArticleIds(null);
+    setDimension('entity');
   }
 
   return (
@@ -452,10 +452,7 @@ export default function GraphPage() {
             selectedArticleIds={pickedArticleIds ?? new Set()}
             onChangeEntities={setPickedEntityIds}
             onChangeArticles={setPickedArticleIds}
-            onReset={() => {
-              setPickedEntityIds(null);
-              setPickedArticleIds(null);
-            }}
+            onReset={resetCustomize}
             onClose={() => setCustomizeOpen(false)}
             cap={selectionCap}
           />
