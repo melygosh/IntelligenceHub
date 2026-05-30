@@ -354,6 +354,23 @@ export default function GraphPage() {
   }
 
   function openCustomize(): void {
+    // First open: pre-check whatever is currently on the canvas so the sidebar
+    // reflects the visible graph (the user then narrows/expands from there).
+    // Seed from the *displayed* nodes (`filtered`), not the raw response, so
+    // hidden article nodes in the default entities-only view aren't dragged in.
+    if (pickedEntityIds === null && pickedArticleIds === null && filtered) {
+      const ents = new Set<string>();
+      const arts = new Set<string>();
+      for (const n of filtered.nodes) {
+        if (n.kind === 'entity') {
+          if (ents.size < selectionCap) ents.add(n.id);
+        } else if (arts.size < selectionCap) {
+          arts.add(n.id);
+        }
+      }
+      setPickedEntityIds(ents);
+      setPickedArticleIds(arts);
+    }
     setCustomizeOpen(true);
   }
 
