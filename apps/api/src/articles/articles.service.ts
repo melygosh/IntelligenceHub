@@ -139,12 +139,16 @@ export class ArticlesService {
     // Inline sibling-count subquery so the row carries similarCount AND the
     // `sort=duplicates` ORDER BY can reference it. Same predicate as the
     // standalone findSiblings* helpers: status in (ready, duplicate),
-    // matching content_hash OR url, excluding self. Costs one indexed
-    // scan per page row — at pageSize<=500 that's a non-issue.
+    // matching content_hash OR url, excluding self, AND from a different feed
+    // — the label says "in other sources", so a same-feed re-pull must not
+    // count. IS DISTINCT FROM treats a detached sibling (feed_id NULL) as a
+    // different source. Costs one indexed scan per page row — at pageSize<=500
+    // that's a non-issue.
     const similarCountExpr = sql<number>`(
       SELECT COUNT(*)::int FROM ${articles} b
       WHERE b.user_id = ${articles.userId}
         AND b.id <> ${articles.id}
+        AND b.feed_id IS DISTINCT FROM ${articles.feedId}
         AND b.status IN ('ready', 'duplicate')
         AND (
           (${articles.contentHash} IS NOT NULL AND b.content_hash = ${articles.contentHash})
@@ -321,6 +325,7 @@ export class ArticlesService {
     const siblings = await this.findSiblings(
       userId,
       a.id,
+      a.feedId,
       a.contentHash,
       a.url,
     );
@@ -356,13 +361,16 @@ export class ArticlesService {
 
   /**
    * Siblings for one article — used by getById. Returns rows with the same
-   * user, status in ('ready', 'duplicate'), and matching content_hash OR url,
-   * excluding the article itself. Sorted by ts DESC. Backed by
-   * articles_user_contenthash_idx + articles_user_url_idx from migration 0010.
+   * user, status in ('ready', 'duplicate'), matching content_hash OR url, from
+   * a different feed (IS DISTINCT FROM, so a detached/NULL-feed sibling still
+   * counts as another source), excluding the article itself. Sorted by ts DESC.
+   * Backed by articles_user_contenthash_idx + articles_user_url_idx from
+   * migration 0010.
    */
   private async findSiblings(
     userId: string,
     articleId: string,
+    feedId: string | null,
     contentHash: string | null,
     url: string,
   ): Promise<SimilarArticleSummary[]> {
@@ -382,6 +390,7 @@ export class ArticlesService {
         and(
           eq(articles.userId, userId),
           ne(articles.id, articleId),
+          sql`${articles.feedId} IS DISTINCT FROM ${feedId}`,
           inArray(articles.status, ['ready', 'duplicate']),
           contentHash
             ? or(eq(articles.contentHash, contentHash), eq(articles.url, url))
