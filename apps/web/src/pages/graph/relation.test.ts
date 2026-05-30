@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  isRelated,
-  partitionByRelation,
-  relatedArticleIdSet,
-  relatedEntityIdSet,
-} from './relation';
+import { relatedArticleIdSet, relatedEntityIdSet } from './relation';
 
 // Three articles over four entities:
 //   a1 -> e1, e2
@@ -61,65 +56,3 @@ describe('relatedEntityIdSet', () => {
   });
 });
 
-describe('isRelated', () => {
-  const related = new Set(['e2']);
-  it('treats pinned ids as related even when not in the related set', () => {
-    expect(isRelated('e9', new Set(['e9']), related)).toBe(true);
-  });
-  it('treats ids in the related set as related', () => {
-    expect(isRelated('e2', new Set(), related)).toBe(true);
-  });
-  it('is false for unrelated, unpinned ids', () => {
-    expect(isRelated('e3', new Set(), related)).toBe(false);
-  });
-  it('is false for everything when related is null', () => {
-    expect(isRelated('e2', new Set(), null)).toBe(false);
-  });
-});
-
-describe('partitionByRelation', () => {
-  const entities = [
-    { id: 'e1' },
-    { id: 'e2' },
-    { id: 'e3' },
-    { id: 'e4' },
-  ];
-
-  it('does not split when related is null — everything in others, order kept', () => {
-    const g = partitionByRelation(entities, new Set(), null);
-    expect(g.split).toBe(false);
-    expect(g.related).toEqual([]);
-    expect(g.others.map((x) => x.id)).toEqual(['e1', 'e2', 'e3', 'e4']);
-  });
-
-  it('splits related (incl. pinned) above others, preserving input order', () => {
-    // related set = {e2}; pinned = {e4}. Related group = [e2, e4] in input
-    // order; others = [e1, e3].
-    const g = partitionByRelation(entities, new Set(['e4']), new Set(['e2']));
-    expect(g.split).toBe(true);
-    expect(g.related.map((x) => x.id)).toEqual(['e2', 'e4']);
-    expect(g.others.map((x) => x.id)).toEqual(['e1', 'e3']);
-  });
-
-  it('keeps a selected-but-unrelated item in the Related group (pinned wins)', () => {
-    // e1 is pinned but not in the related set — it must stay in Related so the
-    // user's pick never sinks into Others.
-    const g = partitionByRelation(entities, new Set(['e1']), new Set(['e3']));
-    expect(g.related.map((x) => x.id)).toEqual(['e1', 'e3']);
-    expect(g.others.map((x) => x.id)).toEqual(['e2', 'e4']);
-  });
-
-  it('puts everything in others when nothing is related or pinned', () => {
-    const g = partitionByRelation(entities, new Set(), new Set(['zzz']));
-    expect(g.split).toBe(true);
-    expect(g.related).toEqual([]);
-    expect(g.others.map((x) => x.id)).toEqual(['e1', 'e2', 'e3', 'e4']);
-  });
-
-  it('does not mutate the input array', () => {
-    const input = [{ id: 'e1' }, { id: 'e2' }];
-    const snapshot = input.map((x) => x.id);
-    partitionByRelation(input, new Set(['e2']), new Set(['e1']));
-    expect(input.map((x) => x.id)).toEqual(snapshot);
-  });
-});

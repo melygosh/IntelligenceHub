@@ -49,51 +49,6 @@ export function relatedEntityIdSet(
 }
 
 /**
- * A row counts as "related" when it's currently selected (pinned) or it's in
- * the cross-dimension related set. Selected rows stay in the Related group so
- * the user's picks never sink into Others.
- */
-export function isRelated(
-  id: string,
-  pinned: ReadonlySet<string>,
-  related: ReadonlySet<string> | null,
-): boolean {
-  if (pinned.has(id)) return true;
-  return related !== null && related.has(id);
-}
-
-export interface RelationGroups<T> {
-  related: T[];
-  others: T[];
-  // false when there's no cross-dimension selection — the UI then renders a
-  // single flat list with no Related/Others headers.
-  split: boolean;
-}
-
-/**
- * Partition `items` into Related (pinned ∪ related) and Others, preserving the
- * input order within each group. When `related` is null (nothing selected in
- * the other tab) there's no relationship to show: `split` is false and every
- * item lands in `others` in its original order.
- */
-export function partitionByRelation<T extends HasId>(
-  items: ReadonlyArray<T>,
-  pinned: ReadonlySet<string>,
-  related: ReadonlySet<string> | null,
-): RelationGroups<T> {
-  if (related === null) {
-    return { related: [], others: [...items], split: false };
-  }
-  const relatedGroup: T[] = [];
-  const others: T[] = [];
-  for (const item of items) {
-    if (isRelated(item.id, pinned, related)) relatedGroup.push(item);
-    else others.push(item);
-  }
-  return { related: relatedGroup, others, split: true };
-}
-
-/**
  * Ids of articles that mention EVERY selected entity (AND / intersection — the
  * "Connecting" set). `null` when nothing is selected, so the caller hides the
  * Connecting/Related sections entirely.
