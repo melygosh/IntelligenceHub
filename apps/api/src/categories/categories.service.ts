@@ -77,6 +77,45 @@ export class CategoriesService {
     }
   }
 
+  async rename(userId: string, id: string, rawName: string): Promise<Category> {
+    const name = rawName.normalize('NFKC').trim();
+    if (name === '') {
+      throw new HttpException(
+        { error: 'invalid_name' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    try {
+      const [row] = await this.db
+        .update(category)
+        .set({ name })
+        .where(and(eq(category.userId, userId), eq(category.id, id)))
+        .returning({
+          id: category.id,
+          name: category.name,
+          createdAt: category.createdAt,
+        });
+      if (!row) {
+        throw new NotFoundException('Category not found');
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        createdAt: row.createdAt.toISOString(),
+      };
+    } catch (err) {
+      const cause = (err as { cause?: { code?: string; constraint?: string } })
+        .cause;
+      if (
+        cause?.code === '23505' &&
+        cause.constraint === 'category_user_name_unique'
+      ) {
+        throw new ConflictException({ error: 'duplicate_name' });
+      }
+      throw err;
+    }
+  }
+
   async delete(userId: string, id: string): Promise<void> {
     const result = await this.db
       .delete(category)

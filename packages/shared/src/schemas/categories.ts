@@ -16,3 +16,8 @@ export const CreateCategoryRequest = z.object({
   name: z.string().min(1).max(64),
 });
 export type CreateCategoryRequest = z.infer<typeof CreateCategoryRequest>;
+
+export const UpdateCategoryRequest = z.object({
+  name: z.string().min(1).max(64),
+});
+export type UpdateCategoryRequest = z.infer<typeof UpdateCategoryRequest>;

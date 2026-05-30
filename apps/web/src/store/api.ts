@@ -17,6 +17,7 @@ import type {
   ConfirmEmailResponse,
   CreateAxisRequest,
   CreateCategoryRequest,
+  UpdateCategoryRequest,
   CreateFeedRequest,
   DigestDetail,
   DigestSummary,
@@ -273,6 +274,17 @@ export const api = createApi({
       query: (body) => ({ url: '/categories', method: 'POST', body }),
       invalidatesTags: ['Categories'],
     }),
+    updateCategory: build.mutation<
+      Category,
+      { id: string; body: UpdateCategoryRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/categories/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Categories', 'Articles'],
+    }),
     deleteCategory: build.mutation<void, string>({
       query: (id) => ({ url: `/categories/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Categories', 'Articles'],
@@ -362,6 +374,7 @@ export const {
   useGetGraphQuery,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
+  useUpdateCategoryMutation,
   useDeleteCategoryMutation,
   useGetAxesQuery,
   useCreateAxisMutation,

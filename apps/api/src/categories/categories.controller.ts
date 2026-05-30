@@ -7,11 +7,13 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
   CreateCategoryRequest,
+  UpdateCategoryRequest,
   type Category,
   type CategoryList,
 } from '@intelligencehub/shared';
@@ -43,6 +45,16 @@ export class CategoriesController {
     body: typeof CreateCategoryRequest._type,
   ): Promise<Category> {
     return this.categories.create(user.userId, body.name);
+  }
+
+  @Patch(':id')
+  async rename(
+    @CurrentUser() user: AuthUserContext,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(UpdateCategoryRequest))
+    body: typeof UpdateCategoryRequest._type,
+  ): Promise<Category> {
+    return this.categories.rename(user.userId, id, body.name);
   }
 
   @Delete(':id')
