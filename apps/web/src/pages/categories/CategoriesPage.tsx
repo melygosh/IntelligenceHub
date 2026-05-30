@@ -7,6 +7,7 @@ import {
 } from '../../store/api';
 import { SettingsScaffold } from '../../components/settings/SettingsScaffold';
 import { DeleteIconButton } from '../../components/settings/DeleteIconButton';
+import { EditIconButton } from '../../components/settings/EditIconButton';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 
 export default function CategoriesPage() {
@@ -101,7 +102,7 @@ export default function CategoriesPage() {
                 key={c.id}
                 className="flex flex-col gap-1 border border-border bg-surface p-3"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-stretch gap-2">
                   <input
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
@@ -115,13 +116,13 @@ export default function CategoriesPage() {
                   />
                   <button
                     onClick={() => void onRename(c.id)}
-                    className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper"
+                    className="flex items-center justify-center border border-ink bg-ink px-3 font-mono text-[13px] uppercase tracking-[0.1em] text-paper"
                   >
                     Save
                   </button>
                   <button
                     onClick={cancelEdit}
-                    className="border border-border px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-muted hover:text-ink"
+                    className="flex items-center justify-center border border-border px-3 font-mono text-[13px] uppercase tracking-[0.1em] text-muted hover:text-ink"
                   >
                     Cancel
                   </button>
@@ -137,12 +138,10 @@ export default function CategoriesPage() {
               >
                 <span className="font-serif text-[18px] text-ink">{c.name}</span>
                 <div className="flex items-center gap-3">
-                  <button
+                  <EditIconButton
+                    label="Rename category"
                     onClick={() => startEdit(c.id, c.name)}
-                    className="font-mono text-[12px] uppercase tracking-[0.1em] text-mute2 hover:text-ink"
-                  >
-                    Rename
-                  </button>
+                  />
                   <DeleteIconButton
                     label="Delete category"
                     onClick={() => {
