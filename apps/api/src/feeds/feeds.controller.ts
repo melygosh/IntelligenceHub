@@ -98,7 +98,7 @@ export class FeedsController {
     @CurrentUser() user: AuthUserContext,
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<PullFeedResponse> {
-    await this.feedsService.enqueuePull(user.userId, id);
-    return { enqueued: true, feedId: id };
+    const { enqueued } = await this.feedsService.enqueuePull(user.userId, id);
+    return { enqueued, feedId: id };
   }
 }

@@ -6,7 +6,11 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articles, feeds } from '../db/schema';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
-import type { FeedPullJobData } from '../feeds/feeds.service';
+import {
+  feedPullJobOpts,
+  isFeedPullInFlight,
+  type FeedPullJobData,
+} from '../feeds/feeds.service';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 import { runPreFilter } from '../articles/pre-filter';
@@ -29,7 +33,20 @@ type ProcessResult = {
   llmErrors: number;
 };
 
-@Processor(QUEUE_NAMES.FEED_PULL)
+type SweepResult = { enqueued: number; skippedInFlight: number };
+
+// Job name for the scheduled sweep (vs the per-feed 'pull'). The sweep fans
+// out a 'pull' for every active feed across ALL users — it runs without a
+// request context, so it must read userId from each row to preserve per-user
+// isolation (never enqueue a bare feedId).
+export const FEED_PULL_SWEEP_JOB = 'sweep';
+
+// Feed pull is network-bound (HTTP fetch + parse); this bounds how many feeds
+// are fetched in parallel. Independent of LLM_CONCURRENCY (the downstream LLM
+// gate), so raising it never affects LLM cost.
+const CONCURRENCY = Number(process.env.FEED_PULL_CONCURRENCY) || 5;
+
+@Processor(QUEUE_NAMES.FEED_PULL, { concurrency: CONCURRENCY })
 export class FeedPullWorker extends WorkerHost {
   private readonly log = new Logger(FeedPullWorker.name);
 
@@ -38,13 +55,66 @@ export class FeedPullWorker extends WorkerHost {
     private readonly fetcher: FeedFetcher,
     private readonly processor: ArticleProcessor,
     private readonly events: EventsService,
+    @InjectQueue(QUEUE_NAMES.FEED_PULL)
+    private readonly feedPullQueue: Queue<FeedPullJobData>,
     @InjectQueue(QUEUE_NAMES.ARTICLE_ANALYZE)
     private readonly analyzeQueue: Queue<AnalyzeJobData>,
   ) {
     super();
   }
 
-  async process(job: Job<FeedPullJobData>): Promise<ProcessResult> {
+  async process(
+    job: Job<FeedPullJobData>,
+  ): Promise<ProcessResult | SweepResult> {
+    if (job.name === FEED_PULL_SWEEP_JOB) {
+      return this.runSweep(job);
+    }
+    return this.runPull(job);
+  }
+
+  /**
+   * Scheduled fan-out: enqueue a 'pull' for every active feed across all
+   * users. Each enqueue carries the per-(user,feed) deduplication id, so a
+   * feed still being pulled from a prior tick is skipped rather than piling
+   * up a second job. Paused/error feeds are not swept (an error feed resumes
+   * via a successful manual pull, matching existing manual-pull semantics).
+   */
+  private async runSweep(job: Job<FeedPullJobData>): Promise<SweepResult> {
+    const active = await this.db
+      .select({ id: feeds.id, userId: feeds.userId })
+      .from(feeds)
+      .where(eq(feeds.status, 'active'));
+
+    let enqueued = 0;
+    let skippedInFlight = 0;
+    for (const f of active) {
+      const inFlight = await isFeedPullInFlight(
+        this.feedPullQueue,
+        f.userId,
+        f.id,
+      );
+      await this.feedPullQueue.add(
+        'pull',
+        { feedId: f.id, userId: f.userId },
+        feedPullJobOpts(f.userId, f.id),
+      );
+      if (inFlight) skippedInFlight += 1;
+      else enqueued += 1;
+    }
+
+    this.log.log(
+      JSON.stringify({
+        event: 'feed.pull.sweep',
+        jobId: job.id,
+        activeFeeds: active.length,
+        enqueued,
+        skippedInFlight,
+      }),
+    );
+    return { enqueued, skippedInFlight };
+  }
+
+  private async runPull(job: Job<FeedPullJobData>): Promise<ProcessResult> {
     const { feedId, userId } = job.data;
     this.log.log(
       JSON.stringify({

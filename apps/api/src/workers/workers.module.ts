@@ -7,6 +7,7 @@ import { SeedModule } from '../seed/seed.module';
 import { LlmModule } from '../llm/llm.module';
 import { EventsModule } from '../events/events.module';
 import { FeedPullWorker } from './feed-pull.worker';
+import { FeedPullScheduler } from './feed-pull.scheduler';
 import { ArticleAnalyzeWorker } from './article-analyze.worker';
 import { PendingAnalyzeReconcile } from './pending-analyze.reconcile';
 import { RegenerationWorker } from './regeneration.worker';
@@ -33,6 +34,7 @@ import { RetagArticleWorker } from './retag-article.worker';
   ],
   providers: [
     FeedPullWorker,
+    FeedPullScheduler,
     ArticleAnalyzeWorker,
     PendingAnalyzeReconcile,
     RegenerationWorker,

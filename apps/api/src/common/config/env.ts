@@ -87,6 +87,22 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(2),
     ),
+    // Feed pull scheduling. FEED_PULL_CRON drives a single repeatable sweep
+    // job that fans out a pull for every active feed across all users (the
+    // scheduler runs without a request context — Principle 3). Empty disables
+    // the schedule, leaving manual "Pull now" / "Pull all" as the only path.
+    // 6-field cron (with seconds); default = every 15 minutes.
+    FEED_PULL_CRON: z.preprocess(
+      emptyToUndef,
+      z.string().default('0 */15 * * * *'),
+    ),
+    // How many feeds are fetched concurrently. Feed pull is network-bound
+    // (HTTP fetch + parse), independent of LLM_CONCURRENCY which gates the
+    // downstream LLM calls — so raising this never affects LLM cost.
+    FEED_PULL_CONCURRENCY: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(5),
+    ),
     // Graph customize-canvas selection cap (per kind). UUID + comma is ~37
     // chars, so 100 * 2 = ~7.4KB query string — well under Node's default
     // 16KB max-http-header-size. Surfaced to the frontend via /api/config

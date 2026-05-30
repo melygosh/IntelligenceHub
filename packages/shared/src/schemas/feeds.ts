@@ -28,7 +28,9 @@ export const FeedListResponse = z.object({
 export type FeedListResponse = z.infer<typeof FeedListResponse>;
 
 export const PullFeedResponse = z.object({
-  enqueued: z.literal(true),
+  // `false` when a pull for this feed is already in flight (waiting/active/
+  // delayed) and the request was soft-rejected via queue deduplication.
+  enqueued: z.boolean(),
   feedId: z.string().uuid(),
 });
 export type PullFeedResponse = z.infer<typeof PullFeedResponse>;
@@ -36,6 +38,9 @@ export type PullFeedResponse = z.infer<typeof PullFeedResponse>;
 export const PullAllFeedsResponse = z.object({
   enqueued: z.number().int().nonnegative(),
   skippedPaused: z.number().int().nonnegative(),
+  // Feeds skipped because a pull was already in flight (soft-rejected via
+  // queue deduplication).
+  skippedInFlight: z.number().int().nonnegative(),
 });
 export type PullAllFeedsResponse = z.infer<typeof PullAllFeedsResponse>;
 

@@ -530,6 +530,9 @@ export default function FeedsPage() {
       if (res.skippedPaused > 0) {
         parts.push(`${res.skippedPaused} paused skipped`);
       }
+      if (res.skippedInFlight > 0) {
+        parts.push(`${res.skippedInFlight} already in progress`);
+      }
       pushToast({
         severity: 'info',
         title: 'Pull all queued',
@@ -550,7 +553,16 @@ export default function FeedsPage() {
     const label = feed.title ?? feed.url;
     addPending([feed.id]);
     try {
-      await pullFeed(feed.id).unwrap();
+      const res = await pullFeed(feed.id).unwrap();
+      if (!res.enqueued) {
+        clearPending([feed.id]);
+        pushToast({
+          severity: 'info',
+          title: 'Already in progress',
+          subtitle: label,
+        });
+        return;
+      }
       pushToast({ severity: 'info', title: 'Queued for pull', subtitle: label });
     } catch {
       clearPending([feed.id]);
