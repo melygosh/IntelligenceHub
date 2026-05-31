@@ -18,7 +18,15 @@ export function GraphSidePanel({
   onClose: () => void;
 }) {
   return (
-    <aside className="flex w-[360px] shrink-0 flex-col border-l border-border bg-paper">
+    // On narrow screens the panel takes over the full viewport so the user isn't
+    // fighting the graph behind a cramped rail; on md+ it's the right-hand rail.
+    <aside
+      className={
+        'flex flex-col bg-paper ' +
+        'fixed inset-0 z-40 w-full ' +
+        'md:static md:z-auto md:w-[360px] md:shrink-0 md:border-l md:border-border'
+      }
+    >
       <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
           {selected.kind === 'article' ? 'Article' : 'Entity'}
@@ -26,11 +34,13 @@ export function GraphSidePanel({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close panel"
-          title="Close"
-          className="px-1 text-muted hover:text-ink"
+          aria-label="Back to graph"
+          title="Back to graph"
+          className="font-mono text-[12px] text-muted hover:text-ink"
         >
-          ×
+          {/* Full label on mobile (the panel is the whole screen); bare × on desktop. */}
+          <span className="md:hidden">← Back to graph</span>
+          <span className="hidden md:inline">×</span>
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
@@ -47,7 +57,8 @@ export function GraphSidePanel({
 function ArticlePanel({ id }: { id: string }) {
   const { data, isLoading, isError } = useGetArticleQuery(id);
   if (isLoading) return <LoadingHint />;
-  if (isError || !data) return <p className="font-mono text-[12.5px] text-muted">Could not load article.</p>;
+  if (isError || !data)
+    return <p className="font-mono text-[12.5px] text-muted">Could not load article.</p>;
   const imp = (data.importance ?? 'normal') as 'high' | 'normal' | 'junk';
   const impStyle = IMP_STYLE[imp];
   return (
@@ -99,7 +110,8 @@ function ArticlePanel({ id }: { id: string }) {
 function EntityPanel({ id }: { id: string }) {
   const { data, isLoading, isError } = useGetEntityQuery(id);
   if (isLoading) return <LoadingHint />;
-  if (isError || !data) return <p className="font-mono text-[12.5px] text-muted">Could not load entity.</p>;
+  if (isError || !data)
+    return <p className="font-mono text-[12.5px] text-muted">Could not load entity.</p>;
   return (
     <div className="flex flex-col gap-3">
       <h2 className="font-serif text-[18px] leading-snug text-ink">{data.canonicalName}</h2>
@@ -115,7 +127,9 @@ function EntityPanel({ id }: { id: string }) {
           </div>
           <div className="flex flex-wrap gap-1.5 font-mono text-[11.5px] text-ink">
             {data.aliases.map((a) => (
-              <span key={a} className="border border-border bg-surface px-1.5 py-[1px]">{a}</span>
+              <span key={a} className="border border-border bg-surface px-1.5 py-[1px]">
+                {a}
+              </span>
             ))}
           </div>
         </div>

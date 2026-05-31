@@ -81,7 +81,15 @@ export function ArticlesPanel({
   const isDisabled = (id: string) => !selectedArticleIds.has(id) && atCap;
 
   return (
-    <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-paper">
+    // Full-viewport overlay on mobile (so the article picker isn't a cramped
+    // rail fighting the graph); right-hand rail on md+.
+    <aside
+      className={
+        'flex flex-col bg-paper ' +
+        'fixed inset-0 z-40 w-full ' +
+        'md:static md:z-auto md:w-[380px] md:shrink-0 md:border-l md:border-border'
+      }
+    >
       <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
           Articles
@@ -98,22 +106,19 @@ export function ArticlesPanel({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close panel"
-            title="Close"
-            className="px-1 text-muted hover:text-ink"
+            aria-label="Back to graph"
+            title="Back to graph"
+            className="font-mono text-[12px] text-muted hover:text-ink"
           >
-            ×
+            {/* Full label on mobile (panel is the whole screen); bare × on desktop. */}
+            <span className="md:hidden">← Back to graph</span>
+            <span className="hidden md:inline">×</span>
           </button>
         </div>
       </header>
 
       <div className="border-b border-border p-3">
-        <SearchInput
-          value={q}
-          onChange={setQ}
-          placeholder="search articles…"
-          widthClass="w-full"
-        />
+        <SearchInput value={q} onChange={setQ} placeholder="search articles…" widthClass="w-full" />
         <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
           <span>
             {articles.length} shown ·{' '}
