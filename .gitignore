@@ -46,4 +46,4 @@ docs/
 # Playwright walkthrough artifacts (manual smoke tests; not for the repo).
 .playwright-mcp/
 walk-*.png
-
+.claude

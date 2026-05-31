@@ -36,7 +36,11 @@ export class GraphController {
       throw new BadRequestException('period=custom requires `from`');
     }
     const cap = loadEnv().GRAPH_SELECTION_CAP;
-    const selectedEntityIds = capList(body.selectedEntityIds, 'selectedEntityIds', cap);
+    const selectedEntityIds = capList(
+      body.selectedEntityIds,
+      'selectedEntityIds',
+      cap,
+    );
     const selectedArticleIds = capList(
       body.selectedArticleIds,
       'selectedArticleIds',
@@ -58,7 +62,11 @@ export class GraphController {
 // UUID shape is already validated by the Zod schema; here we only enforce the
 // environment-driven per-list length cap (GRAPH_SELECTION_CAP), which Zod can't
 // express statically.
-function capList(ids: string[] | undefined, paramName: string, max: number): string[] {
+function capList(
+  ids: string[] | undefined,
+  paramName: string,
+  max: number,
+): string[] {
   const list = ids ?? [];
   if (list.length > max) {
     throw new BadRequestException(
