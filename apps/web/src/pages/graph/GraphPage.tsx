@@ -1,5 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState, AppDispatch } from '../../store';
+import { saveGraphView } from '../../store/graphViewSlice';
 import {
   Background,
   BackgroundVariant,
@@ -10,18 +13,9 @@ import {
   type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  useGetCategoriesQuery,
-  useGetGraphQuery,
-  useGetPublicConfigQuery,
-} from '../../store/api';
+import { useGetCategoriesQuery, useGetGraphQuery, useGetPublicConfigQuery } from '../../store/api';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
-import type {
-  GraphEdge,
-  GraphNode,
-  GraphPeriod,
-  GraphResponse,
-} from '@intelligencehub/shared';
+import type { GraphEdge, GraphNode, GraphPeriod, GraphResponse } from '@intelligencehub/shared';
 import { filterGraph } from './filter';
 import { layout } from './layout';
 import { ArticleGraphNode } from './ArticleGraphNode';
@@ -65,10 +59,7 @@ function sameIdList(a: string[], b: string[]): boolean {
 }
 
 /** Equality of two selection sets, treating null (untouched) distinctly. */
-function sameSel(
-  a: ReadonlySet<string> | null,
-  b: ReadonlySet<string> | null,
-): boolean {
+function sameSel(a: ReadonlySet<string> | null, b: ReadonlySet<string> | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.size !== b.size) return false;
@@ -191,37 +182,59 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
 export default function GraphPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const anchorEntityId = (location.state as { anchorEntityId?: string } | null)
-    ?.anchorEntityId;
+  const anchorEntityId = (location.state as { anchorEntityId?: string } | null)?.anchorEntityId;
   // `animate` stays URL-backed + instant — it's a client-only render toggle
   // (no fetch), unaffected by the build flow.
   const animateRequested = searchParams.get('animate') === '1';
+
+  // Restore the previous /graph view when returning from a detail page. An
+  // anchored arrival (clicking "view in graph" on an entity) is an explicit new
+  // intent, so it overrides any saved snapshot. Read once for the initializers.
+  const dispatch = useDispatch<AppDispatch>();
+  const savedSnapshot = useSelector((s: RootState) => s.graphView.snapshot);
+  const restore = anchorEntityId ? null : savedSnapshot;
 
   // --- Draft: what the builder edits. Changing these fetches NOTHING; they
   // only take effect when the user clicks Build. Seeded once from the URL so
   // existing /graph?category=…&period=… links still open as expected.
   const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>(() =>
-    parseCsv(searchParams.get('category')),
+    restore ? restore.draftCategoryIds : parseCsv(searchParams.get('category')),
   );
   const [draftPeriod, setDraftPeriod] = useState<GraphPeriod>(() => {
+    if (restore) return restore.draftPeriod;
     const p = searchParams.get('period');
     return isGraphPeriod(p) ? p : DEFAULT_PERIOD;
   });
-  const [draftFrom, setDraftFrom] = useState<string | undefined>(
-    () => searchParams.get('from') ?? undefined,
+  const [draftFrom, setDraftFrom] = useState<string | undefined>(() =>
+    restore ? restore.draftFrom : (searchParams.get('from') ?? undefined),
   );
-  const [draftTo, setDraftTo] = useState<string | undefined>(
-    () => searchParams.get('to') ?? undefined,
+  const [draftTo, setDraftTo] = useState<string | undefined>(() =>
+    restore ? restore.draftTo : (searchParams.get('to') ?? undefined),
   );
   // null = untouched (the dropdown pre-checks the on-canvas top-N display-only);
   // a non-null set is an explicit entity pick.
-  const [draftEntitySel, setDraftEntitySel] = useState<Set<string> | null>(null);
-  const [draftArticleIds, setDraftArticleIds] = useState<Set<string>>(new Set());
+  const [draftEntitySel, setDraftEntitySel] = useState<Set<string> | null>(() =>
+    restore?.draftEntitySel ? new Set(restore.draftEntitySel) : null,
+  );
+  const [draftArticleIds, setDraftArticleIds] = useState<Set<string>>(() =>
+    restore ? new Set(restore.draftArticleIds) : new Set(),
+  );
 
   // --- Built: the committed params that actually drive the /graph fetch.
   // Initialised = draft defaults (+ any anchor) so the canvas auto-builds the
   // top-N on first load. Only Build / reset reassign this.
   const [built, setBuilt] = useState<BuiltParams>(() => {
+    if (restore) {
+      return {
+        categoryIds: restore.built.categoryIds,
+        period: restore.built.period,
+        from: restore.built.from,
+        to: restore.built.to,
+        entitySel: restore.built.entitySel ? new Set(restore.built.entitySel) : null,
+        articleIds: new Set(restore.built.articleIds),
+        anchorEntityId: restore.built.anchorEntityId,
+      };
+    }
     const p = searchParams.get('period');
     return {
       categoryIds: parseCsv(searchParams.get('category')),
@@ -234,10 +247,10 @@ export default function GraphPage() {
     };
   });
 
-  const [articlesOpen, setArticlesOpen] = useState(false);
+  const [articlesOpen, setArticlesOpen] = useState(() => restore?.articlesOpen ?? false);
   // Canvas-level text search: dims non-matching nodes by label. In-memory,
   // client-only — operates on the already-built graph, no fetch.
-  const [graphQuery, setGraphQuery] = useState('');
+  const [graphQuery, setGraphQuery] = useState(() => restore?.graphQuery ?? '');
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
@@ -250,11 +263,8 @@ export default function GraphPage() {
     to: built.to,
     anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
     selectedEntityIds:
-      built.entitySel && built.entitySel.size > 0
-        ? Array.from(built.entitySel)
-        : undefined,
-    selectedArticleIds:
-      built.articleIds.size > 0 ? Array.from(built.articleIds) : undefined,
+      built.entitySel && built.entitySel.size > 0 ? Array.from(built.entitySel) : undefined,
+    selectedArticleIds: built.articleIds.size > 0 ? Array.from(built.articleIds) : undefined,
   });
 
   // Draft differs from what's currently built → Build is "pending" (glows).
@@ -266,8 +276,48 @@ export default function GraphPage() {
     !sameSel(draftEntitySel, built.entitySel) ||
     !sameSel(draftArticleIds, built.articleIds);
 
-  const [selected, setSelected] = useState<SelectedNode | null>(null);
+  const [selected, setSelected] = useState<SelectedNode | null>(() => restore?.selected ?? null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+
+  // Persist the whole view to Redux on any change, so leaving /graph and coming
+  // back restores this exact canvas + builder + open panel/selection (survives
+  // navigation; a full page reload starts fresh by design).
+  useEffect(() => {
+    dispatch(
+      saveGraphView({
+        draftCategoryIds,
+        draftPeriod,
+        draftFrom,
+        draftTo,
+        draftEntitySel: draftEntitySel ? Array.from(draftEntitySel) : null,
+        draftArticleIds: Array.from(draftArticleIds),
+        built: {
+          categoryIds: built.categoryIds,
+          period: built.period,
+          from: built.from,
+          to: built.to,
+          entitySel: built.entitySel ? Array.from(built.entitySel) : null,
+          articleIds: Array.from(built.articleIds),
+          anchorEntityId: built.anchorEntityId,
+        },
+        articlesOpen,
+        graphQuery,
+        selected,
+      }),
+    );
+  }, [
+    dispatch,
+    draftCategoryIds,
+    draftPeriod,
+    draftFrom,
+    draftTo,
+    draftEntitySel,
+    draftArticleIds,
+    built,
+    articlesOpen,
+    graphQuery,
+    selected,
+  ]);
 
   // Entity ids currently on the canvas (from the BUILT graph). When the draft
   // entity selection is untouched, the dropdown pre-checks these so it reflects
@@ -340,12 +390,24 @@ export default function GraphPage() {
   // incoming anchor (the user is driving now).
   function build(): void {
     if (!pending && !isFetching) return;
+    // Entity selection to commit:
+    //  - user explicitly picked entities → use that draft set.
+    //  - user added articles WITHOUT touching the entity dropdown → seed from
+    //    the currently-displayed top-N entities, so they persist on the canvas
+    //    instead of vanishing (explicit mode with an empty entity set would
+    //    otherwise render only the picked articles).
+    //  - otherwise → null (default top-N path).
+    const entitySel: Set<string> | null = draftEntitySel
+      ? new Set(draftEntitySel)
+      : draftArticleIds.size > 0 && canvasEntityIds.size > 0
+        ? new Set(canvasEntityIds)
+        : null;
     setBuilt({
       categoryIds: draftCategoryIds,
       period: draftPeriod,
       from: draftFrom,
       to: draftTo,
-      entitySel: draftEntitySel ? new Set(draftEntitySel) : null,
+      entitySel,
       articleIds: new Set(draftArticleIds),
       anchorEntityId: undefined,
     });
@@ -389,9 +451,7 @@ export default function GraphPage() {
       {/* Builder card — build inputs only. A Build click commits these in one
           /graph fetch. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-border bg-paper px-3 py-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
-          build
-        </span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">build</span>
         <CategoryDropdown selected={draftCategoryIds} onChange={setDraftCategoryIds} />
         <EntityPickerDropdown
           selectedIds={checkedEntityIds}
@@ -414,7 +474,9 @@ export default function GraphPage() {
           {draftArticleIds.size > 0 ? (
             <span className="text-[11px]">({draftArticleIds.size})</span>
           ) : null}
-          <span aria-hidden="true" className="text-mute2">›</span>
+          <span aria-hidden="true" className="text-mute2">
+            ›
+          </span>
         </button>
         <div className="ml-auto flex items-center gap-2.5">
           <button
@@ -543,9 +605,7 @@ export default function GraphPage() {
             ) : null}
           </div>
         </div>
-        {selected ? (
-          <GraphSidePanel selected={selected} onClose={() => setSelected(null)} />
-        ) : null}
+        {selected ? <GraphSidePanel selected={selected} onClose={() => setSelected(null)} /> : null}
         {articlesOpen ? (
           <ArticlesPanel
             selectedEntityIds={draftEntitySel ?? new Set()}
