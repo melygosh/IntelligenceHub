@@ -17,7 +17,12 @@ export function layout(
       height: NODE_HEIGHT,
     }),
   );
-  edges.forEach((e) => g.setEdge(e.from, e.to));
+  // Lay out by the structural edges only (mentions + co_mention). `similar`
+  // (article<->article) edges are supplementary and dense — feeding them to
+  // dagre both bloats layout time (superlinear in edge count) and produces a
+  // hairball; they're drawn on top of the structural layout instead. Article
+  // nodes still get positioned via their mention edges to displayed entities.
+  edges.filter((e) => e.kind !== 'similar').forEach((e) => g.setEdge(e.from, e.to));
   dagre.layout(g);
   const positions = new Map<string, { x: number; y: number }>();
   g.nodes().forEach((id) => {

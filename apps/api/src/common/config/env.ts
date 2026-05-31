@@ -136,6 +136,13 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(100),
     ),
+    // Max `similar` (article<->article) graph edges emitted per article node.
+    // Caps article-article edge density so the graph stays readable and the
+    // client layout/render stays responsive (FR-7 responsiveness at MVP scale).
+    GRAPH_SIMILAR_EDGES_PER_NODE: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(3),
+    ),
     // Semantic similarity (ADR-7 / FR-5 Could). Self-contained config —
     // separate from LLM_PROVIDER on purpose, so the cost lens, key, and
     // provider can be managed independently. Off by default; flipping

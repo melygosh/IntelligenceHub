@@ -3,6 +3,7 @@ import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articleEntity, articles } from '../db/schema';
+import { loadEnv } from '../common/config/env';
 import type {
   EntityKind,
   GraphEdge,
@@ -157,6 +158,10 @@ export class GraphService {
       opts.categoryIds,
     );
 
+    // 5. Semantic-similarity edges (FR-7 `similar`) between the article nodes
+    //    already on the canvas. Off unless SEMANTIC_SIMILARITY_ENABLED.
+    const similarEdges = await this.buildSimilarEdges(userId, articleIds);
+
     const nodes: GraphNode[] = [
       ...articleRows.map(
         (a): GraphNode => ({
@@ -185,7 +190,10 @@ export class GraphService {
       ),
     ];
 
-    return { nodes, edges: [...mentionEdges, ...coMentionEdges] };
+    return {
+      nodes,
+      edges: [...mentionEdges, ...coMentionEdges, ...similarEdges],
+    };
   }
 
   /**
@@ -662,6 +670,84 @@ export class GraphService {
         to: r.to_id,
         kind: 'co_mention',
         weight: r.weight,
+      }),
+    );
+  }
+
+  /**
+   * Semantic-similarity edges (FR-7 `similar`, article→article) among the
+   * article nodes already on the canvas. A pair gets an edge when the cosine
+   * distance between their embeddings is below SEMANTIC_SIMILARITY_THRESHOLD —
+   * the same pgvector operator + env threshold the article-dedup path uses.
+   *
+   * Cost discipline (FR-10 / Principle 1): this is a self-join restricted to
+   * the *displayed* article IDs (already bounded by the entity cap), NOT the
+   * whole corpus — so it is not quadratic in total articles and never calls an
+   * LLM. `a1.id < a2.id` keeps one direction per pair for stable React keys.
+   * Both sides are user-scoped (Principle 4). Returns [] when the feature is
+   * off or fewer than two displayed articles carry an embedding.
+   */
+  private async buildSimilarEdges(
+    userId: string,
+    articleIds: string[],
+  ): Promise<GraphEdge[]> {
+    if (articleIds.length < 2) return [];
+    const env = loadEnv();
+    if (!env.SEMANTIC_SIMILARITY_ENABLED) return [];
+    const threshold = env.SEMANTIC_SIMILARITY_THRESHOLD;
+    const perNode = env.GRAPH_SIMILAR_EDGES_PER_NODE;
+    const idArray = sql`ARRAY[${sql.join(
+      articleIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    )}]`;
+
+    // Each displayed article keeps only its `perNode` nearest neighbours (by
+    // cosine distance, under the threshold) within the displayed set; the union
+    // is then deduped to undirected pairs (LEAST/GREATEST). This caps edge
+    // density so the canvas doesn't hairball and client layout/render stays
+    // responsive. Still a bounded self-join over the displayed IDs only (not
+    // corpus-quadratic, FR-10) and no LLM (Principle 1).
+    const result = await this.db.execute<{
+      from_id: string;
+      to_id: string;
+    }>(sql`
+      WITH ranked AS (
+        SELECT a1.id AS src,
+               a2.id AS dst,
+               ROW_NUMBER() OVER (
+                 PARTITION BY a1.id
+                 ORDER BY (a1.embedding <=> a2.embedding) ASC
+               ) AS rn
+        FROM articles a1
+        JOIN articles a2
+          ON a1.id <> a2.id
+         AND (a1.embedding <=> a2.embedding) < ${threshold}
+        WHERE a1.user_id = ${userId}
+          AND a2.user_id = ${userId}
+          AND a1.id = ANY(${idArray})
+          AND a2.id = ANY(${idArray})
+          AND a1.embedding IS NOT NULL
+          AND a2.embedding IS NOT NULL
+      )
+      SELECT DISTINCT
+        LEAST(src, dst) AS from_id,
+        GREATEST(src, dst) AS to_id
+      FROM ranked
+      WHERE rn <= ${perNode}
+    `);
+    const rows = (
+      result as unknown as {
+        rows: Array<{ from_id: string; to_id: string }>;
+      }
+    ).rows;
+    return rows.map(
+      (r): GraphEdge => ({
+        from: r.from_id,
+        to: r.to_id,
+        kind: 'similar',
+        // `weight` is the integer co-mention counter; similar edges carry no
+        // count. (Spec allows an optional 0–1 `score` here — not emitted yet.)
+        weight: null,
       }),
     );
   }
