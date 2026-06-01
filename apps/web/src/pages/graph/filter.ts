@@ -2,12 +2,6 @@ import type { GraphResponse } from '@intelligencehub/shared';
 
 export type NodeKindFilter = 'both' | 'articles' | 'entities';
 
-export const NODE_KIND_FILTERS: NodeKindFilter[] = ['both', 'articles', 'entities'];
-
-export function isNodeKindFilter(v: unknown): v is NodeKindFilter {
-  return v === 'both' || v === 'articles' || v === 'entities';
-}
-
 /**
  * Drops nodes that don't match the filter and any edge whose endpoint was
  * dropped. Returns the input unchanged on 'both'. Important: 'entities' keeps

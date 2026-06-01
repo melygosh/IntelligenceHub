@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GraphPeriod } from '@intelligencehub/shared';
-import type { NodeKindFilter } from '../pages/graph/filter';
 
 /**
  * In-memory snapshot of the /graph page's view state so navigating away (to an
@@ -34,8 +33,6 @@ export type GraphViewSnapshot = {
   // UI state to restore.
   articlesOpen: boolean;
   graphQuery: string;
-  // Client-side node-type view filter; null = auto (adaptive default).
-  nodeKind: NodeKindFilter | null;
   selected: GraphSelectedNode | null;
 };
 
