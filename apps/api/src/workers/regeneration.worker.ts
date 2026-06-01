@@ -92,10 +92,10 @@ export class RegenerationWorker extends WorkerHost {
         .set({ articlesTotal: total })
         .where(eq(regenerationRun.id, runId));
 
-      this.events.publish(userId, {
-        type: 'regeneration.started',
-        payload: { runId, articlesTotal: total },
-      });
+      // NOTE: do NOT re-publish 'regeneration.started' here — the service
+      // already emitted it on enqueue (instant UI feedback). Re-emitting from
+      // the worker would surface a second toast now that worker events reach
+      // the SSE stream via Redis (they were previously dropped in-process).
       await job.log(`fanout target: ${total} articles`);
 
       if (total === 0) {

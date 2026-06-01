@@ -32,6 +32,9 @@ export function useRegenerationStatusEvents(): void {
   useServerEvents((event) => {
     if (event.type === 'regeneration.started') {
       const { runId, articlesTotal } = event.payload;
+      // Idempotent: ignore a duplicate 'started' for a run we're already
+      // showing, so a stray second publish can't spawn a second toast.
+      if (toastByRun.current.has(runId)) return;
       const id = push({
         severity: 'info',
         title: 'Regenerating tags',
