@@ -37,8 +37,8 @@ docker compose up --build
 ```
 
 The api auto-applies Drizzle migrations on first boot, and seeds the four
-default categorization axes per user at registration. Once all four services
-are healthy:
+default categorization axes per user at registration. Once all five services
+(`postgres`, `redis`, `api`, `worker`, `web`) are healthy:
 
 1. Open **http://localhost:5174** in a browser.
 2. Register with email + password. Tick **Load demo data** if you want a
@@ -69,8 +69,9 @@ Inside the docker network everything talks on standard ports.
 
 | Service  | Container port | Host port | Reason                                              |
 |----------|---------------:|----------:|-----------------------------------------------------|
-| web      |           5173 |  **5174** | local Vite dev server typically holds 5173          |
+| web      |             80 |  **5174** | nginx serves the built SPA + proxies /api           |
 | api      |           3011 |  **3010** | avoid clashing with other local servers on 3000     |
+| worker   |            —   |     —     | BullMQ consumers + scheduler; no HTTP port          |
 | postgres |           5432 |  **5433** | avoid clashing with a host-side Postgres            |
 | redis    |           6379 |  **6380** | avoid clashing with a host-side Redis               |
 
@@ -440,30 +441,37 @@ commits for verification.
   recall, zero cost when disabled, and a clean separation between
   deterministic exact dedup and probabilistic semantic similarity.
 
-## ADR-8: Single-process backend: workers and Bull Board in the `api` service (Principle 3, FR-1)
+## ADR-8: Split `api` and `worker` into separate compose services sharing one image (Principle 3, FR-1)
 
-- **Context.** §7 lists workers as a component and the launch section
-  («Склад запуску») requires "один або кілька воркерів", but neither mandates
-  that workers run as *separate* containers/services. P3 only requires that
-  expensive work stays off the request path; NFR-1 sizes the test run at ≤10
-  feeds per user.
-- **Decision.** One backend image and process (the `api` compose service). All
-  BullMQ workers are NestJS `@Processor` classes (`FeedPull`,
-  `ArticleAnalyze`, `Regeneration`, `RetagArticle`, `DemoSeeder`,
-  `DigestBuilder`, `EmbedBackfill`) registered by `WorkersModule` and run
-  in-process; Bull Board mounts on the same process. `docker compose` runs four
-  services — `postgres`, `redis`, `api`, `web`. Throughput is bounded by
-  per-queue concurrency (`LLM_CONCURRENCY` et al.), not by process count, so the
-  queue — not the topology — is what keeps HTTP handlers responsive (P3).
-- **Alternatives.** A second container that shares the image with a
-  worker-only entrypoint; a dedicated Bull Board service. Both add compose
-  services and orchestration for no benefit at MVP scale.
-- **Trade-offs.** Workers can't be scaled or restarted independently of the
-  HTTP server, and a fatal worker crash takes the API process with it. In
-  return: one image to build and run, workers share DI / config / `packages/shared`
-  types with zero duplication, and `docker compose up` stays a single command.
-  Splitting workers onto a second entrypoint is a config change, not a rewrite,
-  if scale ever demands it.
+- **Context.** §7's component diagram shows Workers as their own component, and
+  P3 requires expensive work to stay off the request path. Running the BullMQ
+  consumers in the same process as the HTTP server couples their failure domains
+  (a fatal worker crash takes the API down) and lets background CPU contend with
+  request handling.
+- **Decision.** One backend image, two roles selected by the `APP_ROLE` env var
+  (`all` | `api` | `worker`). The `api` compose service runs role `api` — HTTP +
+  Bull Board + queue *producers*, and registers **no** consumers. The `worker`
+  service runs role `worker` — the BullMQ `@Processor` consumers (`FeedPull`,
+  `ArticleAnalyze`, `Regeneration`, `RetagArticle`, `DemoSeeder`, `DigestBuilder`,
+  `EmbedBackfill`), the cron scheduler, and the startup reconcilers — with no
+  HTTP socket. `WorkersModule` is a dynamic module (`forRoot(runWorkers)`) that
+  contributes those providers only under `all` | `worker`, so the api can enqueue
+  (producers live in the feature modules) without ever consuming → no
+  double-processing. `docker compose` runs five services — `postgres`, `redis`,
+  `api`, `worker`, `web` — with the api and worker sharing the same image via a
+  YAML env anchor. The api owns migrations; the worker waits on an api
+  healthcheck (port-open ⇒ migrated) before starting and skips migrate itself.
+  Bull Board stays in the api (it only reads queue state from Redis). The
+  default `APP_ROLE=all` keeps native `pnpm dev` a single process.
+- **Alternatives.** A single in-process backend (the previous design) — simpler
+  and one fewer container, but couples the crash domains and doesn't present a
+  worker as its own runnable component. A dedicated worker-only Nest entrypoint
+  module — more wiring than the role flag for no additional isolation.
+- **Trade-offs.** One extra container and a healthcheck-gated startup ordering,
+  versus: background load fully decoupled from HTTP (a worker crash no longer
+  takes the API with it), workers independently scalable/restartable, and — via
+  the role flag rather than a code fork — still one image, one DI graph, one
+  config, and shared `packages/shared` types with zero duplication.
 
 ## ADR-9: Bull Board access: basic-auth as the gate, no per-user admin role (US-12, NFR-3)
 
