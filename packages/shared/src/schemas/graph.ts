@@ -41,9 +41,7 @@ export const GraphEdge = z.object({
   // counts (bucket-start unix seconds + co-mentions in that bucket), ascending
   // by `t`. The client cumulatively sums these to get weight-as-of a scrub time.
   // `weight` always equals the sum of all bucket counts.
-  buckets: z
-    .array(z.object({ t: z.number().int(), count: z.number().int() }))
-    .optional(),
+  buckets: z.array(z.object({ t: z.number().int(), count: z.number().int() })).optional(),
 });
 export type GraphEdge = z.infer<typeof GraphEdge>;
 
