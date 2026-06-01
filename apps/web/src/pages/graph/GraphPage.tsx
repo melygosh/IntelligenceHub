@@ -11,6 +11,7 @@ import {
   ReactFlow,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useGetCategoriesQuery, useGetGraphQuery, useGetPublicConfigQuery } from '../../store/api';
@@ -293,6 +294,9 @@ export default function GraphPage() {
 
   const [selected, setSelected] = useState<SelectedNode | null>(() => restore?.selected ?? null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  // react-flow instance, captured on init so we can re-fit the view after each
+  // Build (the `fitView` prop only fits on initial mount, not on data changes).
+  const rfRef = useRef<ReactFlowInstance | null>(null);
 
   // Persist the whole view to Redux on any change, so leaving /graph and coming
   // back restores this exact canvas + builder + open panel/selection (survives
@@ -359,6 +363,15 @@ export default function GraphPage() {
     () => (filtered ? timelineBounds(filtered.edges) : null),
     [filtered],
   );
+
+  // The timeline replays co-mention build-up, so it's only applicable when the
+  // built graph actually has co-mention edges (≥2 co-mentioned entities) — and
+  // not on the too-short 24h window. Used to disable the toggle.
+  const hasCoMention = useMemo(
+    () => !!filtered?.edges.some((e) => e.kind === 'co_mention'),
+    [filtered],
+  );
+  const timelineUnavailable = timelineDisabled || !hasCoMention;
 
   // The graph projected to the scrub time: co_mention edges take their
   // weight-as-of(scrubT) (zero-weight dropped); entity nodes are kept only when
@@ -442,6 +455,19 @@ export default function GraphPage() {
     const id = setTimeout(() => setScrubT(next), 220);
     return () => clearTimeout(id);
   }, [playing, scrubT, bounds, filtered]);
+
+  // Re-fit the view whenever a new graph is built (the `fitView` prop only fits
+  // on initial mount, not on data changes). rAF so it runs after the new node
+  // set has laid out. Keyed on `data` (the built fetch result), so it fits on
+  // Build, not on every scrub frame.
+  useEffect(() => {
+    const inst = rfRef.current;
+    if (!inst || !data || data.nodes.length === 0) return;
+    const raf = requestAnimationFrame(() =>
+      inst.fitView({ padding: 0.2, duration: 300 }),
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [data]);
 
   function setAnimate(on: boolean): void {
     const next = new URLSearchParams(searchParams);
@@ -602,20 +628,22 @@ export default function GraphPage() {
           <label
             className={
               'flex items-center gap-1.5 ' +
-              (timelineDisabled
+              (timelineUnavailable
                 ? 'cursor-not-allowed opacity-40'
                 : 'hover:text-ink')
             }
             title={
               timelineDisabled
                 ? 'Timeline needs a longer window than 24h'
-                : 'Replay how co-mention relationships built up over the period'
+                : !hasCoMention
+                  ? 'No co-mention relationships to replay in this view'
+                  : 'Replay how co-mention relationships built up over the period'
             }
           >
             <input
               type="checkbox"
-              checked={timelineActive}
-              disabled={timelineDisabled}
+              checked={timelineActive && hasCoMention}
+              disabled={timelineUnavailable}
               onChange={(e) => {
                 setTimelineOn(e.target.checked);
                 setScrubT(null);
@@ -719,6 +747,9 @@ export default function GraphPage() {
               edges={edges}
               nodeTypes={nodeTypes}
               fitView
+              onInit={(inst) => {
+                rfRef.current = inst;
+              }}
               onNodeClick={onNodeClick}
               onPaneClick={onPaneClick}
               proOptions={{ hideAttribution: true }}
