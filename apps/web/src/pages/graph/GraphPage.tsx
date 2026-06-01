@@ -165,6 +165,10 @@ function clamp(n: number, lo: number, hi: number): number {
 // that the cap takes over and the page surfaces a hint.
 const ANIMATE_EDGE_CAP = 80;
 
+// Autoplay cadence: ms the playhead dwells on each bucket before advancing.
+// Slow enough to read how the graph changes between steps.
+const AUTOPLAY_STEP_MS = 650;
+
 function toReactFlowEdges(
   graphEdges: GraphEdge[],
   focus: ReadonlySet<string> | null,
@@ -524,7 +528,8 @@ export default function GraphPage() {
     [timeFiltered, focus, animateEffective],
   );
 
-  // Autoplay: step the playhead across buckets, ~1 step / 220ms, stop at max.
+  // Autoplay: step the playhead across buckets, one step per AUTOPLAY_STEP_MS,
+  // stop at max.
   // The stop-at-max state change is deferred (scheduled, not called inline) so
   // it doesn't trigger a cascading render synchronously within the effect.
   useEffect(() => {
@@ -540,7 +545,7 @@ export default function GraphPage() {
     ].sort((a, b) => a - b);
     const cur = scrubT ?? bounds.min - 1;
     const next = buckets.find((t) => t > cur) ?? bounds.max;
-    const id = setTimeout(() => setScrubT(next), 220);
+    const id = setTimeout(() => setScrubT(next), AUTOPLAY_STEP_MS);
     return () => clearTimeout(id);
   }, [playing, scrubT, bounds, filtered]);
 
