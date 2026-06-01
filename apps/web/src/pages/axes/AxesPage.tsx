@@ -111,6 +111,13 @@ function AxisRow({ axis }: { axis: Axis }) {
       setError('Axis must keep at least one value. Delete the axis instead.');
       return;
     }
+    const ok = await confirm({
+      title: 'Remove value',
+      message: `Remove "${value}" from "${axis.name}"? Article assignments to it will be cleared on the next regeneration.`,
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await updateAxis({ id: axis.id, patch: { values: newValues } }).unwrap();
     } catch {
