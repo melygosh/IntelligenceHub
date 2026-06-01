@@ -165,9 +165,12 @@ function clamp(n: number, lo: number, hi: number): number {
 // that the cap takes over and the page surfaces a hint.
 const ANIMATE_EDGE_CAP = 80;
 
-// Autoplay cadence: ms the playhead dwells on each bucket before advancing.
-// Slow enough to read how the graph changes between steps.
-const AUTOPLAY_STEP_MS = 900;
+// Autoplay cadence: seconds the playhead dwells on each bucket before
+// advancing. User-adjustable via the speed input next to play; clamped to
+// [MIN, MAX] so it can't be set to 0 (busy-loop) or absurdly slow.
+const AUTOPLAY_DEFAULT_SEC = 0.9;
+const AUTOPLAY_MIN_SEC = 0.1;
+const AUTOPLAY_MAX_SEC = 10;
 
 function toReactFlowEdges(
   graphEdges: GraphEdge[],
@@ -312,6 +315,8 @@ export default function GraphPage() {
   const [timelineOn, setTimelineOn] = useState(false);
   const [scrubT, setScrubT] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  // Autoplay dwell time per bucket, in seconds (user-adjustable).
+  const [speedSec, setSpeedSec] = useState(AUTOPLAY_DEFAULT_SEC);
   // The 24h window is too short for a meaningful build-up replay — disable the
   // timeline there. Keyed on the BUILT period (what's on the canvas), not the
   // draft. `timelineActive` (used everywhere below) folds the disable in, so a
@@ -545,9 +550,9 @@ export default function GraphPage() {
     ].sort((a, b) => a - b);
     const cur = scrubT ?? bounds.min - 1;
     const next = buckets.find((t) => t > cur) ?? bounds.max;
-    const id = setTimeout(() => setScrubT(next), AUTOPLAY_STEP_MS);
+    const id = setTimeout(() => setScrubT(next), speedSec * 1000);
     return () => clearTimeout(id);
-  }, [playing, scrubT, bounds, filtered]);
+  }, [playing, scrubT, bounds, filtered, speedSec]);
 
   // Re-fit the view whenever a new graph is built (the `fitView` prop only fits
   // on initial mount, not on data changes). rAF so it runs after the new node
@@ -778,6 +783,28 @@ export default function GraphPage() {
           >
             {playing ? '❚❚' : '▶'}
           </button>
+          <label
+            className="flex items-center gap-1 text-mute2"
+            title="Autoplay speed — seconds spent on each step before advancing"
+          >
+            <input
+              type="number"
+              min={AUTOPLAY_MIN_SEC}
+              max={AUTOPLAY_MAX_SEC}
+              step={0.1}
+              value={speedSec}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (Number.isNaN(v)) return;
+                setSpeedSec(
+                  Math.min(AUTOPLAY_MAX_SEC, Math.max(AUTOPLAY_MIN_SEC, v)),
+                );
+              }}
+              className="w-12 border border-border bg-paper px-1 py-0.5 text-right text-ink tnum focus:border-ink focus:outline-none"
+              aria-label="Autoplay speed in seconds per step"
+            />
+            <span>s</span>
+          </label>
           <input
             type="range"
             min={bounds.min}
