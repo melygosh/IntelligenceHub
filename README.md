@@ -282,7 +282,7 @@ Format follows §9.6: Context / Decision / Alternatives / Trade-offs. Each
 ADR reflects code that is actually shipping; see file references and
 commits for verification.
 
-### ADR-1 — Own LLM abstraction, no agent framework (Principle 1, FR-3)
+## ADR-1: Own LLM abstraction, no agent framework (Principle 1, FR-3)
 
 - **Context.** §5.2/§6 require the LLM to be used only for genuinely
   semantic work and forbid a high-level framework (LangChain / LlamaIndex /
@@ -300,7 +300,7 @@ commits for verification.
 - **Trade-offs.** More adapter code to maintain; in return, full control
   over request shaping, validation, caching, and provider switching.
 
-### ADR-2 — Asynchronous analysis queue with durable pending (Principle 3, FR-2)
+## ADR-2: Asynchronous analysis queue with durable pending (Principle 3, FR-2)
 
 - **Context.** P3 keeps expensive work off the request path: HTTP handlers
   must not block on the LLM, and feed pulls must not stall on per-article
@@ -318,7 +318,7 @@ commits for verification.
   reconcile absorbs drift); in return, every attempt is visible in Bull
   Board and HTTP handlers stay sub-50ms even under load.
 
-### ADR-3 — LLM error handling: per-job retry, cross-provider failover, per-feed isolation (Principle 2)
+## ADR-3: LLM error handling: per-job retry, cross-provider failover, per-feed isolation (Principle 2)
 
 - **Context.** P2 requires graceful degradation on LLM-provider failure
   (retry with backoff, or switch adapter, or mark `pending`); one dead
@@ -353,7 +353,7 @@ commits for verification.
   return, a provider outage is opt-in survivable, a poisoned feed never
   poisons the rest, and every failure is auditable post hoc.
 
-### ADR-4 — Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
+## ADR-4: Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
 
 - **Context.** FR-10 caps ≤1 LLM call per article in normal mode, mandates
   a content-hash cache, a concurrency cap, and telemetry, and forbids
@@ -372,7 +372,7 @@ commits for verification.
   input the LLM actually sees; in return, regeneration after a config
   revert is effectively free and cross-source duplicates cost zero tokens.
 
-### ADR-5 — Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
+## ADR-5: Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
 
 - **Context.** FR-6 must merge `Microsoft` / `MSFT` / `Microsoft Corp.` /
   Cyrillic spellings / `MS`-in-context into one entity with an alias set,
@@ -391,7 +391,7 @@ commits for verification.
   Jaro-Winkler threshold; in return, dedup costs zero extra LLM calls and
   is mostly deterministic and debuggable.
 
-### ADR-6 — NestJS over Directus for the backend
+## ADR-6: NestJS over Directus for the backend
 
 - **Context.** The spec offers NestJS or Directus. We need custom BullMQ
   workers, an LLM abstraction, SSE, auth guards, and a typed contract
@@ -406,7 +406,7 @@ commits for verification.
   return, no impedance mismatch with the async pipeline and every layer
   stays explainable on demand (§9.7).
 
-### ADR-7 — Semantic similarity via pgvector embeddings (FR-5 Could)
+## ADR-7: Semantic similarity via pgvector embeddings (FR-5 Could)
 
 - **Context.** Exact dedup catches verbatim re-publications (URL +
   content-hash). It misses the more common case where two outlets cover
@@ -440,7 +440,7 @@ commits for verification.
   recall, zero cost when disabled, and a clean separation between
   deterministic exact dedup and probabilistic semantic similarity.
 
-### ADR-8 — Single-process backend: workers and Bull Board in the `api` service (Principle 3, FR-1)
+## ADR-8: Single-process backend: workers and Bull Board in the `api` service (Principle 3, FR-1)
 
 - **Context.** §7 lists workers as a component and the launch section
   («Склад запуску») requires "один або кілька воркерів", but neither mandates
@@ -465,7 +465,7 @@ commits for verification.
   Splitting workers onto a second entrypoint is a config change, not a rewrite,
   if scale ever demands it.
 
-### ADR-9 — Bull Board access: basic-auth as the gate, no per-user admin role (US-12, NFR-3)
+## ADR-9: Bull Board access: basic-auth as the gate, no per-user admin role (US-12, NFR-3)
 
 - **Context.** US-12 wants Bull Board behind basic-auth from env, with the app
   showing an "Open queues" link "for admin". The app is flat multi-tenant —
@@ -487,7 +487,7 @@ commits for verification.
   UI element, and operators get queue visibility from a single env-configured
   credential pair.
 
-### ADR-10 — Heuristic pre-filter at ingest, not in the analyze worker (FR-2, FR-4, FR-10)
+## ADR-10: Heuristic pre-filter at ingest, not in the analyze worker (FR-2, FR-4, FR-10)
 
 - **Context.** The FR-2 diagram draws the heuristic pre-filter *inside* the
   article-processing worker, after `load raw article`. FR-4 requires a
@@ -514,7 +514,7 @@ commits for verification.
   actually encodes (filtered ⇒ `status='filtered'`, no LLM call) holds
   identically, and filtered rows stay queryable for the US-7 status filter.
 
-### ADR-11 — On-read graph projection, no materialized graph deltas (FR-2, FR-7, Principle 1, NFR-1)
+## ADR-11: On-read graph projection, no materialized graph deltas (FR-2, FR-7, Principle 1, NFR-1)
 
 - **Context.** The FR-2 diagram shows a "Graph Builder" that persists graph
   deltas (nodes / edges) after each analysis. FR-7 fixes the node/edge *shapes*
