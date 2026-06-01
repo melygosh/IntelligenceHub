@@ -50,14 +50,35 @@ export function partitionArticles<T extends ArticleRelation>(
   return { connecting, related, others, active: true };
 }
 
-/** Selected items first (original order), then the rest. */
+/**
+ * Selected items first (original order), then the rest.
+ *
+ * `pool` is an optional superset of entities seen earlier this session. A
+ * selected item that's missing from `items` (e.g. searched-then-selected, then
+ * the search cleared so the current query no longer returns it) is recovered
+ * from `pool` and pinned right after the in-list selected items — so a
+ * selection never silently disappears from the top of the list.
+ */
 export function pinSelectedFirst<T extends HasId>(
   items: ReadonlyArray<T>,
   selected: ReadonlySet<string>,
+  pool?: ReadonlyArray<T>,
 ): T[] {
   if (selected.size === 0) return [...items];
   const sel: T[] = [];
   const rest: T[] = [];
-  for (const item of items) (selected.has(item.id) ? sel : rest).push(item);
+  const seen = new Set<string>();
+  for (const item of items) {
+    seen.add(item.id);
+    (selected.has(item.id) ? sel : rest).push(item);
+  }
+  if (pool) {
+    for (const item of pool) {
+      if (selected.has(item.id) && !seen.has(item.id)) {
+        seen.add(item.id);
+        sel.push(item);
+      }
+    }
+  }
   return [...sel, ...rest];
 }
