@@ -1,7 +1,6 @@
 import OpenAI from 'openai';
 import { Injectable } from '@nestjs/common';
 import {
-  ArticleAnalysisResult,
   BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type BuildDigestLlmInput,
@@ -19,6 +18,7 @@ import {
   formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
+import { parseOpenAiAnalysis } from './parse-analysis';
 
 @Injectable()
 export class OpenAiAdapter implements LlmAdapter {
@@ -73,29 +73,10 @@ export class OpenAiAdapter implements LlmAdapter {
     });
 
     const latencyMs = Date.now() - t0;
-    const content = completion.choices[0]?.message.content;
-    if (!content) {
-      throw new Error('OpenAI response had no content');
-    }
-
-    let raw: unknown;
-    try {
-      raw = JSON.parse(content);
-    } catch (err) {
-      throw new Error(
-        `OpenAI response was not valid JSON: ${(err as Error).message}`,
-      );
-    }
-
-    const parsed = ArticleAnalysisResult.safeParse(raw);
-    if (!parsed.success) {
-      throw new Error(
-        `OpenAI response failed Zod validation: ${parsed.error.message}`,
-      );
-    }
+    const data = parseOpenAiAnalysis(completion.choices[0]?.message.content);
 
     return {
-      data: parsed.data,
+      data,
       telemetry: {
         inputTokens: completion.usage?.prompt_tokens ?? 0,
         outputTokens: completion.usage?.completion_tokens ?? 0,

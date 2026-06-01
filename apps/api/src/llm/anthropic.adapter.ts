@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Injectable } from '@nestjs/common';
 import {
-  ArticleAnalysisResult,
   BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type BuildDigestLlmInput,
@@ -19,6 +18,7 @@ import {
   formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
+import { parseAnthropicAnalysis } from './parse-analysis';
 
 const BUILD_DIGEST_OUTPUT_SCHEMA = {
   type: 'object' as const,
@@ -99,22 +99,10 @@ export class AnthropicAdapter implements LlmAdapter {
 
     const latencyMs = Date.now() - t0;
 
-    const toolUse = response.content.find(
-      (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-    );
-    if (!toolUse) {
-      throw new Error('Anthropic response missing tool_use block');
-    }
-
-    const parsed = ArticleAnalysisResult.safeParse(toolUse.input);
-    if (!parsed.success) {
-      throw new Error(
-        `Anthropic response failed Zod validation: ${parsed.error.message}`,
-      );
-    }
+    const data = parseAnthropicAnalysis(response.content);
 
     return {
-      data: parsed.data,
+      data,
       telemetry: {
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,
