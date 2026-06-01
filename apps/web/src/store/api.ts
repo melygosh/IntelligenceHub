@@ -209,6 +209,7 @@ export const api = createApi({
         // the canvas renders exactly these IDs.
         selectedEntityIds?: string[];
         selectedArticleIds?: string[];
+        timeline?: boolean;
       } | void
     >({
       // POST (not GET): explicit entity/article selections can exceed 100 UUIDs
@@ -236,6 +237,7 @@ export const api = createApi({
             arg?.selectedArticleIds && arg.selectedArticleIds.length > 0
               ? arg.selectedArticleIds
               : undefined,
+          timeline: arg?.timeline ? true : undefined,
         },
       }),
       // Provide both: existing mutations + SSE handlers that invalidate
