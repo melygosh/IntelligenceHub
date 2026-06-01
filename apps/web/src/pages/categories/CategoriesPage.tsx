@@ -72,17 +72,17 @@ export default function CategoriesPage() {
         <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Add category
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="New category name"
-            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+            className="w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none sm:flex-1"
           />
           <button
             type="submit"
             disabled={isCreating || name.trim() === ''}
-            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+            className="w-full border border-ink bg-ink px-3 py-2 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50 sm:w-auto sm:py-1.5"
           >
             Add
           </button>
@@ -104,7 +104,7 @@ export default function CategoriesPage() {
                 key={c.id}
                 className="flex flex-col gap-1 border border-border bg-surface p-3"
               >
-                <div className="flex items-stretch gap-2">
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row">
                   <input
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
@@ -114,20 +114,22 @@ export default function CategoriesPage() {
                     }}
                     autoFocus
                     maxLength={64}
-                    className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink focus:border-ink focus:outline-none"
+                    className="w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink focus:border-ink focus:outline-none sm:flex-1"
                   />
-                  <button
-                    onClick={() => void onRename(c.id)}
-                    className="flex items-center justify-center border border-ink bg-ink px-3 font-mono text-[13px] uppercase tracking-[0.1em] text-paper"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="flex items-center justify-center border border-border px-3 font-mono text-[13px] uppercase tracking-[0.1em] text-muted hover:text-ink"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => void onRename(c.id)}
+                      className="flex flex-1 items-center justify-center border border-ink bg-ink px-3 py-2 font-mono text-[13px] uppercase tracking-[0.1em] text-paper sm:flex-none sm:py-0"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="flex flex-1 items-center justify-center border border-border px-3 py-2 font-mono text-[13px] uppercase tracking-[0.1em] text-muted hover:text-ink sm:flex-none sm:py-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
                 {editError ? (
                   <p className="font-mono text-[12.5px] text-critical">{editError}</p>
