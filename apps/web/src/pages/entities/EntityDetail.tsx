@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useGetEntityQuery } from '../../store/api';
 import type { EntityKind, RelatedEntitySummary } from '@intelligencehub/shared';
@@ -47,10 +48,26 @@ function RelatedChip({ r }: { r: RelatedEntitySummary }) {
   );
 }
 
+// "Often appears with" shows this many co-mentioned entities before the
+// expand toggle; the mentioning-articles list reveals this many at a time.
+const RELATED_VISIBLE = 8;
+const MENTIONS_STEP = 10;
+
 export default function EntityDetail() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useGetEntityQuery(id ?? '', { skip: !id });
   useSetPageTitle(data?.canonicalName);
+
+  // Progressive reveal state. Reset during render when the route entity changes
+  // (the component stays mounted across :id changes).
+  const [mentionsShown, setMentionsShown] = useState(MENTIONS_STEP);
+  const [relatedExpanded, setRelatedExpanded] = useState(false);
+  const [prevId, setPrevId] = useState(id);
+  if (id !== prevId) {
+    setPrevId(id);
+    setMentionsShown(MENTIONS_STEP);
+    setRelatedExpanded(false);
+  }
 
   if (isLoading) {
     return <LoadingHint />;
@@ -136,12 +153,26 @@ export default function EntityDetail() {
         <section className="space-y-2">
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Often appears with</div>
           <ul className="flex flex-wrap gap-2">
-            {data.relatedEntities.map((r) => (
+            {(relatedExpanded
+              ? data.relatedEntities
+              : data.relatedEntities.slice(0, RELATED_VISIBLE)
+            ).map((r) => (
               <li key={r.id}>
                 <RelatedChip r={r} />
               </li>
             ))}
           </ul>
+          {data.relatedEntities.length > RELATED_VISIBLE ? (
+            <button
+              type="button"
+              onClick={() => setRelatedExpanded((v) => !v)}
+              className="font-mono text-[12px] text-accent hover:text-accent-deep"
+            >
+              {relatedExpanded
+                ? 'Show less'
+                : `Show all (+${data.relatedEntities.length - RELATED_VISIBLE})`}
+            </button>
+          ) : null}
         </section>
       ) : null}
 
@@ -150,7 +181,25 @@ export default function EntityDetail() {
           <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
             Mentioned in {data.mentionCount} article{data.mentionCount === 1 ? '' : 's'}
           </div>
-          <ArticleListCard items={data.mentioningArticles} />
+          <ArticleListCard items={data.mentioningArticles.slice(0, mentionsShown)} />
+          {data.mentioningArticles.length > mentionsShown ? (
+            <button
+              type="button"
+              onClick={() =>
+                setMentionsShown((n) =>
+                  Math.min(n + MENTIONS_STEP, data.mentioningArticles.length),
+                )
+              }
+              className="font-mono text-[12px] text-accent hover:text-accent-deep"
+            >
+              Show{' '}
+              {Math.min(
+                MENTIONS_STEP,
+                data.mentioningArticles.length - mentionsShown,
+              )}{' '}
+              more ({mentionsShown} of {data.mentioningArticles.length})
+            </button>
+          ) : null}
         </section>
       ) : null}
     </article>
