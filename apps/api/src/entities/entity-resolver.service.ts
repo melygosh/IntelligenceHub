@@ -81,6 +81,13 @@ export class EntityResolverService {
     // Step 3 — type-scoped likely-match against canonical_name only.
     // isLikelyMatch combines a token-prefix shortcut (catches "pope leo" vs
     // "pope leo xiv") with a strict Jaro-Winkler threshold (catches typos).
+    // Cost: this loads all same-type entities for the user and compares in JS,
+    // so it is O(entities-of-this-type) CPU per unmatched entity — NOT constant
+    // time. It's gated behind the exact (step 1) and alias (step 2) short-
+    // circuits and scoped by type, and crucially does ZERO LLM calls — which is
+    // the FR-10 cost requirement (no LLM fan-out quadratic in entity count). The
+    // pure-CPU comparison is acceptable at MVP scale; a trigram/GIN index would
+    // be the next step if the per-user entity count grew large.
     const sameTypeRows = await this.db
       .select({ id: entities.id, canonicalName: entities.canonicalName })
       .from(entities)
