@@ -77,16 +77,15 @@ export default function EntityDetail() {
   return (
     <article className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Entities › Entity
-        </div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
           <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
-          <TypeBadge type={data.type} />
+          <span className="self-center">
+            <TypeBadge type={data.type} />
+          </span>
           <Link
             to="/graph?period=all"
             state={{ anchorEntityId: data.id }}
-            className="font-mono text-[12.5px] text-accent hover:text-accent-deep"
+            className="self-center font-mono text-[12.5px] text-accent hover:text-accent-deep"
           >
             view in graph →
           </Link>

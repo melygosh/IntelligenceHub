@@ -95,9 +95,6 @@ export default function DigestDetailPage() {
   return (
     <article className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Digests › Digest
-        </div>
         <h1 className="pretty font-serif text-[34px] leading-tight text-ink">
           {data.title ? (
             <>

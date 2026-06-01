@@ -100,9 +100,6 @@ export default function ArticleDetail() {
   return (
     <article className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-3">
-        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Articles › Article
-        </div>
         <h1 className="pretty font-serif text-[34px] leading-tight text-ink">{data.title}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
           {data.importance ? (
