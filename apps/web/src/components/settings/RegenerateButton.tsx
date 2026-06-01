@@ -4,7 +4,7 @@ import {
   useStartRegenerationMutation,
 } from '../../store/api';
 
-/** "Regenerate articles" control — re-tags every article under the user's
+/** "Regenerate articles" control — regenerates every article under the user's
  * current config. Shared by the settings pages (categories, axes) since
  * changing either invalidates prior taggings. */
 export function RegenerateButton() {
@@ -21,7 +21,7 @@ export function RegenerateButton() {
       if (result.eligibleArticles === 0) {
         setMessage('Nothing to regenerate — all articles already match your current config.');
       } else {
-        setMessage(`Regeneration started — ${result.eligibleArticles} articles will be re-tagged.`);
+        setMessage(`Regeneration started — ${result.eligibleArticles} articles will be re-processed.`);
       }
     } catch (err) {
       const code = (err as { data?: { error?: string } }).data?.error;
@@ -48,7 +48,7 @@ export function RegenerateButton() {
             : 'Regenerate articles'}
       </button>
       <p className="font-mono text-[12.5px] text-mute2">
-        Re-tags every article processed under your previous config. Uses cached LLM responses where the article markup didn't change.
+        Regenerates every article processed under your previous config. Uses cached LLM responses where the article markup didn't change.
       </p>
       {message ? <p className="font-mono text-[12.5px] text-muted">{message}</p> : null}
     </div>

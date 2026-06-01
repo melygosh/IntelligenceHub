@@ -37,7 +37,7 @@ export function useRegenerationStatusEvents(): void {
       if (toastByRun.current.has(runId)) return;
       const id = push({
         severity: 'info',
-        title: 'Regenerating tags',
+        title: 'Regenerating…',
         subtitle: `${articlesTotal} article${articlesTotal === 1 ? '' : 's'}`,
         progress: { current: 0, total: articlesTotal },
       });
