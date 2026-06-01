@@ -23,6 +23,7 @@ import {
   type NodeKindFilter,
 } from './filter';
 import { layout } from './layout';
+import { weightAsOf, timelineBounds } from './timeline';
 import { ArticleGraphNode } from './ArticleGraphNode';
 import { EntityGraphNode } from './EntityGraphNode';
 import { computeFocusSet } from './focus';
@@ -263,6 +264,12 @@ export default function GraphPage() {
   const [nodeKind, setNodeKind] = useState<NodeKindFilter | null>(() =>
     restore && isNodeKindFilter(restore.nodeKind) ? restore.nodeKind : null,
   );
+  // Timeline scrubber (FR-7 timeline mode). Opt-in: off → graph is fetched
+  // WITHOUT timeline data and behaves exactly as before. `scrubT` is the
+  // current "as-of" unix-seconds playhead; null = no scrub (show full totals).
+  const [timelineOn, setTimelineOn] = useState(false);
+  const [scrubT, setScrubT] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
@@ -277,6 +284,7 @@ export default function GraphPage() {
     selectedEntityIds:
       built.entitySel && built.entitySel.size > 0 ? Array.from(built.entitySel) : undefined,
     selectedArticleIds: built.articleIds.size > 0 ? Array.from(built.articleIds) : undefined,
+    timeline: timelineOn,
   });
 
   // Draft differs from what's currently built → Build is "pending" (glows).
@@ -353,6 +361,41 @@ export default function GraphPage() {
     if (!data) return null;
     return filterGraph(data, effectiveNodeKind);
   }, [data, effectiveNodeKind]);
+
+  // Bounds of the co-mention buckets on the built graph (null when timeline
+  // data isn't present). Drives the slider range.
+  const bounds = useMemo(
+    () => (filtered ? timelineBounds(filtered.edges) : null),
+    [filtered],
+  );
+
+  // The graph projected to the scrub time: co_mention edges take their
+  // weight-as-of(scrubT) (zero-weight dropped); entity nodes are kept only when
+  // still incident to a visible co-mention edge (so the canvas fills in over
+  // time). When the timeline is off or scrubT is null/at-max, this is identity.
+  const timeFiltered: GraphResponse | null = useMemo(() => {
+    if (!filtered) return null;
+    if (!timelineOn || scrubT === null || !bounds || scrubT >= bounds.max) {
+      return filtered;
+    }
+    const edges = filtered.edges.flatMap((e) => {
+      if (e.kind !== 'co_mention') return [e]; // mention/similar unaffected in v1
+      const w = weightAsOf(e.buckets, scrubT);
+      return w > 0 ? [{ ...e, weight: w }] : [];
+    });
+    const liveEntityIds = new Set<string>();
+    for (const e of edges) {
+      if (e.kind === 'co_mention') {
+        liveEntityIds.add(e.from);
+        liveEntityIds.add(e.to);
+      }
+    }
+    const nodes = filtered.nodes.filter(
+      (n) => n.kind !== 'entity' || liveEntityIds.has(n.id),
+    );
+    return { nodes, edges };
+  }, [filtered, timelineOn, scrubT, bounds]);
+
   const positions = useMemo(
     () =>
       filtered
@@ -362,32 +405,52 @@ export default function GraphPage() {
   );
 
   const focus = useMemo(() => {
-    if (!filtered) return null;
+    if (!timeFiltered) return null;
     const q = graphQuery.trim().toLowerCase();
     if (q) {
       return new Set(
-        filtered.nodes.filter((n) => n.label.toLowerCase().includes(q)).map((n) => n.id),
+        timeFiltered.nodes.filter((n) => n.label.toLowerCase().includes(q)).map((n) => n.id),
       );
     }
     if (!selected) return null;
-    const onCanvas = filtered.nodes.some((n) => n.id === selected.id);
+    const onCanvas = timeFiltered.nodes.some((n) => n.id === selected.id);
     if (!onCanvas) return null;
-    return computeFocusSet(selected.id, filtered.edges);
-  }, [filtered, selected, graphQuery]);
+    return computeFocusSet(selected.id, timeFiltered.edges);
+  }, [timeFiltered, selected, graphQuery]);
 
   const nodes = useMemo(
-    () => (filtered ? toReactFlowNodes(filtered.nodes, positions, focus) : []),
-    [filtered, positions, focus],
+    () => (timeFiltered ? toReactFlowNodes(timeFiltered.nodes, positions, focus) : []),
+    [timeFiltered, positions, focus],
   );
-  const mentionsEdgeCount = filtered
-    ? filtered.edges.filter((e) => e.kind === 'mentions').length
+  const mentionsEdgeCount = timeFiltered
+    ? timeFiltered.edges.filter((e) => e.kind === 'mentions').length
     : 0;
   const animateCapped = animateRequested && mentionsEdgeCount > ANIMATE_EDGE_CAP;
   const animateEffective = animateRequested && !animateCapped;
   const edges = useMemo(
-    () => (filtered ? toReactFlowEdges(filtered.edges, focus, animateEffective) : []),
-    [filtered, focus, animateEffective],
+    () => (timeFiltered ? toReactFlowEdges(timeFiltered.edges, focus, animateEffective) : []),
+    [timeFiltered, focus, animateEffective],
   );
+
+  // Autoplay: step the playhead across buckets, ~1 step / 220ms, stop at max.
+  // The stop-at-max state change is deferred (scheduled, not called inline) so
+  // it doesn't trigger a cascading render synchronously within the effect.
+  useEffect(() => {
+    if (!playing || !bounds) return;
+    if (scrubT !== null && scrubT >= bounds.max) {
+      const stop = setTimeout(() => setPlaying(false), 0);
+      return () => clearTimeout(stop);
+    }
+    const buckets = [
+      ...new Set(
+        (filtered?.edges ?? []).flatMap((e) => e.buckets?.map((b) => b.t) ?? []),
+      ),
+    ].sort((a, b) => a - b);
+    const cur = scrubT ?? bounds.min - 1;
+    const next = buckets.find((t) => t > cur) ?? bounds.max;
+    const id = setTimeout(() => setScrubT(next), 220);
+    return () => clearTimeout(id);
+  }, [playing, scrubT, bounds, filtered]);
 
   function setAnimate(on: boolean): void {
     const next = new URLSearchParams(searchParams);
@@ -570,6 +633,24 @@ export default function GraphPage() {
             />
             animate
           </label>
+          {effectiveNodeKind !== 'articles' ? (
+            <label
+              className="flex items-center gap-1.5 hover:text-ink"
+              title="Replay how co-mention relationships built up over the period"
+            >
+              <input
+                type="checkbox"
+                checked={timelineOn}
+                onChange={(e) => {
+                  setTimelineOn(e.target.checked);
+                  setScrubT(null);
+                  setPlaying(false);
+                }}
+                className="h-3 w-3 accent-ink"
+              />
+              timeline
+            </label>
+          ) : null}
           <span className="text-border" aria-hidden="true">
             ·
           </span>
@@ -587,6 +668,41 @@ export default function GraphPage() {
           />
         </div>
       </div>
+      {timelineOn && bounds ? (
+        <div className="flex items-center gap-3 border border-border bg-paper px-3 py-2 font-mono text-[12px] text-muted">
+          <button
+            type="button"
+            onClick={() => {
+              if (scrubT === null || scrubT >= bounds.max) setScrubT(bounds.min);
+              setPlaying((p) => !p);
+            }}
+            className="border border-border px-2 py-0.5 text-ink hover:bg-paper2"
+            aria-label={playing ? 'Pause timeline' : 'Play timeline'}
+          >
+            {playing ? '❚❚' : '▶'}
+          </button>
+          <input
+            type="range"
+            min={bounds.min}
+            max={bounds.max}
+            step={3600}
+            value={scrubT ?? bounds.max}
+            onChange={(e) => {
+              setPlaying(false);
+              setScrubT(Number(e.target.value));
+            }}
+            className="flex-1 accent-ink"
+            aria-label="Timeline position"
+          />
+          <span className="tnum whitespace-nowrap text-ink">
+            {new Date((scrubT ?? bounds.max) * 1000).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        </div>
+      ) : null}
       <div className="flex min-h-[440px] flex-1 gap-0">
         <div ref={canvasRef} className="min-w-0 flex-1 border border-border bg-surface">
           {isLoading ? (
