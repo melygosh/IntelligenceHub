@@ -51,11 +51,7 @@ export function FacetDropdown({
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => {
-          const next = !open;
-          setOpen(next);
-          if (next) onOpen?.();
-        }}
+        onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={
           'inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[13.5px] transition-colors ' +
