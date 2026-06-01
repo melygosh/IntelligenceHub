@@ -108,11 +108,19 @@ function toReactFlowNodes(
   positions: Map<string, { x: number; y: number }>,
   focus: ReadonlySet<string> | null,
   categoryColours: ReadonlyMap<string, string>,
+  // During timeline playback: ids active at the CURRENT step. Nodes already
+  // revealed in earlier steps but not active now are dimmed to spotlight the
+  // current ones. null = no timeline dimming (off / at end).
+  timelineCurrent: ReadonlySet<string> | null,
 ): Node[] {
   return graphNodes.map((n) => {
-    const dim = focus !== null && !focus.has(n.id);
+    // Focus (search/selection) dimming wins; otherwise the timeline spotlights
+    // the current step by dimming previously-revealed nodes.
+    const focusDim = focus !== null && !focus.has(n.id);
+    const timelineDim =
+      !focusDim && timelineCurrent !== null && !timelineCurrent.has(n.id);
     const style: React.CSSProperties = {
-      opacity: dim ? 0.18 : 1,
+      opacity: focusDim ? 0.18 : timelineDim ? 0.25 : 1,
       transition: 'opacity 120ms linear',
     };
     if (n.kind === 'article') {
@@ -176,9 +184,17 @@ function toReactFlowEdges(
   graphEdges: GraphEdge[],
   focus: ReadonlySet<string> | null,
   animateMentions: boolean,
+  // During timeline playback: the current step's bucket time. A co_mention
+  // edge with no bucket at this time is "previous" and gets dimmed. null = no
+  // timeline dimming (off / at end).
+  timelineStepT: number | null,
 ): Edge[] {
   return graphEdges.map((e, i) => {
-    const dim = focus !== null && !(focus.has(e.from) && focus.has(e.to));
+    const focusDim = focus !== null && !(focus.has(e.from) && focus.has(e.to));
+    const timelineDim =
+      !focusDim &&
+      timelineStepT !== null &&
+      !(e.kind === 'co_mention' && (e.buckets?.some((b) => b.t === timelineStepT) ?? false));
     return {
       id: `${e.from}->${e.to}-${e.kind}-${i}`,
       source: e.from,
@@ -189,7 +205,7 @@ function toReactFlowEdges(
         stroke: 'var(--color-mute2)',
         strokeWidth: e.kind === 'co_mention' ? Math.min(1 + (e.weight ?? 1) * 0.3, 3) : 1,
         strokeDasharray: e.kind === 'similar' ? '4 3' : undefined,
-        opacity: dim ? 0.12 : 1,
+        opacity: focusDim ? 0.12 : timelineDim ? 0.12 : 1,
         transition: 'opacity 120ms linear',
       },
     };
@@ -474,6 +490,32 @@ export default function GraphPage() {
     [filtered],
   );
 
+  // While the timeline is mid-playback, work out which step is "current": the
+  // most recent co-mention bucket at or before the playhead. Nodes/edges with
+  // activity at that step stay bright; everything already revealed dims. null
+  // (timeline off, before the first bucket, or at/after the end) → no dimming,
+  // so the graph settles back to full opacity when playback finishes.
+  const timelineCurrent = useMemo<{ stepT: number; nodeIds: Set<string> } | null>(() => {
+    if (!filtered || !timelineActive || scrubT === null || !bounds || scrubT >= bounds.max) {
+      return null;
+    }
+    let stepT = -Infinity;
+    for (const e of filtered.edges) {
+      if (e.kind !== 'co_mention' || !e.buckets) continue;
+      for (const b of e.buckets) if (b.t <= scrubT && b.t > stepT) stepT = b.t;
+    }
+    if (stepT === -Infinity) return null; // playhead before the first bucket
+    const nodeIds = new Set<string>();
+    for (const e of filtered.edges) {
+      if (e.kind !== 'co_mention' || !e.buckets) continue;
+      if (e.buckets.some((b) => b.t === stepT)) {
+        nodeIds.add(e.from);
+        nodeIds.add(e.to);
+      }
+    }
+    return { stepT, nodeIds };
+  }, [filtered, timelineActive, scrubT, bounds]);
+
   // Bound how far the canvas can pan: the node bounding box plus a generous
   // margin (wide enough to clear labels/edges) so the user can't scroll off
   // into empty space and "lose" the graph. Unbounded while there are no nodes.
@@ -519,9 +561,15 @@ export default function GraphPage() {
   const nodes = useMemo(
     () =>
       timeFiltered
-        ? toReactFlowNodes(timeFiltered.nodes, positions, focus, categoryColours)
+        ? toReactFlowNodes(
+            timeFiltered.nodes,
+            positions,
+            focus,
+            categoryColours,
+            timelineCurrent?.nodeIds ?? null,
+          )
         : [],
-    [timeFiltered, positions, focus, categoryColours],
+    [timeFiltered, positions, focus, categoryColours, timelineCurrent],
   );
   const mentionsEdgeCount = timeFiltered
     ? timeFiltered.edges.filter((e) => e.kind === 'mentions').length
@@ -529,8 +577,16 @@ export default function GraphPage() {
   const animateCapped = animateRequested && mentionsEdgeCount > ANIMATE_EDGE_CAP;
   const animateEffective = animateRequested && !animateCapped;
   const edges = useMemo(
-    () => (timeFiltered ? toReactFlowEdges(timeFiltered.edges, focus, animateEffective) : []),
-    [timeFiltered, focus, animateEffective],
+    () =>
+      timeFiltered
+        ? toReactFlowEdges(
+            timeFiltered.edges,
+            focus,
+            animateEffective,
+            timelineCurrent?.stepT ?? null,
+          )
+        : [],
+    [timeFiltered, focus, animateEffective, timelineCurrent],
   );
 
   // Autoplay: step the playhead across buckets, one step per AUTOPLAY_STEP_MS,
