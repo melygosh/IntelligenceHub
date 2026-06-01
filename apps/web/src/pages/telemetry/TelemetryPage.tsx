@@ -36,6 +36,44 @@ const OPERATION_LABEL: Record<string, string> = {
   build_digest_v2: 'Digest',
 };
 
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-[11px] uppercase tracking-[0.06em] text-muted">{label}</span>
+      <span className="tnum text-ink">{value}</span>
+    </div>
+  );
+}
+
+// Stacked card variant shown below `md`, where the 10-column table would
+// otherwise overflow horizontally. Same data, vertical key/value layout.
+function TelemetryCard({ r }: { r: TelemetryRow }) {
+  return (
+    <div className="space-y-2 border border-border p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-mono text-[13px] text-ink" title={r.operation}>
+          {OPERATION_LABEL[r.operation] ?? r.operation}
+        </span>
+        <span className="font-mono text-[11.5px] text-muted">
+          {r.provider} / {r.model}
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[12.5px]">
+        <Stat label="Calls" value={r.callCount} />
+        <Stat label="Success" value={fmtPercent(r.successRate)} />
+        <Stat label="Input" value={fmtTokens(r.inputTokens)} />
+        <Stat label="Output" value={fmtTokens(r.outputTokens)} />
+        <Stat
+          label="Cache R/W"
+          value={`${fmtTokens(r.cacheReadTokens)} / ${fmtTokens(r.cacheCreationTokens)}`}
+        />
+        <Stat label="Avg ms" value={r.avgLatencyMs} />
+        <Stat label="Failover" value={r.failoverCount} />
+      </dl>
+    </div>
+  );
+}
+
 function TelemetryTableRow({ r }: { r: TelemetryRow }) {
   return (
     <tr className="border-t border-border">
@@ -100,7 +138,16 @@ export default function TelemetryPage() {
             ) : null}
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden">
+            {data.rows.map((r, i) => (
+              <TelemetryCard
+                key={`${r.operation}-${r.provider}-${r.model}-${i}`}
+                r={r}
+              />
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
