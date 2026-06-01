@@ -133,13 +133,10 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     container_name: ih-web
-    environment:
-      # Vite proxy target inside the docker network — must use the api service hostname,
-      # not localhost (localhost inside the web container = the web container itself).
-      VITE_API_BASE_URL: http://api:3011
     ports:
-      # Host port 5174 to avoid clashing with any local Vite dev server on 5173.
-      - "5174:5173"
+      # Host port 5174 -> nginx :80. The SPA calls relative /api, which nginx
+      # proxies to the api service (see apps/web/nginx.conf).
+      - "5174:80"
     depends_on:
       - api
 
