@@ -41,7 +41,7 @@ const Chevron = () => (
   </svg>
 );
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { data: me } = useGetMeQuery();
   const [logout, { isLoading }] = useLogoutMutation();
   const navigate = useNavigate();
@@ -79,6 +79,23 @@ export default function TopBar() {
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-paper px-3">
+      <button
+        type="button"
+        onClick={onMenuClick}
+        aria-label="Open navigation"
+        aria-controls="mobile-nav"
+        className="-ml-1 p-1 text-mute2 hover:text-ink md:hidden"
+      >
+        <svg viewBox="0 0 16 16" className="h-4 w-4">
+          <path
+            d="M2 4h12M2 8h12M2 12h12"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+
       <div className="flex min-w-0 items-center gap-1.5 font-mono text-[13px] text-muted">
         {crumbs.map((c, i) => {
           const isLast = i === crumbs.length - 1;

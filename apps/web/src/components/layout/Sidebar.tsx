@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Brand, Logo } from '../brand/Brand';
+
+type SidebarProps = {
+  // Mobile drawer wiring (ignored by the desktop in-flow sidebar). Below `md`
+  // the sidebar renders as a slide-in overlay controlled by these.
+  open: boolean;
+  onClose: () => void;
+};
 
 // Icon set from docs/IntelligenceHub_design/App Shell.html — keep currentColor + thin strokes
 // for the editorial-mono look.
@@ -127,7 +134,74 @@ function CompactNavItem({ item }: { item: Item }) {
   );
 }
 
-export default function Sidebar() {
+// Shared full-width nav body (brand header + Navigate / Settings / Admin
+// sections). Reused by the desktop in-flow sidebar and the mobile drawer so the
+// nav list lives in exactly one place. `headerButton` is the top-right control
+// (collapse on desktop, close on the drawer); `onNavigate` lets the drawer
+// close itself when a destination is chosen.
+function SidebarBody({
+  headerButton,
+  onNavigate,
+}: {
+  headerButton: ReactNode;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      <div className="flex h-11 items-center justify-between border-b border-border px-3">
+        <Brand />
+        {headerButton}
+      </div>
+
+      <nav>
+        <div className={eyebrowClass}>Navigate</div>
+        <div className="flex flex-col gap-px">
+          {NAV.map((item) => (
+            <NavLink key={item.to} to={item.to} className={itemClass} onClick={onNavigate}>
+              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
+              <span className="flex-1 text-left">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+
+      <div className="border-t border-border">
+        <div className={eyebrowClass}>Settings</div>
+        <div className="flex flex-col gap-px">
+          {SETTINGS.map((item) => (
+            <NavLink key={item.to} to={item.to} className={itemClass} onClick={onNavigate}>
+              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
+              <span className="flex-1 text-left">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </div>
+
+      {/* US-12: admin entry point to Bull Board. Served by the API at
+          /admin/queues behind HTTP basic-auth (BULL_BOARD_USER/PASS); the
+          Vite dev proxy forwards /admin/queues. Opens in a new tab rather
+          than routing inside the SPA — the credentials are the access gate. */}
+      <div className="mt-auto border-t border-border">
+        <div className={eyebrowClass}>Admin</div>
+        <a
+          href="/admin/queues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={itemClass({ isActive: false })}
+          onClick={onNavigate}
+        >
+          <span className="text-mute2 group-hover:text-ink">{ICONS.bolt()}</span>
+          <span className="flex-1 text-left">Open queues</span>
+          <span aria-hidden="true" className="text-mute2">
+            ↗
+          </span>
+        </a>
+      </div>
+    </>
+  );
+}
+
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const [compact, setCompact] = useState<boolean>(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1';
@@ -144,9 +218,60 @@ export default function Sidebar() {
     }
   }, [compact]);
 
+  // Close the mobile drawer on Escape (listener only active while open).
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  // Mobile drawer: full-width nav as a slide-in overlay, shown only below `md`.
+  // Rendered alongside the desktop sidebar; visibility is controlled purely by
+  // breakpoint utilities (`md:hidden`) and the `open` transform.
+  const mobileDrawer = (
+    <div className="md:hidden">
+      {open ? (
+        <div
+          className="fixed inset-0 z-40 bg-ink/40"
+          aria-hidden="true"
+          onClick={onClose}
+        />
+      ) : null}
+      <aside
+        id="mobile-nav"
+        className={[
+          'fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-border bg-paper2',
+          'transition-transform duration-200',
+          open ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
+        <SidebarBody
+          onNavigate={onClose}
+          headerButton={
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close navigation"
+              className="-mr-1 p-1 text-mute2 hover:text-ink"
+            >
+              <svg viewBox="0 0 12 12" className="h-3 w-3">
+                <path d="M3 3 L9 9 M9 3 L3 9" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              </svg>
+            </button>
+          }
+        />
+      </aside>
+    </div>
+  );
+
   if (compact) {
     return (
-      <aside className="flex w-[52px] shrink-0 flex-col border-r border-border bg-paper2/50 transition-[width] duration-150">
+      <>
+        {mobileDrawer}
+      <aside className="hidden w-[52px] shrink-0 flex-col border-r border-border bg-paper2/50 transition-[width] duration-150 md:flex">
         <div className="flex h-11 items-center justify-center border-b border-border">
           <Logo size={16} />
         </div>
@@ -188,68 +313,29 @@ export default function Sidebar() {
           </button>
         </div>
       </aside>
+      </>
     );
   }
 
   return (
-    <aside className="flex w-[280px] shrink-0 flex-col border-r border-border bg-paper2/40 transition-[width] duration-150">
-      <div className="flex h-11 items-center justify-between border-b border-border px-3">
-        <Brand />
-        <button
-          type="button"
-          onClick={() => setCompact(true)}
-          aria-label="Collapse sidebar"
-          className="-mr-1 p-1 text-mute2 hover:text-ink"
-        >
-          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
-            <path d="M9 2 L4 6 L9 10" stroke="currentColor" strokeWidth="1.2" fill="none" />
-          </svg>
-        </button>
-      </div>
-
-      <nav>
-        <div className={eyebrowClass}>Navigate</div>
-        <div className="flex flex-col gap-px">
-          {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={itemClass}>
-              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
-              <span className="flex-1 text-left">{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-
-      <div className="border-t border-border">
-        <div className={eyebrowClass}>Settings</div>
-        <div className="flex flex-col gap-px">
-          {SETTINGS.map((item) => (
-            <NavLink key={item.to} to={item.to} className={itemClass}>
-              <span className="text-mute2 group-hover:text-ink">{ICONS[item.icon]()}</span>
-              <span className="flex-1 text-left">{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </div>
-
-      {/* US-12: admin entry point to Bull Board. Served by the API at
-          /admin/queues behind HTTP basic-auth (BULL_BOARD_USER/PASS); the
-          Vite dev proxy forwards /admin/queues. Opens in a new tab rather
-          than routing inside the SPA — the credentials are the access gate. */}
-      <div className="mt-auto border-t border-border">
-        <div className={eyebrowClass}>Admin</div>
-        <a
-          href="/admin/queues"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={itemClass({ isActive: false })}
-        >
-          <span className="text-mute2 group-hover:text-ink">{ICONS.bolt()}</span>
-          <span className="flex-1 text-left">Open queues</span>
-          <span aria-hidden="true" className="text-mute2">
-            ↗
-          </span>
-        </a>
-      </div>
-    </aside>
+    <>
+      {mobileDrawer}
+      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-border bg-paper2/40 transition-[width] duration-150 md:flex">
+        <SidebarBody
+          headerButton={
+            <button
+              type="button"
+              onClick={() => setCompact(true)}
+              aria-label="Collapse sidebar"
+              className="-mr-1 p-1 text-mute2 hover:text-ink"
+            >
+              <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
+                <path d="M9 2 L4 6 L9 10" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              </svg>
+            </button>
+          }
+        />
+      </aside>
+    </>
   );
 }
