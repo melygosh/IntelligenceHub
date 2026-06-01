@@ -4,6 +4,7 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articleEntity, articles } from '../db/schema';
 import { loadEnv } from '../common/config/env';
+import { pickGranularity, type Granularity } from './graph-granularity';
 import type {
   EntityKind,
   GraphEdge,
@@ -32,6 +33,9 @@ export type BuildGraphOpts = {
   // picks outside scope). Used by the GraphSelectionPanel.
   selectedEntityIds?: string[];
   selectedArticleIds?: string[];
+  // When true, co-mention edges additionally carry per-bucket counts for the
+  // timeline scrubber (FR-7 timeline mode). Off → unchanged response.
+  timeline?: boolean;
 };
 
 export type TopEntityRow = {
@@ -150,12 +154,21 @@ export class GraphService {
           );
 
     // 4. Co-mention edges between displayed entities, scoped to the same window.
+    // For the timeline scrubber, pick a bucket granularity from the window span.
+    // span = (to ?? now) - from; null when the window is open-ended (period=all).
+    const spanSeconds =
+      fromDate === null
+        ? null
+        : Math.floor(
+            ((toDate ?? new Date()).getTime() - fromDate.getTime()) / 1000,
+          );
     const coMentionEdges = await this.buildCoMentionEdges(
       userId,
       fromDate,
       toDate,
       topEntityIds,
       opts.categoryIds,
+      opts.timeline ? pickGranularity(spanSeconds) : null,
     );
 
     // 5. Semantic-similarity edges (FR-7 `similar`) between the article nodes
@@ -621,6 +634,7 @@ export class GraphService {
     toDate: Date | null,
     entityIds: string[],
     categoryIds: string[],
+    granularity: Granularity | null = null,
   ): Promise<GraphEdge[]> {
     if (entityIds.length === 0) return [];
     const categoryJoin =
@@ -637,6 +651,65 @@ export class GraphService {
       entityIds.map((id) => sql`${id}::uuid`),
       sql`, `,
     )}]`;
+
+    // Timeline mode: also bucket by time so the client can replay weight growth.
+    // One extra GROUP BY dimension (date_trunc); rows assembled into per-pair
+    // ascending bucket series in JS. Still scoped to displayed entities +
+    // window + category, still no LLM (Principle 1 / FR-10).
+    if (granularity !== null) {
+      const bucketed = await this.db.execute<{
+        from_id: string;
+        to_id: string;
+        bucket_t: string; // bigint comes back as string from node-postgres
+        count: number;
+      }>(sql`
+        SELECT
+          LEAST(ae1.entity_id, ae2.entity_id) AS from_id,
+          GREATEST(ae1.entity_id, ae2.entity_id) AS to_id,
+          EXTRACT(EPOCH FROM date_trunc(${granularity}, a.ts))::bigint AS bucket_t,
+          COUNT(*)::int AS count
+        FROM article_entity ae1
+        JOIN article_entity ae2 ON ae1.article_id = ae2.article_id
+        JOIN articles a ON a.id = ae1.article_id AND a.user_id = ${userId}
+          AND a.status = 'ready'
+        ${categoryJoin}
+        WHERE ae1.entity_id < ae2.entity_id
+          AND ae1.entity_id = ANY(${entityArray})
+          AND ae2.entity_id = ANY(${entityArray})
+          ${fromFilter}
+          ${toFilter}
+        GROUP BY from_id, to_id, bucket_t
+        ORDER BY bucket_t ASC
+      `);
+      const brows = (
+        bucketed as unknown as {
+          rows: Array<{
+            from_id: string;
+            to_id: string;
+            bucket_t: string;
+            count: number;
+          }>;
+        }
+      ).rows;
+      const byPair = new Map<string, GraphEdge>();
+      for (const r of brows) {
+        const key = `${r.from_id}->${r.to_id}`;
+        let edge = byPair.get(key);
+        if (!edge) {
+          edge = {
+            from: r.from_id,
+            to: r.to_id,
+            kind: 'co_mention',
+            weight: 0,
+            buckets: [],
+          };
+          byPair.set(key, edge);
+        }
+        edge.buckets!.push({ t: Number(r.bucket_t), count: r.count });
+        edge.weight = (edge.weight ?? 0) + r.count;
+      }
+      return [...byPair.values()];
+    }
 
     const result = await this.db.execute<{
       from_id: string;

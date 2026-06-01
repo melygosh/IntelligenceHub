@@ -55,6 +55,7 @@ export class GraphController {
       anchorEntityId: body.anchorEntityId,
       selectedEntityIds,
       selectedArticleIds,
+      timeline: body.timeline ?? false,
     });
   }
 }
