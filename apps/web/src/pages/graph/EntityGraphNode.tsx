@@ -1,11 +1,12 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import { colourFor } from './graph-palette';
 
 export type EntityNodeData = {
   label: string;
   kind: 'entity';
   mentionCount: number | null;
   dominantCategoryId: string | null;
+  /** Resolved category colour (graph-palette index assignment). */
+  color: string;
 };
 
 // xyflow v12's NodeProps generic is over the Node type, not the data type;
@@ -26,7 +27,7 @@ function clamp(n: number, lo: number, hi: number): number {
 export function EntityGraphNode({ data }: NodeProps<EntityNode>) {
   const count = data.mentionCount ?? 0;
   const diameter = clamp(16 + count * 1.2, 16, 48);
-  const fill = colourFor(data.dominantCategoryId);
+  const fill = data.color;
   return (
     <div
       className="flex items-center gap-2"

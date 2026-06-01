@@ -31,7 +31,11 @@ import { SearchInput } from '../../components/filters/SearchInput';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { colourFor } from './graph-palette';
+import {
+  buildCategoryColours,
+  categoryColour,
+  UNCATEGORISED_COLOUR,
+} from './graph-palette';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { GraphExportMenu } from './GraphExportMenu';
 
@@ -51,7 +55,8 @@ function minimapNodeColor(node: Node): string {
     const imp = (node.data.importance as 'high' | 'normal' | 'junk' | null) ?? 'normal';
     return IMP_STYLE[imp].dot;
   }
-  return colourFor((node.data?.dominantCategoryId as string | null) ?? null);
+  // Entity nodes carry their resolved category colour in data.color.
+  return (node.data?.color as string | undefined) ?? UNCATEGORISED_COLOUR;
 }
 
 const DEFAULT_PERIOD: GraphPeriod = '7d';
@@ -102,6 +107,7 @@ function toReactFlowNodes(
   graphNodes: GraphNode[],
   positions: Map<string, { x: number; y: number }>,
   focus: ReadonlySet<string> | null,
+  categoryColours: ReadonlyMap<string, string>,
 ): Node[] {
   return graphNodes.map((n) => {
     const dim = focus !== null && !focus.has(n.id);
@@ -144,6 +150,7 @@ function toReactFlowNodes(
         kind: 'entity' as const,
         mentionCount: n.mentionCount,
         dominantCategoryId: n.dominantCategoryId,
+        color: categoryColour(categoryColours, n.dominantCategoryId),
       },
     };
   });
@@ -186,7 +193,13 @@ function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
-function CategoryLegend({ data }: { data: GraphResponse | null }) {
+function CategoryLegend({
+  data,
+  colours,
+}: {
+  data: GraphResponse | null;
+  colours: ReadonlyMap<string, string>;
+}) {
   const { data: cats } = useGetCategoriesQuery();
   const present = useMemo(() => {
     if (!data) return [] as Array<{ id: string; name: string }>;
@@ -203,7 +216,12 @@ function CategoryLegend({ data }: { data: GraphResponse | null }) {
         <span key={p.id} className="flex items-center gap-1">
           <span
             aria-hidden
-            style={{ display: 'inline-block', width: 9, height: 9, background: colourFor(p.id) }}
+            style={{
+              display: 'inline-block',
+              width: 9,
+              height: 9,
+              background: categoryColour(colours, p.id),
+            }}
           />
           {p.name}
         </span>
@@ -299,6 +317,14 @@ export default function GraphPage() {
   const timelineActive = timelineOn && !timelineDisabled;
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
+
+  // Stable category→colour map by list order — distinct colour per category,
+  // shared by the canvas, minimap, and legend (see graph-palette.ts).
+  const { data: cats } = useGetCategoriesQuery();
+  const categoryColours = useMemo(
+    () => buildCategoryColours(cats?.categories.map((c) => c.id) ?? []),
+    [cats],
+  );
 
   const explicitMode = built.entitySel !== null || built.articleIds.size > 0;
 
@@ -454,8 +480,11 @@ export default function GraphPage() {
   }, [timeFiltered, selected, graphQuery]);
 
   const nodes = useMemo(
-    () => (timeFiltered ? toReactFlowNodes(timeFiltered.nodes, positions, focus) : []),
-    [timeFiltered, positions, focus],
+    () =>
+      timeFiltered
+        ? toReactFlowNodes(timeFiltered.nodes, positions, focus, categoryColours)
+        : [],
+    [timeFiltered, positions, focus, categoryColours],
   );
   const mentionsEdgeCount = timeFiltered
     ? timeFiltered.edges.filter((e) => e.kind === 'mentions').length
@@ -802,7 +831,7 @@ export default function GraphPage() {
             </ReactFlow>
           )}
           <div className="border-t border-border px-3 py-1.5">
-            <CategoryLegend data={filtered} />
+            <CategoryLegend data={filtered} colours={categoryColours} />
             {animateCapped ? (
               <p className="mt-1 font-mono text-[11px] text-mute2">
                 Animation off — {mentionsEdgeCount} mentions edges in view exceeds the cap of{' '}

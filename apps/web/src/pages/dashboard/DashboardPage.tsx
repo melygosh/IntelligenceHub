@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type {
   DashboardPeriod,
@@ -6,13 +7,13 @@ import type {
   DashboardTopFeed,
   GraphPeriod,
 } from '@intelligencehub/shared';
-import { useGetDashboardQuery } from '../../store/api';
+import { useGetCategoriesQuery, useGetDashboardQuery } from '../../store/api';
 import { useArticleAnalyzedEvents } from '../../events/useArticleAnalyzedEvents';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { PeriodChips } from '../../components/filters/PeriodChips';
-import { colourFor } from '../graph/graph-palette';
+import { buildCategoryColours, categoryColour } from '../graph/graph-palette';
 
 const DEFAULT_PERIOD: DashboardPeriod = '7d';
 
@@ -29,6 +30,13 @@ export default function DashboardPage() {
   const to = params.get('to') ?? undefined;
 
   const { data, isLoading } = useGetDashboardQuery({ period, from, to });
+  // Same index-based category→colour map as the graph, so the dots here match
+  // the graph legend/canvas.
+  const { data: cats } = useGetCategoriesQuery();
+  const categoryColours = useMemo(
+    () => buildCategoryColours(cats?.categories.map((c) => c.id) ?? []),
+    [cats],
+  );
   // SSE: refresh the cards when new articles become ready so totals stay
   // fresh while the user has /dashboard open and feed-pull is running.
   useArticleAnalyzedEvents();
@@ -83,7 +91,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <TopEntitiesCard rows={data.topEntities} />
+            <TopEntitiesCard rows={data.topEntities} colours={categoryColours} />
             <TopCategoriesCard rows={data.topCategories} total={data.totalArticles} />
             <TopFeedsCard rows={data.topFeeds} />
           </div>
@@ -125,7 +133,13 @@ function CardShell({
   );
 }
 
-function TopEntitiesCard({ rows }: { rows: DashboardTopEntity[] }) {
+function TopEntitiesCard({
+  rows,
+  colours,
+}: {
+  rows: DashboardTopEntity[];
+  colours: ReadonlyMap<string, string>;
+}) {
   return (
     <CardShell
       title="Top entities"
@@ -141,7 +155,7 @@ function TopEntitiesCard({ rows }: { rows: DashboardTopEntity[] }) {
             <span
               aria-hidden
               className="inline-block h-2 w-2 shrink-0"
-              style={{ background: colourFor(e.dominantCategoryId) }}
+              style={{ background: categoryColour(colours, e.dominantCategoryId) }}
             />
             <Link
               to={`/entities/${e.id}`}
