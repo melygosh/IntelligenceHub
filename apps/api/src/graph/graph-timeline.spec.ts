@@ -35,7 +35,7 @@ describeDb('graph timeline buckets (integration)', () => {
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
     db = drizzle(pool, { schema });
     // GraphService only consumes a Db; constructing directly bypasses DI.
-    svc = new GraphService(db as unknown as never);
+    svc = new GraphService(db);
 
     // Throwaway, isolated user. Every other table the test touches references
     // users.id ON DELETE CASCADE, so deleting this user in afterAll cleans up.
