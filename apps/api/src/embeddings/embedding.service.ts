@@ -6,6 +6,18 @@ import type { Db } from '../db/client';
 import { embeddingCache } from '../db/schema';
 import { loadEnv } from '../common/config/env';
 
+// DESIGN NOTE — why this imports the OpenAI SDK directly instead of going
+// through the LlmAdapter abstraction:
+//   • That abstraction is a *dual chat-provider* interface (analyzeArticle /
+//     buildDigest, swappable between Anthropic and OpenAI). Embeddings are a
+//     different API surface and are OpenAI-only here — Anthropic exposes no
+//     embeddings endpoint — so there is no second provider to abstract over.
+//   • §5.2 forbids LLM calls from request handlers; this service is invoked
+//     only from BullMQ workers (related-semantic backfill), never a controller,
+//     so the constraint is satisfied. Provider/model/key stay env-driven.
+// Folding a single-provider embeddings call into the chat-adapter interface
+// would add indirection without removing a real switch point — intentionally
+// kept separate.
 const EMBEDDING_DIM = 1536;
 
 /**

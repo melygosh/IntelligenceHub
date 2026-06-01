@@ -25,7 +25,13 @@ function fmtDate(iso: string): string {
 }
 
 // Friendly labels for the raw `operation` keys (FR-10 buckets: processing /
-// regeneration / digest). Unknown/legacy keys fall back to the raw string.
+// regeneration / digest). Unknown/legacy keys fall back to the raw string
+// (see TelemetryTableRow). This raw-string fallback is intentional, NOT an
+// oversight: `operation` is a free-form DB column whose values are versioned
+// and accrete over time (analyze_article_v4, build_digest_v2, …). A new
+// operation should keep rendering — showing its raw name — rather than force a
+// frontend change or break the table, so this is deliberately a loose
+// Record<string, string> with a fallback, not a compile-time-exhaustive map.
 const OPERATION_LABEL: Record<string, string> = {
   analyze_article: 'Processing',
   analyze_article_v2: 'Processing',
