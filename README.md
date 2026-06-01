@@ -3,7 +3,7 @@
 A multi-user web app that pulls RSS feeds, runs each article through a single
 structured LLM call, deduplicates entities, and surfaces the result as a
 filterable feed, an interactive knowledge graph, and on-demand period digests.
-Submitted for the UA-Skills tournament (`docs/spec.pdf`).
+Submitted for the UA-Skills tournament.
 
 ## Stack
 
