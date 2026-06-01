@@ -16,7 +16,12 @@ import '@xyflow/react/dist/style.css';
 import { useGetCategoriesQuery, useGetGraphQuery, useGetPublicConfigQuery } from '../../store/api';
 import { CategoryDropdown } from '../../components/filters/CategoryDropdown';
 import type { GraphEdge, GraphNode, GraphPeriod, GraphResponse } from '@intelligencehub/shared';
-import { filterGraph } from './filter';
+import {
+  filterGraph,
+  NODE_KIND_FILTERS,
+  isNodeKindFilter,
+  type NodeKindFilter,
+} from './filter';
 import { layout } from './layout';
 import { ArticleGraphNode } from './ArticleGraphNode';
 import { EntityGraphNode } from './EntityGraphNode';
@@ -251,6 +256,13 @@ export default function GraphPage() {
   // Canvas-level text search: dims non-matching nodes by label. In-memory,
   // client-only — operates on the already-built graph, no fetch.
   const [graphQuery, setGraphQuery] = useState(() => restore?.graphQuery ?? '');
+  // Node-type view filter (FR-7 mandatory). Client-only — operates on the
+  // already-built graph, no fetch. `null` = auto (preserve the adaptive default:
+  // entities-only until the user engages an explicit selection); a non-null
+  // value is an explicit user override chosen via the toolbar control.
+  const [nodeKind, setNodeKind] = useState<NodeKindFilter | null>(() =>
+    restore && isNodeKindFilter(restore.nodeKind) ? restore.nodeKind : null,
+  );
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
@@ -302,6 +314,7 @@ export default function GraphPage() {
         },
         articlesOpen,
         graphQuery,
+        nodeKind,
         selected,
       }),
     );
@@ -316,6 +329,7 @@ export default function GraphPage() {
     built,
     articlesOpen,
     graphQuery,
+    nodeKind,
     selected,
   ]);
 
@@ -329,12 +343,16 @@ export default function GraphPage() {
   }, [data]);
   const checkedEntityIds = draftEntitySel ?? canvasEntityIds;
 
-  // Default canvas shows the top-N entities only; once a selection exists we
-  // show both kinds so connecting article nodes + their edges appear.
+  // Effective node-type filter: the user's explicit choice if set, else the
+  // adaptive default (entities-only until a selection exists, then both).
+  const effectiveNodeKind: NodeKindFilter =
+    nodeKind ?? (explicitMode ? 'both' : 'entities');
+
+  // Apply the node-type filter to the built graph (client-side, no fetch).
   const filtered: GraphResponse | null = useMemo(() => {
     if (!data) return null;
-    return filterGraph(data, explicitMode ? 'both' : 'entities');
-  }, [data, explicitMode]);
+    return filterGraph(data, effectiveNodeKind);
+  }, [data, effectiveNodeKind]);
   const positions = useMemo(
     () =>
       filtered
@@ -514,6 +532,31 @@ export default function GraphPage() {
           placeholder="search graph…"
           widthClass="md:w-80"
         />
+        <div
+          className="flex items-center gap-1.5 font-mono text-[12.5px] text-muted"
+          role="group"
+          aria-label="Filter by node type"
+        >
+          <span className="uppercase tracking-[0.08em]">nodes</span>
+          <div className="flex border border-border">
+            {NODE_KIND_FILTERS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setNodeKind(k)}
+                aria-pressed={effectiveNodeKind === k}
+                className={
+                  'px-2 py-1 capitalize transition-colors ' +
+                  (effectiveNodeKind === k
+                    ? 'bg-ink text-paper'
+                    : 'bg-paper text-muted hover:text-ink')
+                }
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="ml-auto flex items-center gap-2.5 font-mono text-[12.5px] text-muted">
           <label
             className="flex items-center gap-1.5 hover:text-ink"
@@ -537,7 +580,7 @@ export default function GraphPage() {
               period: built.period,
               from: built.from,
               to: built.to,
-              nodeKind: 'both',
+              nodeKind: effectiveNodeKind,
               categoryIds: built.categoryIds,
               anchorEntityId: explicitMode ? undefined : built.anchorEntityId,
             }}

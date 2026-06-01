@@ -120,6 +120,9 @@ function EntityPanel({ id }: { id: string }) {
         <span>·</span>
         <span>{data.mentionCount} mentions</span>
       </div>
+      {data.description ? (
+        <p className="text-[13px] leading-relaxed text-ink">{data.description}</p>
+      ) : null}
       {data.aliases.length > 0 ? (
         <div>
           <div className="mb-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">
