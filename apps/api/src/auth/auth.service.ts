@@ -75,7 +75,10 @@ export class AuthService {
         await this.demoSeedQueue.add(
           'seed',
           { userId: created.id },
-          { removeOnComplete: true, removeOnFail: false },
+          // Keep last N (a count, not `true`) so a finished seed shows as a
+          // completed entry in Bull Board instead of vanishing — matches the
+          // other queues.
+          { removeOnComplete: 50, removeOnFail: 50 },
         );
         this.log.log(
           JSON.stringify({
