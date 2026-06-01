@@ -44,7 +44,12 @@ export class ArticleAnalyzeWorker extends WorkerHost {
 
   async process(job: Job<AnalyzeJobData>): Promise<void> {
     const { articleId, userId } = job.data;
+    // Per-job narration for Bull Board's Logs tab (admin visibility).
+    await job.log(
+      `analyze article ${articleId} · attempt ${job.attemptsMade + 1}/${job.opts.attempts ?? ANALYZE_ATTEMPTS}`,
+    );
     const outcome = await this.processor.analyzePending(articleId, userId);
+    await job.log(`outcome: ${outcome}`);
     if (outcome === 'analyzed') {
       this.log.log(
         JSON.stringify({ event: 'article.analyze.ready', articleId, userId }),
@@ -68,6 +73,10 @@ export class ArticleAnalyzeWorker extends WorkerHost {
     const { articleId, userId } = job.data;
     const attempts = job.opts.attempts ?? ANALYZE_ATTEMPTS;
     const exhausted = job.attemptsMade >= attempts;
+    await job.log(
+      `attempt ${job.attemptsMade}/${attempts} failed: ${err.message}` +
+        (exhausted ? ' — giving up, marking article failed' : ' — will retry'),
+    );
     if (!exhausted) {
       this.log.warn(
         JSON.stringify({

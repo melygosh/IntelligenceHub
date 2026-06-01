@@ -65,10 +65,14 @@ export class DigestBuilderWorker extends WorkerHost {
         jobId: job.id,
       }),
     );
+    await job.log(
+      `build digest · period=${run.period} · scope=${run.scopeKind}`,
+    );
 
     try {
       // 1. Query in-scope articles
       const inScope = await this.queryInScope(run);
+      await job.log(`${inScope.length} articles in scope`);
       if (inScope.length === 0) {
         await this.db
           .update(digestRun)
@@ -87,6 +91,7 @@ export class DigestBuilderWorker extends WorkerHost {
         this.log.warn(
           JSON.stringify({ event: 'digest.build.empty_scope', digestRunId }),
         );
+        await job.log('failed: no articles in scope for this period/filters');
         return;
       }
 
@@ -174,6 +179,10 @@ export class DigestBuilderWorker extends WorkerHost {
           durationMs: Date.now() - t0,
         }),
       );
+      const tokens = llmResult.inputTokens + llmResult.outputTokens;
+      await job.log(
+        `done: ${inScope.length} articles · ${topEntities.length} entities · ${tokens === 0 ? 'cache hit' : `${tokens} tokens`} · ${Date.now() - t0}ms`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await this.db
@@ -196,6 +205,7 @@ export class DigestBuilderWorker extends WorkerHost {
           error: msg,
         }),
       );
+      await job.log(`failed: ${msg}`);
       throw err;
     }
   }

@@ -113,6 +113,9 @@ export class FeedPullWorker extends WorkerHost {
         skippedInFlight,
       }),
     );
+    await job.log(
+      `swept ${active.length} active feeds · enqueued ${enqueued} · skipped ${skippedInFlight} in-flight`,
+    );
     return { enqueued, skippedInFlight };
   }
 
@@ -126,6 +129,7 @@ export class FeedPullWorker extends WorkerHost {
         jobId: job.id,
       }),
     );
+    await job.log(`pull feed ${feedId}`);
 
     const [feed] = await this.db
       .select()
@@ -190,6 +194,9 @@ export class FeedPullWorker extends WorkerHost {
           duplicates,
           llmErrors,
         }),
+      );
+      await job.log(
+        `done: ${fetched.items.length} fetched · inserted ${inserted} · filtered ${filtered} · duplicates ${duplicates} · llmErrors ${llmErrors}`,
       );
 
       this.events.publish(userId, {

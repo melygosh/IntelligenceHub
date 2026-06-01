@@ -21,6 +21,7 @@ export class DemoSeederWorker extends WorkerHost {
     this.log.log(
       JSON.stringify({ event: 'demo.seed.start', userId, jobId: job.id }),
     );
+    await job.log(`seeding demo data for user ${userId}…`);
     try {
       const totals = await this.seeder.seedFor(userId);
       this.log.log(
@@ -32,11 +33,13 @@ export class DemoSeederWorker extends WorkerHost {
           durationMs: Date.now() - t0,
         }),
       );
+      await job.log(`done: ${JSON.stringify(totals)} in ${Date.now() - t0}ms`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.log.error(
         JSON.stringify({ event: 'demo.seed.failed', userId, error: msg }),
       );
+      await job.log(`failed: ${msg}`);
       throw err; // Bull marks job failed; visible in Bull Board
     }
   }
