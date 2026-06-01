@@ -1,3 +1,46 @@
+# Shared backend env, reused by both the `api` (HTTP) and `worker` (BullMQ
+# consumers) services — they run the same image with a different APP_ROLE.
+x-api-env: &api-env
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: ${REDIS_URL}
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+  BULL_BOARD_USER: ${BULL_BOARD_USER}
+  BULL_BOARD_PASS: ${BULL_BOARD_PASS}
+  APP_DEV_MODE: ${APP_DEV_MODE}
+  APP_BASE_URL: ${APP_BASE_URL}
+  WEB_BASE_URL: ${WEB_BASE_URL}
+  API_PORT: ${API_PORT}
+  LLM_PROVIDER: ${LLM_PROVIDER}
+  LLM_PROVIDER_MODEL: ${LLM_PROVIDER_MODEL}
+  LLM_PROVIDER_API_KEY: ${LLM_PROVIDER_API_KEY}
+  LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER}
+  LLM_FALLBACK_PROVIDER_MODEL: ${LLM_FALLBACK_PROVIDER_MODEL}
+  LLM_FALLBACK_PROVIDER_API_KEY: ${LLM_FALLBACK_PROVIDER_API_KEY}
+  LLM_CONCURRENCY: ${LLM_CONCURRENCY}
+  LLM_TOKEN_LIMIT_PER_ARTICLE: ${LLM_TOKEN_LIMIT_PER_ARTICLE}
+  LLM_TOKEN_LIMIT_PER_DIGEST: ${LLM_TOKEN_LIMIT_PER_DIGEST}
+  ANALYZE_MAX_ATTEMPTS: ${ANALYZE_MAX_ATTEMPTS}
+  ANALYZE_BACKOFF_SECONDS: ${ANALYZE_BACKOFF_SECONDS}
+  ANALYZE_CONCURRENCY: ${ANALYZE_CONCURRENCY}
+  FEED_PULL_CRON: ${FEED_PULL_CRON}
+  FEED_PULL_CONCURRENCY: ${FEED_PULL_CONCURRENCY}
+  PREFILTER_MIN_LENGTH: ${PREFILTER_MIN_LENGTH}
+  PREFILTER_EMPTY_ENABLED: ${PREFILTER_EMPTY_ENABLED}
+  PREFILTER_MIN_LENGTH_ENABLED: ${PREFILTER_MIN_LENGTH_ENABLED}
+  PREFILTER_SPAM_TITLE_RATIO_ENABLED: ${PREFILTER_SPAM_TITLE_RATIO_ENABLED}
+  PREFILTER_SPAM_LINK_DENSITY_ENABLED: ${PREFILTER_SPAM_LINK_DENSITY_ENABLED}
+  PREFILTER_TITLE_RATIO: ${PREFILTER_TITLE_RATIO}
+  PREFILTER_LINK_DENSITY_RATIO: ${PREFILTER_LINK_DENSITY_RATIO}
+  DIGEST_MAX_LLM_ARTICLES: ${DIGEST_MAX_LLM_ARTICLES}
+  GRAPH_SELECTION_CAP: ${GRAPH_SELECTION_CAP}
+  GRAPH_SIMILAR_EDGES_PER_NODE: ${GRAPH_SIMILAR_EDGES_PER_NODE}
+  SEMANTIC_SIMILARITY_ENABLED: ${SEMANTIC_SIMILARITY_ENABLED}
+  SEMANTIC_SIMILARITY_PROVIDER: ${SEMANTIC_SIMILARITY_PROVIDER}
+  SEMANTIC_SIMILARITY_MODEL: ${SEMANTIC_SIMILARITY_MODEL}
+  SEMANTIC_SIMILARITY_API_KEY: ${SEMANTIC_SIMILARITY_API_KEY}
+  SEMANTIC_SIMILARITY_THRESHOLD: ${SEMANTIC_SIMILARITY_THRESHOLD}
+
 services:
   postgres:
     # pgvector/pgvector:pg16 is a drop-in PG16 image bundled with the pgvector
@@ -37,54 +80,52 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: ih-api
+    # role=api: serves HTTP + Bull Board + queue producers; runs NO consumers
+    # (the worker service owns those). Runs migrations on boot.
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      BULL_BOARD_USER: ${BULL_BOARD_USER}
-      BULL_BOARD_PASS: ${BULL_BOARD_PASS}
-      APP_DEV_MODE: ${APP_DEV_MODE}
-      APP_BASE_URL: ${APP_BASE_URL}
-      WEB_BASE_URL: ${WEB_BASE_URL}
-      API_PORT: ${API_PORT}
-      LLM_PROVIDER: ${LLM_PROVIDER}
-      LLM_PROVIDER_MODEL: ${LLM_PROVIDER_MODEL}
-      LLM_PROVIDER_API_KEY: ${LLM_PROVIDER_API_KEY}
-      LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER}
-      LLM_FALLBACK_PROVIDER_MODEL: ${LLM_FALLBACK_PROVIDER_MODEL}
-      LLM_FALLBACK_PROVIDER_API_KEY: ${LLM_FALLBACK_PROVIDER_API_KEY}
-      LLM_CONCURRENCY: ${LLM_CONCURRENCY}
-      LLM_TOKEN_LIMIT_PER_ARTICLE: ${LLM_TOKEN_LIMIT_PER_ARTICLE}
-      LLM_TOKEN_LIMIT_PER_DIGEST: ${LLM_TOKEN_LIMIT_PER_DIGEST}
-      ANALYZE_MAX_ATTEMPTS: ${ANALYZE_MAX_ATTEMPTS}
-      ANALYZE_BACKOFF_SECONDS: ${ANALYZE_BACKOFF_SECONDS}
-      ANALYZE_CONCURRENCY: ${ANALYZE_CONCURRENCY}
-      FEED_PULL_CRON: ${FEED_PULL_CRON}
-      FEED_PULL_CONCURRENCY: ${FEED_PULL_CONCURRENCY}
-      PREFILTER_MIN_LENGTH: ${PREFILTER_MIN_LENGTH}
-      PREFILTER_EMPTY_ENABLED: ${PREFILTER_EMPTY_ENABLED}
-      PREFILTER_MIN_LENGTH_ENABLED: ${PREFILTER_MIN_LENGTH_ENABLED}
-      PREFILTER_SPAM_TITLE_RATIO_ENABLED: ${PREFILTER_SPAM_TITLE_RATIO_ENABLED}
-      PREFILTER_SPAM_LINK_DENSITY_ENABLED: ${PREFILTER_SPAM_LINK_DENSITY_ENABLED}
-      PREFILTER_TITLE_RATIO: ${PREFILTER_TITLE_RATIO}
-      PREFILTER_LINK_DENSITY_RATIO: ${PREFILTER_LINK_DENSITY_RATIO}
-      DIGEST_MAX_LLM_ARTICLES: ${DIGEST_MAX_LLM_ARTICLES}
-      GRAPH_SELECTION_CAP: ${GRAPH_SELECTION_CAP}
-      GRAPH_SIMILAR_EDGES_PER_NODE: ${GRAPH_SIMILAR_EDGES_PER_NODE}
-      SEMANTIC_SIMILARITY_ENABLED: ${SEMANTIC_SIMILARITY_ENABLED}
-      SEMANTIC_SIMILARITY_PROVIDER: ${SEMANTIC_SIMILARITY_PROVIDER}
-      SEMANTIC_SIMILARITY_MODEL: ${SEMANTIC_SIMILARITY_MODEL}
-      SEMANTIC_SIMILARITY_API_KEY: ${SEMANTIC_SIMILARITY_API_KEY}
-      SEMANTIC_SIMILARITY_THRESHOLD: ${SEMANTIC_SIMILARITY_THRESHOLD}
+      <<: *api-env
+      APP_ROLE: api
     ports:
       # Host port 3010 -> container port 3011. Both 3000 and 3005 are taken on the
       # dev host, so the container listens on 3011 for defense in depth.
       - "3010:3011"
+    # The app binds the port only AFTER migrations finish, so "port open" is a
+    # safe readiness signal — the worker waits on it before starting (schema is
+    # guaranteed present and the worker skips migrate).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('net').connect(${API_PORT},'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # Background workers (BullMQ consumers + cron scheduler). Same image as `api`,
+  # role=worker: runs the processors, no HTTP. Decouples background load from the
+  # API process (Principle 3 / FR-1). Skips migrate (api owns it) and waits for
+  # api to be healthy so the schema exists.
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ih-worker
+    environment:
+      <<: *api-env
+      APP_ROLE: worker
+    command: ["sh", "-c", "node dist/main.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
         condition: service_healthy
 
   web:

@@ -21,6 +21,17 @@ const envFraction = (def: number) =>
 
 const EnvSchema = z
   .object({
+    // Process role. 'all' (default) runs the HTTP API and the BullMQ workers in
+    // one process — convenient for native dev. In docker compose we split them:
+    // the `api` service runs role 'api' (HTTP + producers + Bull Board, no
+    // consumers) and the `worker` service runs role 'worker' (consumers +
+    // scheduler, no HTTP), so background load can't stall HTTP (Principle 3 /
+    // FR-1). Workers register only under 'all' | 'worker'; HTTP listens only
+    // under 'all' | 'api'.
+    APP_ROLE: z.preprocess(
+      emptyToUndef,
+      z.enum(['all', 'api', 'worker']).default('all'),
+    ),
     API_PORT: z.coerce.number().int().positive().default(3011),
     BULL_BOARD_USER: z.string().min(1),
     BULL_BOARD_PASS: z.string().min(1),

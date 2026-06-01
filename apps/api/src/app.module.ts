@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { loadEnv } from './common/config/env';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './auth/auth.module';
 import { QueueModule } from './queue/queue.module';
@@ -21,6 +22,12 @@ import { TelemetryModule } from './telemetry/telemetry.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ConfigModule } from './common/config/config.module';
 
+// Run the BullMQ consumers only in a worker-running role (see APP_ROLE in
+// env.ts). The api role still registers queue producers via the feature
+// modules, so it can enqueue without consuming.
+const role = loadEnv().APP_ROLE;
+const runWorkers = role === 'all' || role === 'worker';
+
 @Module({
   imports: [
     // Global rate-limit backstop (per IP). Generous so normal SPA use is never
@@ -31,7 +38,7 @@ import { ConfigModule } from './common/config/config.module';
     AuthModule,
     QueueModule,
     FeedsModule,
-    WorkersModule,
+    WorkersModule.forRoot(runWorkers),
     BullBoardModule.register(),
     ArticlesModule,
     EntitiesModule,

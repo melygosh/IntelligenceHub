@@ -7,6 +7,18 @@ import { basicAuth } from './common/middleware/basic-auth.middleware';
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
+  const serveHttp = env.APP_ROLE === 'all' || env.APP_ROLE === 'api';
+
+  // Worker-only role: boot the module graph so the BullMQ consumers + scheduler
+  // start, but never bind an HTTP port (init() runs lifecycle hooks without
+  // opening a socket). HTTP-serving roles fall through to the full setup below.
+  if (!serveHttp) {
+    const workerApp = await NestFactory.create(AppModule);
+    await workerApp.init();
+    console.warn(`[bootstrap] worker started (role=${env.APP_ROLE})`);
+    return;
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Security headers (nosniff, frameguard, referrer-policy, etc.). CSP is left
