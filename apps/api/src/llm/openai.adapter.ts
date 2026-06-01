@@ -28,6 +28,7 @@ export class OpenAiAdapter implements LlmAdapter {
   readonly model: string;
   private readonly apiKey: string;
   private readonly maxTokens: number;
+  private readonly digestMaxTokens: number;
   private readonly timeoutMs: number;
 
   constructor() {
@@ -36,6 +37,7 @@ export class OpenAiAdapter implements LlmAdapter {
     this.apiKey = apiKey;
     this.model = model;
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
+    this.digestMaxTokens = env.LLM_TOKEN_LIMIT_PER_DIGEST;
     this.timeoutMs = env.LLM_TIMEOUT_MS;
   }
 
@@ -111,6 +113,7 @@ export class OpenAiAdapter implements LlmAdapter {
 
     const response = await client.chat.completions.create({
       model: this.model,
+      max_completion_tokens: this.digestMaxTokens,
       messages: [
         { role: 'system', content: BUILD_DIGEST_SYSTEM_PROMPT },
         { role: 'user', content: formatBuildDigestUserMessage(input) },

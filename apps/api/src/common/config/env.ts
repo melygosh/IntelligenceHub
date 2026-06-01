@@ -70,6 +70,15 @@ const EnvSchema = z
       .int()
       .positive()
       .default(4000),
+    // Output-token cap for digest generation (a short title + 2-3 bullet
+    // summary), kept separate from the per-article limit since the shapes
+    // differ. §5.2: no hardcoded model config — both adapters read this.
+    // emptyToUndef so an unset var (compose injects "" when absent from .env)
+    // falls back to the default instead of coercing to 0 and failing .positive().
+    LLM_TOKEN_LIMIT_PER_DIGEST: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(1024),
+    ),
     // Per-request timeout (ms) applied to both adapters' SDK clients. Bounds a
     // hung provider so it can't hold an LLM_CONCURRENCY slot for the SDK's
     // ~10-minute default (NFR-1). On timeout the call surfaces, is classified

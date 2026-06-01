@@ -43,6 +43,7 @@ export class AnthropicAdapter implements LlmAdapter {
   readonly model: string;
   private readonly apiKey: string;
   private readonly maxTokens: number;
+  private readonly digestMaxTokens: number;
   private readonly timeoutMs: number;
 
   constructor() {
@@ -51,6 +52,7 @@ export class AnthropicAdapter implements LlmAdapter {
     this.apiKey = apiKey;
     this.model = model;
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
+    this.digestMaxTokens = env.LLM_TOKEN_LIMIT_PER_DIGEST;
     this.timeoutMs = env.LLM_TIMEOUT_MS;
   }
 
@@ -129,7 +131,7 @@ export class AnthropicAdapter implements LlmAdapter {
 
     const response = await client.messages.create({
       model: this.model,
-      max_tokens: 1024,
+      max_tokens: this.digestMaxTokens,
       system: [
         {
           type: 'text',
