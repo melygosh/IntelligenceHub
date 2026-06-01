@@ -369,7 +369,14 @@ export const llmResponseCache = pgTable(
     configHash: text('config_hash').notNull().default(''),
   },
   (t) => ({
-    pk: primaryKey({ columns: [t.contentHash, t.configHash] }),
+    // PK must match the full read/write key — read() filters all five columns.
+    // The narrower (contentHash, configHash) PK let onConflictDoNothing silently
+    // drop a write whose provider/model/operation differed from an existing row
+    // for the same content+config: a cache-miss-forever cost leak after a
+    // provider or model switch. Widen so each distinct tuple caches its own row.
+    pk: primaryKey({
+      columns: [t.contentHash, t.provider, t.model, t.operation, t.configHash],
+    }),
   }),
 );
 
