@@ -37,6 +37,13 @@ export const GraphEdge = z.object({
   to: z.string().uuid(),
   kind: GraphEdgeKind,
   weight: z.number().int().nullable(), // co_mention has weight; mentions/similar may not
+  // Co-mention only, and only when the request set `timeline: true`. Per-bucket
+  // counts (bucket-start unix seconds + co-mentions in that bucket), ascending
+  // by `t`. The client cumulatively sums these to get weight-as-of a scrub time.
+  // `weight` always equals the sum of all bucket counts.
+  buckets: z
+    .array(z.object({ t: z.number().int(), count: z.number().int() }))
+    .optional(),
 });
 export type GraphEdge = z.infer<typeof GraphEdge>;
 
@@ -68,5 +75,8 @@ export const GraphRequest = z.object({
   // them). Driven by the entity dropdown + article sidebar.
   selectedEntityIds: z.array(z.string().uuid()).optional(),
   selectedArticleIds: z.array(z.string().uuid()).optional(),
+  // Opt-in: when true, co_mention edges additionally carry per-bucket counts
+  // (`GraphEdge.buckets`) for the timeline scrubber. Off → response unchanged.
+  timeline: z.boolean().optional(),
 });
 export type GraphRequest = z.infer<typeof GraphRequest>;
