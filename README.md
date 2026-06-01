@@ -200,11 +200,22 @@ articles list. Entity timestamps serialise as Unix seconds per FR-6.
 ### Knowledge graph
 
 `/graph` is the analytical view (Case 2). The filter bar carries the
-mandatory node-type toggle + category filter, plus two Should-tier
-extensions: a **time-window** chip group (default 7d) and an **entity
-search** that anchors the canvas on a specific entity and shows it
-alongside its top-N co-mentioned neighbours in scope. All filters are
-URL-backed.
+mandatory **category** filter plus two Should-tier extensions: a
+**time-window** chip group (default 7d) and an **entity search** that
+anchors the canvas on a specific entity and shows it alongside its top-N
+co-mentioned neighbours in scope. All filters are URL-backed.
+
+**Node-type filtering** (the other half of FR-7's mandatory minimum) is
+driven by *selection* rather than a separate toggle: the canvas shows the
+entity layer by default, and adding articles through the Articles panel
+brings the `article` nodes (and their `mentions`/`similar` edges) onto the
+canvas — removing them takes the graph back to entities only. So the two
+node kinds are independently includable/excludable; we fold node-type into
+the selection model instead of a redundant control (an earlier explicit
+Both/Entities/Articles toggle was removed because it duplicated selection
+and could hide newly-added articles). A co-mention **timeline** scrubber
+(FR-7 Could-tier) can replay how the entity graph builds up over the
+window; it is disabled for the 24h window where a replay isn't meaningful.
 
 A two-cell summary band above the canvas surfaces the top 5 entities
 (by mention count, dot-coded by dominant category) and the top 5 articles
