@@ -51,7 +51,10 @@ export class DigestService {
     await this.queue.add(
       'build',
       { digestRunId: row.id },
-      { removeOnComplete: true, removeOnFail: false },
+      // Keep the last N completed/failed jobs in Redis (a count, not `true`) so
+      // a finished digest shows as a green "completed" entry in Bull Board
+      // instead of vanishing the instant it succeeds — matches the other queues.
+      { removeOnComplete: 50, removeOnFail: 50 },
     );
 
     this.events.publish(userId, {
