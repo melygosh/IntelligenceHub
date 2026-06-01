@@ -258,6 +258,13 @@ export default function GraphPage() {
   const [timelineOn, setTimelineOn] = useState(false);
   const [scrubT, setScrubT] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  // The 24h window is too short for a meaningful build-up replay — disable the
+  // timeline there. Keyed on the BUILT period (what's on the canvas), not the
+  // draft. `timelineActive` (used everywhere below) folds the disable in, so a
+  // 24h build neither fetches nor renders timeline data even if the box was
+  // ticked at a longer period — no effect / setState-in-effect needed.
+  const timelineDisabled = built.period === '24h';
+  const timelineActive = timelineOn && !timelineDisabled;
   const { data: publicConfig } = useGetPublicConfigQuery();
   const selectionCap = publicConfig?.graphSelectionCap ?? 100;
 
@@ -272,7 +279,7 @@ export default function GraphPage() {
     selectedEntityIds:
       built.entitySel && built.entitySel.size > 0 ? Array.from(built.entitySel) : undefined,
     selectedArticleIds: built.articleIds.size > 0 ? Array.from(built.articleIds) : undefined,
-    timeline: timelineOn,
+    timeline: timelineActive,
   });
 
   // Draft differs from what's currently built → Build is "pending" (glows).
@@ -359,7 +366,7 @@ export default function GraphPage() {
   // time). When the timeline is off or scrubT is null/at-max, this is identity.
   const timeFiltered: GraphResponse | null = useMemo(() => {
     if (!filtered) return null;
-    if (!timelineOn || scrubT === null || !bounds || scrubT >= bounds.max) {
+    if (!timelineActive || scrubT === null || !bounds || scrubT >= bounds.max) {
       return filtered;
     }
     const edges = filtered.edges.flatMap((e) => {
@@ -378,7 +385,7 @@ export default function GraphPage() {
       (n) => n.kind !== 'entity' || liveEntityIds.has(n.id),
     );
     return { nodes, edges };
-  }, [filtered, timelineOn, scrubT, bounds]);
+  }, [filtered, timelineActive, scrubT, bounds]);
 
   const positions = useMemo(
     () =>
@@ -593,12 +600,22 @@ export default function GraphPage() {
             animate
           </label>
           <label
-            className="flex items-center gap-1.5 hover:text-ink"
-            title="Replay how co-mention relationships built up over the period"
+            className={
+              'flex items-center gap-1.5 ' +
+              (timelineDisabled
+                ? 'cursor-not-allowed opacity-40'
+                : 'hover:text-ink')
+            }
+            title={
+              timelineDisabled
+                ? 'Timeline needs a longer window than 24h'
+                : 'Replay how co-mention relationships built up over the period'
+            }
           >
             <input
               type="checkbox"
-              checked={timelineOn}
+              checked={timelineActive}
+              disabled={timelineDisabled}
               onChange={(e) => {
                 setTimelineOn(e.target.checked);
                 setScrubT(null);
@@ -625,7 +642,7 @@ export default function GraphPage() {
           />
         </div>
       </div>
-      {timelineOn && bounds ? (
+      {timelineActive && bounds ? (
         <div className="flex items-center gap-3 border border-border bg-paper px-3 py-2 font-mono text-[12px] text-muted">
           <button
             type="button"
