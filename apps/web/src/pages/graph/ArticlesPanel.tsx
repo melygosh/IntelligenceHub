@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGetArticlesQuery } from '../../store/api';
 import { SearchInput } from '../../components/filters/SearchInput';
 import { LoadingHint } from '../../components/ui/LoadingHint';
@@ -6,7 +6,9 @@ import { partitionArticles } from './relation';
 import type { ArticleListItem, GraphPeriod } from '@intelligencehub/shared';
 
 const MAX_CHIPS = 3;
-const PAGE_SIZE = 500;
+// Page size for infinite scroll — small enough to stay snappy, large enough
+// that a few scrolls cover a typical window.
+const PAGE_SIZE = 50;
 
 /**
  * Article-only graph sidebar (replaces the old Customize-canvas panel). Loads
@@ -39,19 +41,69 @@ export function ArticlesPanel({
   categoryIds: string[];
 }) {
   const [q, setQ] = useState('');
-  const { data, isLoading } = useGetArticlesQuery({
+  const [page, setPage] = useState(1);
+  const [accum, setAccum] = useState<ArticleListItem[]>([]);
+
+  const { currentData, isFetching } = useGetArticlesQuery({
     period,
     from,
     to,
     categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
     q: q || undefined,
+    page,
     pageSize: PAGE_SIZE,
   });
-  const articles = useMemo(() => data?.articles ?? [], [data]);
+
+  // Accumulate pages across infinite scroll, adjusting state DURING RENDER
+  // (React's "store info from prior renders" pattern) rather than in an effect.
+  // `currentData` is undefined while new args are in flight, so a stale page is
+  // never merged; dedup by id guards any overlap.
+  const filterKey = `${period}|${from ?? ''}|${to ?? ''}|${categoryIds.join(',')}|${q}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  const [mergedPage, setMergedPage] = useState(0);
+  if (filterKey !== prevFilterKey) {
+    // Fetch filters changed (entity selection does NOT — it only re-partitions
+    // client-side) → restart pagination. Page 1 refetches under the new args.
+    setPrevFilterKey(filterKey);
+    setMergedPage(0);
+    setPage(1);
+    setAccum([]);
+  } else if (currentData && currentData.page !== mergedPage) {
+    setMergedPage(currentData.page);
+    setAccum((prev) => {
+      const byId = new Map(prev.map((a) => [a.id, a]));
+      for (const a of currentData.articles) byId.set(a.id, a);
+      return [...byId.values()];
+    });
+  }
+
+  const articles = accum;
+  const total = currentData?.total ?? accum.length;
+  const hasMore = articles.length < total;
+  const loadingInitial = accum.length === 0 && isFetching;
+
   const groups = useMemo(
     () => partitionArticles(articles, selectedEntityIds),
     [articles, selectedEntityIds],
   );
+
+  // Infinite scroll: load the next page when a sentinel near the list bottom
+  // scrolls into view.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !isFetching) {
+          setPage((p) => p + 1);
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, isFetching]);
 
   const atCap = selectedArticleIds.size >= cap;
 
@@ -121,7 +173,7 @@ export function ArticlesPanel({
         <SearchInput value={q} onChange={setQ} placeholder="search articles…" widthClass="w-full" />
         <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
           <span>
-            {articles.length} shown ·{' '}
+            {articles.length} of {total} loaded ·{' '}
             <span className={atCap ? 'text-accent-deep' : 'text-ink'}>
               {selectedArticleIds.size}
             </span>{' '}
@@ -144,53 +196,66 @@ export function ArticlesPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {isLoading ? (
+        {loadingInitial ? (
           <LoadingHint className="p-4" />
         ) : articles.length === 0 ? (
           <p className="px-3 py-4 font-mono text-[12px] italic text-muted">
             No articles in this window.
           </p>
-        ) : !groups.active ? (
-          <ul className="list-none">
-            {groups.others.map((a) => (
-              <ArticleRow
-                key={a.id}
-                a={a}
-                checked={isChecked(a.id)}
-                disabled={isDisabled(a.id)}
-                onToggle={() => toggle(a.id)}
-              />
-            ))}
-          </ul>
         ) : (
           <>
-            <Group
-              label="Connecting"
-              tone="and"
-              items={groups.connecting}
-              isChecked={isChecked}
-              isDisabled={isDisabled}
-              onToggleItem={toggle}
-              onToggleGroup={toggleGroup}
-            />
-            <Group
-              label="Related"
-              tone="or"
-              items={groups.related}
-              isChecked={isChecked}
-              isDisabled={isDisabled}
-              onToggleItem={toggle}
-              onToggleGroup={toggleGroup}
-            />
-            <Group
-              label="Others"
-              tone="muted"
-              items={groups.others}
-              isChecked={isChecked}
-              isDisabled={isDisabled}
-              onToggleItem={toggle}
-              onToggleGroup={toggleGroup}
-            />
+            {!groups.active ? (
+              <ul className="list-none">
+                {groups.others.map((a) => (
+                  <ArticleRow
+                    key={a.id}
+                    a={a}
+                    checked={isChecked(a.id)}
+                    disabled={isDisabled(a.id)}
+                    onToggle={() => toggle(a.id)}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <>
+                <Group
+                  label="Connecting"
+                  tone="and"
+                  items={groups.connecting}
+                  isChecked={isChecked}
+                  isDisabled={isDisabled}
+                  onToggleItem={toggle}
+                  onToggleGroup={toggleGroup}
+                />
+                <Group
+                  label="Related"
+                  tone="or"
+                  items={groups.related}
+                  isChecked={isChecked}
+                  isDisabled={isDisabled}
+                  onToggleItem={toggle}
+                  onToggleGroup={toggleGroup}
+                />
+                <Group
+                  label="Others"
+                  tone="muted"
+                  items={groups.others}
+                  isChecked={isChecked}
+                  isDisabled={isDisabled}
+                  onToggleItem={toggle}
+                  onToggleGroup={toggleGroup}
+                />
+              </>
+            )}
+            {/* Infinite-scroll sentinel + status line. */}
+            <div ref={sentinelRef} aria-hidden className="h-px" />
+            <p className="px-3 py-2 text-center font-mono text-[11px] text-mute2">
+              {isFetching
+                ? 'loading more…'
+                : hasMore
+                  ? 'scroll for more'
+                  : `all ${total} loaded`}
+            </p>
           </>
         )}
       </div>
