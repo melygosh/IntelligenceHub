@@ -167,7 +167,7 @@ const ANIMATE_EDGE_CAP = 80;
 
 // Autoplay cadence: ms the playhead dwells on each bucket before advancing.
 // Slow enough to read how the graph changes between steps.
-const AUTOPLAY_STEP_MS = 650;
+const AUTOPLAY_STEP_MS = 900;
 
 function toReactFlowEdges(
   graphEdges: GraphEdge[],
