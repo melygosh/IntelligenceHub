@@ -32,12 +32,27 @@ import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { colourFor } from './graph-palette';
+import { IMP_STYLE } from '../../components/articles/importance';
 import { GraphExportMenu } from './GraphExportMenu';
 
 const nodeTypes = {
   article: ArticleGraphNode,
   entity: EntityGraphNode,
 } as const;
+
+/**
+ * MiniMap fill per node — mirrors the canvas encoding (entity = dominant
+ * category colour, article = importance dot colour) so the minimap reads as a
+ * scaled-down map instead of react-flow's default near-invisible light grey on
+ * the cream background.
+ */
+function minimapNodeColor(node: Node): string {
+  if (node.data?.kind === 'article') {
+    const imp = (node.data.importance as 'high' | 'normal' | 'junk' | null) ?? 'normal';
+    return IMP_STYLE[imp].dot;
+  }
+  return colourFor((node.data?.dominantCategoryId as string | null) ?? null);
+}
 
 const DEFAULT_PERIOD: GraphPeriod = '7d';
 
@@ -100,6 +115,13 @@ function toReactFlowNodes(
         type: 'article',
         position: positions.get(n.id) ?? { x: 0, y: 0 },
         style,
+        // Approximate pre-measurement size. We render `nodes` controlled from
+        // data with no onNodesChange, so react-flow never writes `measured`
+        // back onto our node objects — without an initial size the MiniMap's
+        // nodeHasDimensions() check fails and it draws nothing. These hints
+        // don't pin the canvas size (the DOM is still measured for layout).
+        initialWidth: 200,
+        initialHeight: 34,
         data: {
           label: truncate(n.label, 60),
           kind: 'article' as const,
@@ -107,11 +129,16 @@ function toReactFlowNodes(
         },
       };
     }
+    const diameter = clamp(16 + (n.mentionCount ?? 0) * 1.2, 16, 48);
     return {
       id: n.id,
       type: 'entity',
       position: positions.get(n.id) ?? { x: 0, y: 0 },
       style,
+      // See the article branch — initial size so the MiniMap renders a marker.
+      // Width ≈ circle + gap + label chip (rough, minimap-only).
+      initialWidth: Math.round(diameter + 12 + n.label.length * 7),
+      initialHeight: diameter,
       data: {
         label: n.label,
         kind: 'entity' as const,
@@ -120,6 +147,10 @@ function toReactFlowNodes(
       },
     };
   });
+}
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
 }
 
 // Above this many `mentions` edges in view the animation auto-disables — flowing
@@ -756,7 +787,18 @@ export default function GraphPage() {
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#d8cfbd" />
               <Controls showInteractive={false} />
-              <MiniMap pannable zoomable maskColor="rgba(244,239,230,0.6)" />
+              <MiniMap
+                pannable
+                zoomable
+                nodeColor={minimapNodeColor}
+                nodeStrokeColor="#d8cfbd"
+                nodeStrokeWidth={2}
+                maskColor="rgba(61,58,50,0.14)"
+                style={{
+                  background: 'var(--color-paper2)',
+                  border: '1px solid var(--color-border)',
+                }}
+              />
             </ReactFlow>
           )}
           <div className="border-t border-border px-3 py-1.5">
