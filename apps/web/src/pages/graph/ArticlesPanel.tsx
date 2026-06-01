@@ -173,7 +173,6 @@ export function ArticlesPanel({
         <SearchInput value={q} onChange={setQ} placeholder="search articles…" widthClass="w-full" />
         <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
           <span>
-            {articles.length} of {total} loaded ·{' '}
             <span className={atCap ? 'text-accent-deep' : 'text-ink'}>
               {selectedArticleIds.size}
             </span>{' '}
