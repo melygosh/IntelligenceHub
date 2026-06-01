@@ -32,9 +32,11 @@ const ICONS = {
       <path d="M2.3 3.3 L7 7.5 L11.7 3.3" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
     </svg>
   ),
-  feed: (cls = 'h-3.5 w-3.5') => (
+  rss: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
-      <path d="M2 4h10M2 7h10M2 10h7" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+      <circle cx="3.4" cy="10.6" r="1.2" fill="currentColor" />
+      <path d="M2.6 6.4a5 5 0 0 1 5 5" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M2.6 3.2a8.2 8.2 0 0 1 8.2 8.2" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
     </svg>
   ),
   entities: (cls = 'h-3.5 w-3.5') => (
@@ -56,20 +58,30 @@ const ICONS = {
       <circle cx="9.5" cy="4" r="0.9" fill="currentColor" />
     </svg>
   ),
-  settings: (cls = 'h-3.5 w-3.5') => (
+  sliders: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
-      <circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1" fill="none" />
+      <path d="M2 4.5h10M2 9.5h10" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+      <circle cx="5" cy="4.5" r="1.7" fill="currentColor" />
+      <circle cx="9.5" cy="9.5" r="1.7" fill="currentColor" />
+    </svg>
+  ),
+  activity: (cls = 'h-3.5 w-3.5') => (
+    <svg viewBox="0 0 14 14" className={cls}>
       <path
-        d="M7 1.2v2M7 10.8V13M1.2 7h2M10.8 7H13M2.7 2.7l1.4 1.4M9.9 9.9l1.4 1.4M2.7 11.3l1.4-1.4M9.9 4.1l1.4-1.4"
+        d="M1.5 7H4l1.4-3.6L8 10.6 9.3 7H12.5"
         stroke="currentColor"
         strokeWidth="1"
+        fill="none"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   ),
-  bolt: (cls = 'h-3.5 w-3.5') => (
+  queue: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
-      <path d="M8 1 L3 8 H6 L5 13 L11 6 H8 Z" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
+      <rect x="2.5" y="2.2" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect x="2.5" y="5.85" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect x="2.5" y="9.5" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
     </svg>
   ),
   dashboard: (cls = 'h-3.5 w-3.5') => (
@@ -90,14 +102,14 @@ const NAV: Item[] = [
   { to: '/articles', label: 'Articles', icon: 'articles' },
   { to: '/graph', label: 'Graph', icon: 'graph' },
   { to: '/digests', label: 'Digests', icon: 'digests' },
-  { to: '/feeds', label: 'Feeds', icon: 'feed' },
+  { to: '/feeds', label: 'Feeds', icon: 'rss' },
 ];
 
 const SETTINGS: Item[] = [
   { to: '/entities', label: 'Entities', icon: 'entities' },
   { to: '/categories', label: 'Categories', icon: 'tag' },
-  { to: '/settings/axes', label: 'Axes', icon: 'settings' },
-  { to: '/telemetry', label: 'Telemetry', icon: 'bolt' },
+  { to: '/settings/axes', label: 'Axes', icon: 'sliders' },
+  { to: '/telemetry', label: 'Telemetry', icon: 'activity' },
 ];
 
 const STORAGE_KEY = 'ih.sidebar.compact';
@@ -190,7 +202,7 @@ function SidebarBody({
           className={itemClass({ isActive: false })}
           onClick={onNavigate}
         >
-          <span className="text-mute2 group-hover:text-ink">{ICONS.bolt()}</span>
+          <span className="text-mute2 group-hover:text-ink">{ICONS.queue()}</span>
           <span className="flex-1 text-left">Open queues</span>
           <span aria-hidden="true" className="text-mute2">
             ↗
@@ -296,7 +308,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             aria-label="Open queues (Bull Board)"
             className="group relative mx-auto flex h-9 w-10 items-center justify-center border-l-2 border-transparent text-mute2 hover:bg-paper hover:text-ink"
           >
-            <span>{ICONS.bolt()}</span>
+            <span>{ICONS.queue()}</span>
             <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap bg-ink px-1.5 py-0.5 font-mono text-[10.5px] text-paper opacity-0 transition-opacity group-hover:opacity-100">
               Open queues
             </span>
