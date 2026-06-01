@@ -45,23 +45,23 @@ export default function AxesPage() {
         <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
           Add axis
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Axis name"
-            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+            className="w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none sm:flex-1"
           />
           <input
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="First value"
-            className="flex-1 border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none"
+            className="w-full border border-border bg-paper px-2.5 py-2 text-[15px] text-ink placeholder-mute2 focus:border-ink focus:outline-none sm:flex-1"
           />
           <button
             type="submit"
             disabled={isCreating || newName.trim() === '' || newValue.trim() === ''}
-            className="border border-ink bg-ink px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50"
+            className="w-full border border-ink bg-ink px-3 py-2 font-mono text-[13px] uppercase tracking-[0.1em] text-paper disabled:opacity-50 sm:w-auto sm:py-1.5"
           >
             Add
           </button>
