@@ -465,6 +465,34 @@ export default function GraphPage() {
     [filtered],
   );
 
+  // Bound how far the canvas can pan: the node bounding box plus a generous
+  // margin (wide enough to clear labels/edges) so the user can't scroll off
+  // into empty space and "lose" the graph. Unbounded while there are no nodes.
+  const translateExtent = useMemo<[[number, number], [number, number]]>(() => {
+    if (positions.size === 0) {
+      return [
+        [-Infinity, -Infinity],
+        [Infinity, Infinity],
+      ];
+    }
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const { x, y } of positions.values()) {
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+    const padX = 800; // room for wide entity label chips on the right
+    const padY = 400;
+    return [
+      [minX - padX, minY - padY],
+      [maxX + padX, maxY + padY],
+    ];
+  }, [positions]);
+
   const focus = useMemo(() => {
     if (!timeFiltered) return null;
     const q = graphQuery.trim().toLowerCase();
@@ -628,10 +656,12 @@ export default function GraphPage() {
           }
           title="Open the article picker (opens on the right)"
         >
-          Articles
-          {draftArticleIds.size > 0 ? (
-            <span className="text-[11px]">({draftArticleIds.size})</span>
-          ) : null}
+          <span>
+            Articles
+            {draftArticleIds.size > 0 ? (
+              <span className="text-[11px] text-mute2"> ({draftArticleIds.size})</span>
+            ) : null}
+          </span>
           <span aria-hidden="true" className="text-mute2">
             ›
           </span>
@@ -807,6 +837,9 @@ export default function GraphPage() {
               edges={edges}
               nodeTypes={nodeTypes}
               fitView
+              translateExtent={translateExtent}
+              minZoom={0.3}
+              maxZoom={2}
               onInit={(inst) => {
                 rfRef.current = inst;
               }}
