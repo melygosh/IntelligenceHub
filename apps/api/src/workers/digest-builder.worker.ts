@@ -313,7 +313,12 @@ export class DigestBuilderWorker extends WorkerHost {
         ),
       )
       .groupBy(entities.id, entities.canonicalName, entities.type)
-      .orderBy(sql`COUNT(${articleEntity.articleId}) DESC`)
+      // Deterministic tiebreak at the LIMIT cutoff: without it, entities tied
+      // on mention count survive the top-20 in arbitrary order, so identical
+      // data could yield different digests across runs.
+      .orderBy(
+        sql`COUNT(${articleEntity.articleId}) DESC, ${entities.canonicalName} ASC, ${entities.id} ASC`,
+      )
       .limit(20);
     return rows.map((r) => ({
       id: r.id,
@@ -343,7 +348,10 @@ export class DigestBuilderWorker extends WorkerHost {
         ),
       )
       .groupBy(category.id, category.name)
-      .orderBy(sql`COUNT(${articleCategory.articleId}) DESC`)
+      // Deterministic tiebreak at the LIMIT cutoff (see aggregateTopEntities).
+      .orderBy(
+        sql`COUNT(${articleCategory.articleId}) DESC, ${category.name} ASC, ${category.id} ASC`,
+      )
       .limit(10);
     return rows;
   }
