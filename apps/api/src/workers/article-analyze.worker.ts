@@ -90,7 +90,7 @@ export class ArticleAnalyzeWorker extends WorkerHost {
       );
       return;
     }
-    await this.processor.markFailed(articleId, userId);
+    const marked = await this.processor.markFailed(articleId, userId);
     this.log.error(
       JSON.stringify({
         event: 'article.analyze.gave_up',
@@ -98,11 +98,17 @@ export class ArticleAnalyzeWorker extends WorkerHost {
         userId,
         attempts,
         error: err.message,
+        marked,
       }),
     );
-    this.events.publish(userId, {
-      type: 'article.analyzed',
-      payload: { articleId, status: 'failed' },
-    });
+    // Only announce 'failed' if we actually transitioned a still-pending row.
+    // If the article was no longer pending (already resolved another way), the
+    // markFailed no-ops and a 'failed' event would be misleading.
+    if (marked) {
+      this.events.publish(userId, {
+        type: 'article.analyzed',
+        payload: { articleId, status: 'failed' },
+      });
+    }
   }
 }

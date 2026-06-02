@@ -224,13 +224,25 @@ export class ArticleProcessor {
 
   /**
    * Mark an article terminally 'failed' after the analyze job exhausts its
-   * retries. Scoped to the owning user; idempotent.
+   * retries. Scoped to the owning user AND to status='pending' so a late
+   * terminal-failure callback can never clobber an article that has since
+   * reached a different state (e.g. promoted to 'ready' via another path) back
+   * to 'failed'. Returns true iff a still-pending row was actually marked, so
+   * the caller can suppress the 'failed' SSE event otherwise.
    */
-  async markFailed(articleId: string, userId: string): Promise<void> {
-    await this.db
+  async markFailed(articleId: string, userId: string): Promise<boolean> {
+    const updated = await this.db
       .update(articles)
       .set({ status: 'failed' })
-      .where(and(eq(articles.id, articleId), eq(articles.userId, userId)));
+      .where(
+        and(
+          eq(articles.id, articleId),
+          eq(articles.userId, userId),
+          eq(articles.status, 'pending'),
+        ),
+      )
+      .returning({ id: articles.id });
+    return updated.length > 0;
   }
 
   /**
