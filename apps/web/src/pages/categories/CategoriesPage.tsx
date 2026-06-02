@@ -149,7 +149,13 @@ export default function CategoriesPage() {
                         confirmLabel: 'Delete',
                         tone: 'danger',
                       });
-                      if (ok) void deleteCategory(c.id);
+                      if (ok) {
+                        try {
+                          await deleteCategory(c.id).unwrap();
+                        } catch {
+                          setError('Could not delete category. Try again.');
+                        }
+                      }
                     }}
                   />
                 </div>

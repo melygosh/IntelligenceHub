@@ -352,6 +352,12 @@ export const llmCalls = pgTable(
       t.articleId,
       t.status,
     ),
+    // Telemetry dashboard aggregates per user over a time window; this is the
+    // highest-volume table (one row per LLM call), so support those scans.
+    userCreatedIdx: index('llm_calls_user_created_idx').on(
+      t.userId,
+      t.createdAt,
+    ),
   }),
 );
 

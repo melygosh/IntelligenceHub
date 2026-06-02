@@ -31,15 +31,21 @@ export function EntityPickerDropdown({
   });
 
   const items = useMemo(() => data?.pages.flatMap((p) => p.entities) ?? [], [data]);
-  // Retain every entity loaded this session so a selected entity stays pinned
-  // to the top even after a later search (or clearing the search) no longer
-  // returns it. Accumulated DURING RENDER (React's "store info from prior
-  // renders" pattern) — the conditional setState stops once nothing is new.
+  const itemsById = useMemo(() => new Map(items.map((e) => [e.id, e])), [items]);
+  // Retain the SELECTED entities so one stays pinned to the top even after a
+  // later search (or clearing it) no longer returns it. Only selected ids are
+  // ever read back (pinSelectedFirst recovers them from the pool), so we keep
+  // just those — bounding the map by the selection cap instead of growing with
+  // every search. Accumulated DURING RENDER (React's "store info from prior
+  // renders" pattern); the conditional setState converges once stable.
   const [seenById, setSeenById] = useState<Map<string, (typeof items)[number]>>(new Map());
-  if (items.some((e) => !seenById.has(e.id))) {
-    const next = new Map(seenById);
-    for (const e of items) next.set(e.id, e);
-    setSeenById(next);
+  const nextSeen = new Map<string, (typeof items)[number]>();
+  for (const id of selectedIds) {
+    const entity = itemsById.get(id) ?? seenById.get(id);
+    if (entity) nextSeen.set(id, entity);
+  }
+  if (nextSeen.size !== seenById.size || [...nextSeen.keys()].some((k) => !seenById.has(k))) {
+    setSeenById(nextSeen);
   }
   const pool = useMemo(() => [...seenById.values()], [seenById]);
   const rows = useMemo(

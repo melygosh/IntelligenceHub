@@ -154,7 +154,9 @@ export class OpenAiAdapter implements LlmAdapter {
   }
 
   private truncateForBudget(body: string): string {
-    const headroomChars = (this.maxTokens - 1000) * 4;
+    // Clamp at 0: a misconfigured token limit < 1000 would make headroom
+    // negative, and body.slice(0, -n) would silently keep only the tail.
+    const headroomChars = Math.max(0, (this.maxTokens - 1000) * 4);
     if (body.length <= headroomChars) return body;
     return body.slice(0, headroomChars) + '\n\n[truncated]';
   }

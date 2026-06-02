@@ -16,12 +16,15 @@ export function configHash(
   categories: string[],
   axes: { name: string; values: string[] }[],
 ): string {
+  // Dedupe names + values: ['tech','tech'] is the same effective config as
+  // ['tech'] (the prompt/tagging treat them set-wise), so they must hash the
+  // same — otherwise a duplicate yields a spurious cache miss + regeneration.
   const canonical = JSON.stringify({
-    c: [...categories].sort(),
+    c: [...new Set(categories)].sort(),
     a: axes
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((x) => ({ n: x.name, v: x.values.slice().sort() })),
+      .map((x) => ({ n: x.name, v: [...new Set(x.values)].sort() })),
   });
   return createHash('sha256').update(canonical).digest('hex');
 }

@@ -162,7 +162,7 @@ export class ArticlesService {
     // any sort with relevance ranking — feed/duplicates only matter when
     // browsing.
     const orderBy = opts.q
-      ? sql`ts_rank(${articles.searchVector}, plainto_tsquery('english', ${opts.q})) DESC`
+      ? sql`ts_rank(${articles.searchVector}, plainto_tsquery('english', ${opts.q})) DESC, ${articles.ts} DESC, ${articles.id} DESC`
       : sort === 'feed'
         ? sql`${feeds.title} ASC NULLS LAST, ${articles.ts} DESC, ${articles.id} DESC`
         : sort === 'duplicates'

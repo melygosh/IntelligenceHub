@@ -128,10 +128,14 @@ function extractableText(body: string): string {
 }
 
 function sumLinkTextChars(body: string): number {
-  const matches = body.matchAll(/<a\b[^>]*>([^<]*)<\/a>/gi);
   let total = 0;
-  for (const m of matches) {
-    total += (m[1] ?? '').length;
+  // `.*?` + the `s` flag captures the full anchor body (including any nested
+  // tags / newlines); strip inner tags so e.g. `<a><b>Click</b></a>` counts
+  // "Click" rather than zero — otherwise styled-anchor link farms evade the
+  // link-density check.
+  for (const m of body.matchAll(/<a\b[^>]*>(.*?)<\/a>/gis)) {
+    const innerText = (m[1] ?? '').replace(/<[^>]*>/g, '');
+    total += innerText.length;
   }
   return total;
 }

@@ -136,7 +136,13 @@ function AxisRow({ axis }: { axis: Axis }) {
               confirmLabel: 'Delete',
               tone: 'danger',
             });
-            if (ok) void deleteAxis(axis.id);
+            if (ok) {
+              try {
+                await deleteAxis(axis.id).unwrap();
+              } catch {
+                setError('Could not delete axis. Try again.');
+              }
+            }
           }}
         />
       </div>

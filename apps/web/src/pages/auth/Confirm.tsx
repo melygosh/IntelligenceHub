@@ -17,12 +17,15 @@ export default function Confirm() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
     void (async () => {
       try {
         await confirmEmail({ token }).unwrap();
         if (!cancelled) {
           setState('success');
-          setTimeout(() => navigate('/dashboard', { replace: true }), 800);
+          redirectTimer = setTimeout(() => {
+            if (!cancelled) void navigate('/dashboard', { replace: true });
+          }, 800);
         }
       } catch {
         if (!cancelled) setState('error');
@@ -30,6 +33,7 @@ export default function Confirm() {
     })();
     return () => {
       cancelled = true;
+      if (redirectTimer) clearTimeout(redirectTimer);
     };
   }, [confirmEmail, navigate, token]);
 
