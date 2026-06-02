@@ -222,10 +222,21 @@ export class AuthService {
     const rawToken = generateRawToken();
     await this.tokens.insertNew(userId, rawToken);
     const link = buildConfirmationUrl(env.WEB_BASE_URL, rawToken);
+    if (env.APP_DEV_MODE) {
+      // Dev convenience: surface the full link (with token) in logs + response
+      // so local testing can confirm without a mail server.
+      this.log.log(
+        JSON.stringify({ event: 'auth.confirmation_link', userId, link }),
+      );
+      return link;
+    }
+    // Prod: the link embeds the raw confirmation token, so logging it would let
+    // anyone with log access confirm the account. Record only that a link was
+    // issued; the real link goes out via email (and is returned to no one).
     this.log.log(
-      JSON.stringify({ event: 'auth.confirmation_link', userId, link }),
+      JSON.stringify({ event: 'auth.confirmation_link_issued', userId }),
     );
-    return env.APP_DEV_MODE ? link : undefined;
+    return undefined;
   }
 
   private signToken(payload: JwtPayload): string {
