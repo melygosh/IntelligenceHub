@@ -438,6 +438,18 @@ export default function GraphPage() {
   // data isn't present). Drives the slider range.
   const bounds = useMemo(() => (filtered ? timelineBounds(filtered.edges) : null), [filtered]);
 
+  // Sorted unique bucket start-times across the built graph. Memoised so the
+  // autoplay timer keys off a stable array (it changes only when the built
+  // graph changes) rather than the `filtered` object identity, and so the set
+  // isn't recomputed on every autoplay step.
+  const bucketTimes = useMemo(() => {
+    const set = new Set<number>();
+    for (const e of filtered?.edges ?? []) {
+      for (const b of e.buckets ?? []) set.add(b.t);
+    }
+    return [...set].sort((a, b) => a - b);
+  }, [filtered]);
+
   // The timeline replays co-mention build-up, so it's only applicable when the
   // built graph actually has co-mention edges (≥2 co-mentioned entities) — and
   // not on the too-short 24h window. Used to disable the toggle.
@@ -589,14 +601,11 @@ export default function GraphPage() {
       const stop = setTimeout(() => setPlaying(false), 0);
       return () => clearTimeout(stop);
     }
-    const buckets = [
-      ...new Set((filtered?.edges ?? []).flatMap((e) => e.buckets?.map((b) => b.t) ?? [])),
-    ].sort((a, b) => a - b);
     const cur = scrubT ?? bounds.min - 1;
-    const next = buckets.find((t) => t > cur) ?? bounds.max;
+    const next = bucketTimes.find((t) => t > cur) ?? bounds.max;
     const id = setTimeout(() => setScrubT(next), speedSec * 1000);
     return () => clearTimeout(id);
-  }, [playing, scrubT, bounds, filtered, speedSec]);
+  }, [playing, scrubT, bounds, bucketTimes, speedSec]);
 
   // Re-fit the view whenever a new graph is built (the `fitView` prop only fits
   // on initial mount, not on data changes). rAF so it runs after the new node
@@ -650,6 +659,11 @@ export default function GraphPage() {
       anchorEntityId: undefined,
     });
     setSelected(null);
+    // The rebuilt graph has new bounds/buckets; a leftover playhead + running
+    // autoplay would be stale, so stop playback and reset the scrub to "full
+    // totals". The user can re-play on the new graph.
+    setPlaying(false);
+    setScrubT(null);
   }
 
   // Clear draft AND build back to the default top-N overview.
@@ -670,6 +684,8 @@ export default function GraphPage() {
       anchorEntityId: undefined,
     });
     setSelected(null);
+    setPlaying(false);
+    setScrubT(null);
   }
 
   function onNodeClick(_e: React.MouseEvent, node: Node): void {
