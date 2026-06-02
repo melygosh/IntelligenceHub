@@ -31,6 +31,12 @@ export type FeedPullJobData = { feedId: string; userId: string };
 export function feedPullJobOpts(userId: string, feedId: string): JobsOptions {
   return {
     deduplication: { id: `${userId}:${feedId}` },
+    // Retry transient fetch failures (timeout/5xx/DNS) within the job before it
+    // surfaces as a failed pull, so a momentary blip doesn't flip the feed to
+    // 'error'. The sweep also re-attempts 'error' feeds, so a persistent outage
+    // still self-heals once the source recovers — this just avoids the flicker.
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 10_000 },
     removeOnComplete: 100,
     removeOnFail: 100,
   };

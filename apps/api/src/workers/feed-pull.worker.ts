@@ -75,17 +75,20 @@ export class FeedPullWorker extends WorkerHost {
   }
 
   /**
-   * Scheduled fan-out: enqueue a 'pull' for every active feed across all
-   * users. Each enqueue carries the per-(user,feed) deduplication id, so a
-   * feed still being pulled from a prior tick is skipped rather than piling
-   * up a second job. Paused/error feeds are not swept (an error feed resumes
-   * via a successful manual pull, matching existing manual-pull semantics).
+   * Scheduled fan-out: enqueue a 'pull' for every active OR errored feed
+   * across all users. Each enqueue carries the per-(user,feed) deduplication
+   * id, so a feed still being pulled from a prior tick is skipped rather than
+   * piling up a second job. `error` feeds ARE swept so a transient failure
+   * (timeout/5xx/DNS blip) self-heals on the next tick — a successful pull
+   * flips them back to 'active'. Without this, one blip would silently drop a
+   * feed from automation until a manual pull. Only `paused` (explicit user
+   * action) is excluded.
    */
   private async runSweep(job: Job<FeedPullJobData>): Promise<SweepResult> {
     const active = await this.db
       .select({ id: feeds.id, userId: feeds.userId })
       .from(feeds)
-      .where(eq(feeds.status, 'active'));
+      .where(inArray(feeds.status, ['active', 'error']));
 
     let enqueued = 0;
     let skippedInFlight = 0;
