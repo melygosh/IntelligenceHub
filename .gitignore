@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Git worktrees (isolated workspaces for risky changes)
+.worktrees/
+
 # Build artifacts
 dist/
 build/
