@@ -14,11 +14,7 @@ export function PageSizeDropdown({
   onChange: (next: number) => void;
 }) {
   return (
-    <FacetDropdown
-      label="Per page"
-      valueLabel={String(value)}
-      isActive={value !== defaultValue}
-    >
+    <FacetDropdown label="Per page" valueLabel={String(value)} isActive={value !== defaultValue}>
       {(close) =>
         ARTICLE_PAGE_SIZE_OPTIONS.map((n) => {
           const on = n === value;

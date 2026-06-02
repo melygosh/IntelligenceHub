@@ -23,20 +23,43 @@ const ICONS = {
       <circle cx="3" cy="4" r="1.5" fill="currentColor" />
       <circle cx="11" cy="3" r="1.3" fill="currentColor" />
       <circle cx="7" cy="11" r="1.4" fill="currentColor" />
-      <path d="M3 4 L7 11 M11 3 L7 11 M3 4 L11 3" stroke="currentColor" strokeWidth="0.7" opacity="0.55" />
+      <path
+        d="M3 4 L7 11 M11 3 L7 11 M3 4 L11 3"
+        stroke="currentColor"
+        strokeWidth="0.7"
+        opacity="0.55"
+      />
     </svg>
   ),
   digests: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
       <rect x="2" y="3" width="10" height="8" stroke="currentColor" strokeWidth="1" fill="none" />
-      <path d="M2.3 3.3 L7 7.5 L11.7 3.3" stroke="currentColor" strokeWidth="1" fill="none" strokeLinejoin="round" />
+      <path
+        d="M2.3 3.3 L7 7.5 L11.7 3.3"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   rss: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
       <circle cx="3.4" cy="10.6" r="1.2" fill="currentColor" />
-      <path d="M2.6 6.4a5 5 0 0 1 5 5" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-      <path d="M2.6 3.2a8.2 8.2 0 0 1 8.2 8.2" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path
+        d="M2.6 6.4a5 5 0 0 1 5 5"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M2.6 3.2a8.2 8.2 0 0 1 8.2 8.2"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   entities: (cls = 'h-3.5 w-3.5') => (
@@ -60,7 +83,13 @@ const ICONS = {
   ),
   sliders: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
-      <path d="M2 4.5h10M2 9.5h10" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+      <path
+        d="M2 4.5h10M2 9.5h10"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        opacity="0.5"
+      />
       <circle cx="5" cy="4.5" r="1.7" fill="currentColor" />
       <circle cx="9.5" cy="9.5" r="1.7" fill="currentColor" />
     </svg>
@@ -79,17 +108,57 @@ const ICONS = {
   ),
   queue: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
-      <rect x="2.5" y="2.2" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
-      <rect x="2.5" y="5.85" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
-      <rect x="2.5" y="9.5" width="9" height="2.3" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect
+        x="2.5"
+        y="2.2"
+        width="9"
+        height="2.3"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
+      <rect
+        x="2.5"
+        y="5.85"
+        width="9"
+        height="2.3"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
+      <rect
+        x="2.5"
+        y="9.5"
+        width="9"
+        height="2.3"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
     </svg>
   ),
   dashboard: (cls = 'h-3.5 w-3.5') => (
     <svg viewBox="0 0 14 14" className={cls}>
       <rect x="2" y="2" width="4.2" height="5" stroke="currentColor" strokeWidth="1" fill="none" />
       <rect x="2" y="8" width="4.2" height="4" stroke="currentColor" strokeWidth="1" fill="none" />
-      <rect x="7.8" y="2" width="4.2" height="4" stroke="currentColor" strokeWidth="1" fill="none" />
-      <rect x="7.8" y="7" width="4.2" height="5" stroke="currentColor" strokeWidth="1" fill="none" />
+      <rect
+        x="7.8"
+        y="2"
+        width="4.2"
+        height="4"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
+      <rect
+        x="7.8"
+        y="7"
+        width="4.2"
+        height="5"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
     </svg>
   ),
 } as const;
@@ -246,11 +315,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const mobileDrawer = (
     <div className="md:hidden">
       {open ? (
-        <div
-          className="fixed inset-0 z-40 bg-ink/40"
-          aria-hidden="true"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 z-40 bg-ink/40" aria-hidden="true" onClick={onClose} />
       ) : null}
       <aside
         id="mobile-nav"
@@ -283,48 +348,48 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return (
       <>
         {mobileDrawer}
-      <aside className="hidden w-[52px] shrink-0 flex-col border-r border-border bg-paper2/50 transition-[width] duration-150 md:flex">
-        <div className="flex h-11 items-center justify-center border-b border-border">
-          <Logo size={16} />
-        </div>
+        <aside className="hidden w-[52px] shrink-0 flex-col border-r border-border bg-paper2/50 transition-[width] duration-150 md:flex">
+          <div className="flex h-11 items-center justify-center border-b border-border">
+            <Logo size={16} />
+          </div>
 
-        <nav className="flex flex-col gap-px py-2">
-          {NAV.map((item) => (
-            <CompactNavItem key={item.to} item={item} />
-          ))}
-        </nav>
+          <nav className="flex flex-col gap-px py-2">
+            {NAV.map((item) => (
+              <CompactNavItem key={item.to} item={item} />
+            ))}
+          </nav>
 
-        <div className="flex flex-col gap-px border-t border-border py-2">
-          {SETTINGS.map((item) => (
-            <CompactNavItem key={item.to} item={item} />
-          ))}
-        </div>
+          <div className="flex flex-col gap-px border-t border-border py-2">
+            {SETTINGS.map((item) => (
+              <CompactNavItem key={item.to} item={item} />
+            ))}
+          </div>
 
-        <div className="mt-auto flex flex-col gap-px border-t border-border py-2">
-          <a
-            href="/admin/queues"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open queues (Bull Board)"
-            className="group relative mx-auto flex h-9 w-10 items-center justify-center border-l-2 border-transparent text-mute2 hover:bg-paper hover:text-ink"
-          >
-            <span>{ICONS.queue()}</span>
-            <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap bg-ink px-1.5 py-0.5 font-mono text-[10.5px] text-paper opacity-0 transition-opacity group-hover:opacity-100">
-              Open queues
-            </span>
-          </a>
-          <button
-            type="button"
-            onClick={() => setCompact(false)}
-            aria-label="Expand sidebar"
-            className="mx-auto flex h-7 w-10 items-center justify-center text-mute2 hover:bg-paper hover:text-ink"
-          >
-            <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
-              <path d="M3 2 L8 6 L3 10" stroke="currentColor" strokeWidth="1.2" fill="none" />
-            </svg>
-          </button>
-        </div>
-      </aside>
+          <div className="mt-auto flex flex-col gap-px border-t border-border py-2">
+            <a
+              href="/admin/queues"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open queues (Bull Board)"
+              className="group relative mx-auto flex h-9 w-10 items-center justify-center border-l-2 border-transparent text-mute2 hover:bg-paper hover:text-ink"
+            >
+              <span>{ICONS.queue()}</span>
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap bg-ink px-1.5 py-0.5 font-mono text-[10.5px] text-paper opacity-0 transition-opacity group-hover:opacity-100">
+                Open queues
+              </span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setCompact(false)}
+              aria-label="Expand sidebar"
+              className="mx-auto flex h-7 w-10 items-center justify-center text-mute2 hover:bg-paper hover:text-ink"
+            >
+              <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
+                <path d="M3 2 L8 6 L3 10" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              </svg>
+            </button>
+          </div>
+        </aside>
       </>
     );
   }

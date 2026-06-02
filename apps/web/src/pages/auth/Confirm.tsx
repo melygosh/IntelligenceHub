@@ -17,7 +17,7 @@ export default function Confirm() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         await confirmEmail({ token }).unwrap();
         if (!cancelled) {

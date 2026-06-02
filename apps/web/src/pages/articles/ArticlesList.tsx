@@ -16,10 +16,7 @@ import type {
   AxisList,
   Feed,
 } from '@intelligencehub/shared';
-import {
-  ARTICLE_PAGE_SIZE_OPTIONS,
-  DEFAULT_PAGE_SIZE,
-} from '@intelligencehub/shared';
+import { ARTICLE_PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE } from '@intelligencehub/shared';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
@@ -39,7 +36,6 @@ import { Sep } from '../../components/ui/Sep';
 import { ExternalIcon } from '../../components/ui/ExternalIcon';
 import { fmtRelative } from '../../lib/fmtRelative';
 
-
 const IMPORTANCE_OPTIONS: { value: 'high' | 'normal' | 'junk'; label: string }[] = [
   { value: 'high', label: 'High' },
   { value: 'normal', label: 'Normal' },
@@ -58,18 +54,14 @@ function ImportanceDropdown({
     selected.length === 0
       ? null
       : selected.length === 1
-        ? IMPORTANCE_OPTIONS.find((o) => o.value === selected[0])?.label ?? '1 selected'
+        ? (IMPORTANCE_OPTIONS.find((o) => o.value === selected[0])?.label ?? '1 selected')
         : `${selected.length} selected`;
   const toggle = (v: 'high' | 'normal' | 'junk') => {
     if (selectedSet.has(v)) onChange(selected.filter((s) => s !== v));
     else onChange([...selected, v]);
   };
   return (
-    <FacetDropdown
-      label="Importance"
-      valueLabel={valueLabel}
-      isActive={selected.length > 0}
-    >
+    <FacetDropdown label="Importance" valueLabel={valueLabel} isActive={selected.length > 0}>
       {() => (
         <>
           {IMPORTANCE_OPTIONS.map((o) => {
@@ -156,9 +148,7 @@ function buildFilterSubtitle(opts: {
   const parts: string[] = [];
   if (opts.categoryIds.length > 0) {
     if (opts.categoryIds.length === 1) {
-      const name = opts.categoriesData?.categories.find(
-        (c) => c.id === opts.categoryIds[0],
-      )?.name;
+      const name = opts.categoriesData?.categories.find((c) => c.id === opts.categoryIds[0])?.name;
       parts.push(`category: ${name ?? opts.categoryIds[0].slice(0, 8)}`);
     } else {
       parts.push(`${opts.categoryIds.length} categories`);
@@ -217,8 +207,7 @@ function DateDropdown({
   onPeriodChange: (p: Period) => void;
   onCustomChange: (from: string, to: string) => void;
 }) {
-  const customInvalid =
-    period === 'custom' && from && to && new Date(from) > new Date(to);
+  const customInvalid = period === 'custom' && from && to && new Date(from) > new Date(to);
   const valueLabel = period === 'all' ? null : PERIOD_LABELS[period];
   return (
     <FacetDropdown
@@ -283,9 +272,7 @@ function ImportanceDot({ level }: { level: ArticleListItem['importance'] }) {
     return <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 bg-border" />;
   }
   const s = IMP_STYLE[level];
-  return (
-    <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0" style={{ background: s.dot }} />
-  );
+  return <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0" style={{ background: s.dot }} />;
 }
 
 function ImportanceBadge({ level }: { level: ArticleListItem['importance'] }) {
@@ -302,13 +289,7 @@ function ImportanceBadge({ level }: { level: ArticleListItem['importance'] }) {
   );
 }
 
-function SimilarBadge({
-  count,
-  onClick,
-}: {
-  count: number;
-  onClick: () => void;
-}) {
+function SimilarBadge({ count, onClick }: { count: number; onClick: () => void }) {
   if (count < 1) return null;
   return (
     <button
@@ -367,13 +348,7 @@ function EntityChipInline({ entity }: { entity: ArticleEntitySummary }) {
   );
 }
 
-function SimilarSidebar({
-  articleId,
-  onClose,
-}: {
-  articleId: string;
-  onClose: () => void;
-}) {
+function SimilarSidebar({ articleId, onClose }: { articleId: string; onClose: () => void }) {
   const { data, isLoading, isError } = useGetArticleQuery(articleId);
 
   useEffect(() => {
@@ -388,11 +363,7 @@ function SimilarSidebar({
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-40 bg-ink/20"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 z-40 bg-ink/20" onClick={onClose} aria-hidden="true" />
       <aside
         role="dialog"
         aria-label="Similar in other sources"
@@ -510,7 +481,6 @@ function SimilarSidebar({
   );
 }
 
-
 function ArticleRow({
   article,
   feed,
@@ -532,9 +502,7 @@ function ArticleRow({
             to={`/articles/${article.id}`}
             className={
               'pretty leading-snug hover:text-accent ' +
-              (isJunk
-                ? 'text-[14.5px] italic text-muted'
-                : 'text-[15.5px] font-medium text-ink')
+              (isJunk ? 'text-[14.5px] italic text-muted' : 'text-[15.5px] font-medium text-ink')
             }
           >
             {article.title}
@@ -590,10 +558,7 @@ function ArticleRow({
           {article.status !== 'ready' ? (
             <>
               <Sep />
-              <StatusChip
-                status={article.status}
-                filterReason={article.filterReason}
-              />
+              <StatusChip status={article.status} filterReason={article.filterReason} />
             </>
           ) : null}
           {article.similarCount > 0 ? (
@@ -646,23 +611,13 @@ export default function ArticlesList() {
   // SSE: invalidate the list as each pending article completes its analyze
   // job, so newly-ready rows surface here without a manual refresh.
   useArticleAnalyzedEvents();
-  const categoryIds = useMemo(
-    () => parseCsvParam(searchParams.get('category')),
-    [searchParams],
-  );
-  const feedIds = useMemo(
-    () => parseCsvParam(searchParams.get('feed')),
-    [searchParams],
-  );
-  const axisValueIds = useMemo(
-    () => parseCsvParam(searchParams.get('axisValue')),
-    [searchParams],
-  );
+  const categoryIds = useMemo(() => parseCsvParam(searchParams.get('category')), [searchParams]);
+  const feedIds = useMemo(() => parseCsvParam(searchParams.get('feed')), [searchParams]);
+  const axisValueIds = useMemo(() => parseCsvParam(searchParams.get('axisValue')), [searchParams]);
   const importances = useMemo(
     () =>
       parseCsvParam(searchParams.get('importance')).filter(
-        (v): v is 'high' | 'normal' | 'junk' =>
-          v === 'high' || v === 'normal' || v === 'junk',
+        (v): v is 'high' | 'normal' | 'junk' => v === 'high' || v === 'normal' || v === 'junk',
       ),
     [searchParams],
   );
@@ -684,8 +639,7 @@ export default function ArticlesList() {
   const to = searchParams.get('to') ?? '';
   const q = searchParams.get('q') ?? '';
 
-  const customInvalid =
-    period === 'custom' && from && to && new Date(from) > new Date(to);
+  const customInvalid = period === 'custom' && from && to && new Date(from) > new Date(to);
   const customIncomplete = period === 'custom' && (!from || !to);
 
   // Convert local-date `from`/`to` strings to UTC ISO datetimes for the API.
@@ -696,12 +650,10 @@ export default function ArticlesList() {
 
   // 1-based; reset whenever a non-page param changes (see updateParams).
   const parsedPage = Number(searchParams.get('page'));
-  const page =
-    Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
 
   const rawSort = searchParams.get('sort');
-  const sort: ArticleSort =
-    rawSort === 'feed' || rawSort === 'duplicates' ? rawSort : 'newest';
+  const sort: ArticleSort = rawSort === 'feed' || rawSort === 'duplicates' ? rawSort : 'newest';
 
   const parsedPageSize = Number(searchParams.get('pageSize'));
   const pageSize = ARTICLE_PAGE_SIZE_OPTIONS.includes(
@@ -822,9 +774,7 @@ export default function ArticlesList() {
           />
           <FeedDropdown
             selected={feedIds}
-            onChange={(ids) =>
-              updateParams({ feed: ids.length > 0 ? ids.join(',') : undefined })
-            }
+            onChange={(ids) => updateParams({ feed: ids.length > 0 ? ids.join(',') : undefined })}
           />
           <AxisDropdown
             selected={axisValueIds}
@@ -843,9 +793,7 @@ export default function ArticlesList() {
                 to: p === 'custom' ? to || undefined : undefined,
               })
             }
-            onCustomChange={(f, t) =>
-              updateParams({ from: f || undefined, to: t || undefined })
-            }
+            onCustomChange={(f, t) => updateParams({ from: f || undefined, to: t || undefined })}
           />
           <div className="flex-1" />
           <SearchInput
@@ -861,9 +809,7 @@ export default function ArticlesList() {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-2">
           <StatusDropdown
             selected={statuses}
-            onChange={(ss) =>
-              updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })
-            }
+            onChange={(ss) => updateParams({ status: ss.length > 0 ? ss.join(',') : undefined })}
           />
           <div className="flex-1" />
           <SortDropdown
@@ -885,7 +831,7 @@ export default function ArticlesList() {
           <span className="tnum">
             {data && (
               <>
-                 <span className="text-ink">{data.total}</span> articles
+                <span className="text-ink">{data.total}</span> articles
               </>
             )}
           </span>
@@ -937,10 +883,7 @@ export default function ArticlesList() {
       </div>
 
       {openSimilarId ? (
-        <SimilarSidebar
-          articleId={openSimilarId}
-          onClose={() => setOpenSimilarId(null)}
-        />
+        <SimilarSidebar articleId={openSimilarId} onClose={() => setOpenSimilarId(null)} />
       ) : null}
     </div>
   );

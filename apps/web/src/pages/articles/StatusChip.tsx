@@ -31,8 +31,7 @@ export function StatusChip({
 }) {
   if (status === 'ready') return null;
   const label = LABEL[status];
-  const reason =
-    status === 'filtered' && filterReason ? `: ${filterReason}` : '';
+  const reason = status === 'filtered' && filterReason ? `: ${filterReason}` : '';
   return (
     <span
       className={

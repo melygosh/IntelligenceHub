@@ -100,10 +100,7 @@ export default function CategoriesPage() {
         <ul className="space-y-3">
           {data?.categories.map((c) =>
             editingId === c.id ? (
-              <li
-                key={c.id}
-                className="flex flex-col gap-1 border border-border bg-surface p-3"
-              >
+              <li key={c.id} className="flex flex-col gap-1 border border-border bg-surface p-3">
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row">
                   <input
                     value={draftName}
@@ -142,10 +139,7 @@ export default function CategoriesPage() {
               >
                 <span className="font-serif text-[18px] text-ink">{c.name}</span>
                 <div className="flex items-center gap-3">
-                  <EditIconButton
-                    label="Rename category"
-                    onClick={() => startEdit(c.id, c.name)}
-                  />
+                  <EditIconButton label="Rename category" onClick={() => startEdit(c.id, c.name)} />
                   <DeleteIconButton
                     label="Delete category"
                     onClick={async () => {
@@ -155,7 +149,7 @@ export default function CategoriesPage() {
                         confirmLabel: 'Delete',
                         tone: 'danger',
                       });
-                      if (ok) deleteCategory(c.id);
+                      if (ok) void deleteCategory(c.id);
                     }}
                   />
                 </div>

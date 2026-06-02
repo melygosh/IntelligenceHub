@@ -5,7 +5,6 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Sep } from '../../components/ui/Sep';
 
-
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -89,14 +88,24 @@ function TelemetryTableRow({ r }: { r: TelemetryRow }) {
       <td className="py-2 pr-3 font-mono text-[12.5px] text-muted">{r.provider}</td>
       <td className="py-2 pr-3 font-mono text-[12.5px] text-muted">{r.model}</td>
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-ink">{r.callCount}</td>
-      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">{fmtTokens(r.inputTokens)}</td>
-      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">{fmtTokens(r.outputTokens)}</td>
+      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">
+        {fmtTokens(r.inputTokens)}
+      </td>
+      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">
+        {fmtTokens(r.outputTokens)}
+      </td>
       <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-mute2">
         {fmtTokens(r.cacheReadTokens)} / {fmtTokens(r.cacheCreationTokens)}
       </td>
-      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-mute2">{r.avgLatencyMs}</td>
-      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">{fmtPercent(r.successRate)}</td>
-      <td className="py-2 pr-1 text-right font-mono text-[12.5px] tnum text-mute2">{r.failoverCount}</td>
+      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-mute2">
+        {r.avgLatencyMs}
+      </td>
+      <td className="py-2 pr-3 text-right font-mono text-[12.5px] tnum text-muted">
+        {fmtPercent(r.successRate)}
+      </td>
+      <td className="py-2 pr-1 text-right font-mono text-[12.5px] tnum text-mute2">
+        {r.failoverCount}
+      </td>
     </tr>
   );
 }
@@ -137,19 +146,14 @@ export default function TelemetryPage() {
             {data.dateRange.from && data.dateRange.to ? (
               <>
                 <Sep />
-                <span className="tnum">
-                  Since {fmtDate(data.dateRange.from)}
-                </span>
+                <span className="tnum">Since {fmtDate(data.dateRange.from)}</span>
               </>
             ) : null}
           </div>
 
           <div className="space-y-3 md:hidden">
             {data.rows.map((r, i) => (
-              <TelemetryCard
-                key={`${r.operation}-${r.provider}-${r.model}-${i}`}
-                r={r}
-              />
+              <TelemetryCard key={`${r.operation}-${r.provider}-${r.model}-${i}`} r={r} />
             ))}
           </div>
 
@@ -157,16 +161,36 @@ export default function TelemetryPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Operation</th>
-                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Prov</th>
-                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Model</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Calls</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Input</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Output</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Cache R/W</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Avg ms</th>
-                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">Success</th>
-                  <th className="py-2 pr-1 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">F/over</th>
+                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Operation
+                  </th>
+                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Prov
+                  </th>
+                  <th className="py-2 pr-3 text-left font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Model
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Calls
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Input
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Output
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Cache R/W
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Avg ms
+                  </th>
+                  <th className="py-2 pr-3 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    Success
+                  </th>
+                  <th className="py-2 pr-1 text-right font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                    F/over
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -176,7 +200,6 @@ export default function TelemetryPage() {
               </tbody>
             </table>
           </div>
-
         </>
       )}
     </div>

@@ -29,11 +29,7 @@ export function CategoryDropdown({
     else onChange([...selected, id]);
   };
   return (
-    <FacetDropdown
-      label="Category"
-      valueLabel={valueLabel}
-      isActive={selected.length > 0}
-    >
+    <FacetDropdown label="Category" valueLabel={valueLabel} isActive={selected.length > 0}>
       {() => (
         <>
           {data?.categories.map((c) => {

@@ -11,9 +11,7 @@
  * Granularity steps: seconds → minutes → hours → days → months (30d each).
  * Values in the future return "now" rather than a negative count.
  */
-export function fmtRelative(
-  input: string | number | Date | null | undefined,
-): string {
+export function fmtRelative(input: string | number | Date | null | undefined): string {
   if (input === null || input === undefined) return '—';
   const target =
     typeof input === 'number'

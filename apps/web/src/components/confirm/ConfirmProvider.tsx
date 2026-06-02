@@ -68,11 +68,7 @@ function ConfirmDialog({
   const danger = tone === 'danger';
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-ink/30"
-        onClick={onCancel}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-ink/30" onClick={onCancel} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"
@@ -81,9 +77,7 @@ function ConfirmDialog({
       >
         <h2 className="font-serif text-[20px] leading-snug text-ink">{title}</h2>
         {message ? (
-          <p className="mt-2 font-mono text-[13px] leading-relaxed text-muted">
-            {message}
-          </p>
+          <p className="mt-2 font-mono text-[13px] leading-relaxed text-muted">{message}</p>
         ) : null}
         <div className="mt-6 flex justify-end gap-2">
           <button

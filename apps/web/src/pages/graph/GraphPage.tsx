@@ -31,11 +31,7 @@ import { SearchInput } from '../../components/filters/SearchInput';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import {
-  buildCategoryColours,
-  categoryColour,
-  UNCATEGORISED_COLOUR,
-} from './graph-palette';
+import { buildCategoryColours, categoryColour, UNCATEGORISED_COLOUR } from './graph-palette';
 import { IMP_STYLE } from '../../components/articles/importance';
 import { GraphExportMenu } from './GraphExportMenu';
 
@@ -117,8 +113,7 @@ function toReactFlowNodes(
     // Focus (search/selection) dimming wins; otherwise the timeline spotlights
     // the current step by dimming previously-revealed nodes.
     const focusDim = focus !== null && !focus.has(n.id);
-    const timelineDim =
-      !focusDim && timelineCurrent !== null && !timelineCurrent.has(n.id);
+    const timelineDim = !focusDim && timelineCurrent !== null && !timelineCurrent.has(n.id);
     const style: React.CSSProperties = {
       opacity: focusDim ? 0.18 : timelineDim ? 0.25 : 1,
       transition: 'opacity 120ms linear',
@@ -441,10 +436,7 @@ export default function GraphPage() {
 
   // Bounds of the co-mention buckets on the built graph (null when timeline
   // data isn't present). Drives the slider range.
-  const bounds = useMemo(
-    () => (filtered ? timelineBounds(filtered.edges) : null),
-    [filtered],
-  );
+  const bounds = useMemo(() => (filtered ? timelineBounds(filtered.edges) : null), [filtered]);
 
   // The timeline replays co-mention build-up, so it's only applicable when the
   // built graph actually has co-mention edges (≥2 co-mentioned entities) — and
@@ -476,9 +468,7 @@ export default function GraphPage() {
         liveEntityIds.add(e.to);
       }
     }
-    const nodes = filtered.nodes.filter(
-      (n) => n.kind !== 'entity' || liveEntityIds.has(n.id),
-    );
+    const nodes = filtered.nodes.filter((n) => n.kind !== 'entity' || liveEntityIds.has(n.id));
     return { nodes, edges };
   }, [filtered, timelineActive, scrubT, bounds]);
 
@@ -600,9 +590,7 @@ export default function GraphPage() {
       return () => clearTimeout(stop);
     }
     const buckets = [
-      ...new Set(
-        (filtered?.edges ?? []).flatMap((e) => e.buckets?.map((b) => b.t) ?? []),
-      ),
+      ...new Set((filtered?.edges ?? []).flatMap((e) => e.buckets?.map((b) => b.t) ?? [])),
     ].sort((a, b) => a - b);
     const cur = scrubT ?? bounds.min - 1;
     const next = buckets.find((t) => t > cur) ?? bounds.max;
@@ -617,9 +605,7 @@ export default function GraphPage() {
   useEffect(() => {
     const inst = rfRef.current;
     if (!inst || !data || data.nodes.length === 0) return;
-    const raf = requestAnimationFrame(() =>
-      inst.fitView({ padding: 0.2, duration: 300 }),
-    );
+    const raf = requestAnimationFrame(() => inst.fitView({ padding: 0.2, duration: 300 }));
     return () => cancelAnimationFrame(raf);
   }, [data]);
 
@@ -784,9 +770,7 @@ export default function GraphPage() {
           <label
             className={
               'flex items-center gap-1.5 ' +
-              (timelineUnavailable
-                ? 'cursor-not-allowed opacity-40'
-                : 'hover:text-ink')
+              (timelineUnavailable ? 'cursor-not-allowed opacity-40' : 'hover:text-ink')
             }
             title={
               timelineDisabled
@@ -852,9 +836,7 @@ export default function GraphPage() {
               onChange={(e) => {
                 const v = Number(e.target.value);
                 if (Number.isNaN(v)) return;
-                setSpeedSec(
-                  Math.min(AUTOPLAY_MAX_SEC, Math.max(AUTOPLAY_MIN_SEC, v)),
-                );
+                setSpeedSec(Math.min(AUTOPLAY_MAX_SEC, Math.max(AUTOPLAY_MIN_SEC, v)));
               }}
               className="w-12 border border-border bg-paper px-1 py-0.5 text-right text-ink tnum focus:border-ink focus:outline-none"
               aria-label="Autoplay speed in seconds per step"

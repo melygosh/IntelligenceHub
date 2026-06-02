@@ -46,8 +46,7 @@ export function useRegenerationStatusEvents(): void {
     }
 
     if (event.type === 'regeneration.progress') {
-      const { runId, articlesProcessed, articlesTotal, articlesCacheHit } =
-        event.payload;
+      const { runId, articlesProcessed, articlesTotal, articlesCacheHit } = event.payload;
       const toastId = toastByRun.current.get(runId);
       if (!toastId) return;
       update(toastId, {
@@ -61,20 +60,12 @@ export function useRegenerationStatusEvents(): void {
     }
 
     if (event.type === 'regeneration.completed') {
-      const {
-        runId,
-        articlesProcessed,
-        articlesCacheHit,
-        articlesLlmCalled,
-        articlesErrored,
-      } = event.payload;
+      const { runId, articlesProcessed, articlesCacheHit, articlesLlmCalled, articlesErrored } =
+        event.payload;
       const toastId = toastByRun.current.get(runId);
       toastByRun.current.delete(runId);
 
-      const parts = [
-        `${articlesCacheHit} from cache`,
-        `${articlesLlmCalled} new LLM calls`,
-      ];
+      const parts = [`${articlesCacheHit} from cache`, `${articlesLlmCalled} new LLM calls`];
       if (articlesErrored > 0) parts.push(`${articlesErrored} errored`);
       const body = parts.join(' · ');
 
@@ -98,9 +89,7 @@ export function useRegenerationStatusEvents(): void {
       // Invalidate Regeneration so AxesPage/CategoriesPage's "Regenerate"
       // button re-enables itself; Articles/Categories/Axes so the new tags
       // surface in the UI.
-      dispatch(
-        api.util.invalidateTags(['Regeneration', 'Articles', 'Categories', 'Axes']),
-      );
+      dispatch(api.util.invalidateTags(['Regeneration', 'Articles', 'Categories', 'Axes']));
       return;
     }
 

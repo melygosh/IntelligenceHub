@@ -144,10 +144,24 @@ export function MentionTimeline({ buckets }: { buckets: TimelineBucket[] }) {
           <text x={pad.left} y={H - 6} fontSize="10" fontFamily={MONO} fill="var(--color-mute2)">
             {dayLabel(series[0].dayUtc)}
           </text>
-          <text x={W / 2} y={H - 6} fontSize="10" fontFamily={MONO} fill="var(--color-mute2)" textAnchor="middle">
+          <text
+            x={W / 2}
+            y={H - 6}
+            fontSize="10"
+            fontFamily={MONO}
+            fill="var(--color-mute2)"
+            textAnchor="middle"
+          >
             {dayLabel(series[midIdx].dayUtc)}
           </text>
-          <text x={W - pad.right} y={H - 6} fontSize="10" fontFamily={MONO} fill="var(--color-mute2)" textAnchor="end">
+          <text
+            x={W - pad.right}
+            y={H - 6}
+            fontSize="10"
+            fontFamily={MONO}
+            fill="var(--color-mute2)"
+            textAnchor="end"
+          >
             {dayLabel(series[series.length - 1].dayUtc)}
           </text>
         </svg>

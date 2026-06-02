@@ -3,7 +3,10 @@ import DOMPurify from 'dompurify';
 import { Link, useParams } from 'react-router-dom';
 import { useGetArticleQuery, useGetRelatedSemanticQuery } from '../../store/api';
 import { useArticleEmbeddedEvents } from '../../events/useArticleEmbeddedEvents';
-import type { ArticleDetail as ArticleDetailDto, ArticleEntitySummary } from '@intelligencehub/shared';
+import type {
+  ArticleDetail as ArticleDetailDto,
+  ArticleEntitySummary,
+} from '@intelligencehub/shared';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
@@ -53,10 +56,29 @@ export default function ArticleDetail() {
     if (!looksLikeHtml(body)) return null;
     return DOMPurify.sanitize(body, {
       ALLOWED_TAGS: [
-        'p', 'br', 'strong', 'em', 'b', 'i', 'u', 'a',
-        'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'img', 'figure', 'figcaption',
+        'p',
+        'br',
+        'strong',
+        'em',
+        'b',
+        'i',
+        'u',
+        'a',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'code',
+        'pre',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'img',
+        'figure',
+        'figcaption',
       ],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
     });
@@ -104,14 +126,20 @@ export default function ArticleDetail() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-muted">
           {data.importance ? (
             <span className="flex items-center gap-1.5">
-              <span className={`inline-block h-2 w-2 ${IMPORTANCE_COLOR[data.importance] ?? 'bg-border'}`} />
+              <span
+                className={`inline-block h-2 w-2 ${IMPORTANCE_COLOR[data.importance] ?? 'bg-border'}`}
+              />
               <span className="uppercase tracking-[0.06em] text-ink">{data.importance}</span>
             </span>
           ) : null}
           <Sep />
           <span className="tnum">
             {date.toLocaleString(undefined, {
-              month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
             })}
           </span>
           <Sep />
@@ -132,14 +160,20 @@ export default function ArticleDetail() {
 
       {data.summary ? (
         <section className="space-y-2">
-          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Summary</div>
-          <p className="pretty font-serif text-[19px] leading-relaxed text-ink text-justify">{data.summary}</p>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+            Summary
+          </div>
+          <p className="pretty font-serif text-[19px] leading-relaxed text-ink text-justify">
+            {data.summary}
+          </p>
         </section>
       ) : null}
 
       {data.body ? (
         <section className="space-y-2">
-          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Full text</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+            Full text
+          </div>
           {sanitizedBody ? (
             <div
               className="article-body pretty font-serif text-[17px] leading-relaxed text-ink text-justify"
@@ -158,7 +192,9 @@ export default function ArticleDetail() {
         <section className="grid gap-8 sm:grid-cols-2">
           {data.categoryNames.length > 0 ? (
             <div className="space-y-2">
-              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Categories</div>
+              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+                Categories
+              </div>
               <ul className="flex flex-wrap gap-1.5">
                 {data.categoryNames.map((n) => (
                   <li
@@ -173,7 +209,9 @@ export default function ArticleDetail() {
           ) : null}
           {data.axisAssignments.length > 0 ? (
             <div className="space-y-2">
-              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Axes</div>
+              <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+                Axes
+              </div>
               <dl className="border-t border-border">
                 {data.axisAssignments.map((a) => (
                   <div
@@ -204,7 +242,9 @@ export default function ArticleDetail() {
               return (
                 <div key={type} className="space-y-2">
                   <div className="flex items-center gap-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-mute2">
-                    <span className="inline-flex items-center text-mute2"><EntityGlyph type={type} /></span>
+                    <span className="inline-flex items-center text-mute2">
+                      <EntityGlyph type={type} />
+                    </span>
                     <span>{TYPE_GROUP_LABEL[type]}</span>
                     <span className="tnum">{group.length}</span>
                   </div>
@@ -215,7 +255,9 @@ export default function ArticleDetail() {
                           to={`/entities/${e.id}`}
                           className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
                         >
-                          <span className="inline-flex items-center text-mute2"><EntityGlyph type={e.type} /></span>
+                          <span className="inline-flex items-center text-mute2">
+                            <EntityGlyph type={e.type} />
+                          </span>
                           <span>{e.canonicalName}</span>
                         </Link>
                       </li>
@@ -244,9 +286,7 @@ export default function ArticleDetail() {
               Related (semantic)
             </div>
             {related.status === 'pending' ? (
-              <span className="font-mono text-[11px] text-mute2">
-                · computing embedding…
-              </span>
+              <span className="font-mono text-[11px] text-mute2">· computing embedding…</span>
             ) : related.items.length === 0 ? (
               <span className="font-mono text-[11px] text-mute2">
                 · no neighbours above threshold
@@ -270,9 +310,7 @@ export default function ArticleDetail() {
                     {r.title}
                   </Link>
                   {r.feedTitle ? (
-                    <span className="font-mono text-[11.5px] text-mute2">
-                      {r.feedTitle}
-                    </span>
+                    <span className="font-mono text-[11.5px] text-mute2">{r.feedTitle}</span>
                   ) : null}
                 </li>
               ))}

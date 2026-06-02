@@ -1,8 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import {
-  type DigestTopCategory,
-  type DigestTopEntity,
-} from '@intelligencehub/shared';
+import { type DigestTopCategory, type DigestTopEntity } from '@intelligencehub/shared';
 import { useGetDigestQuery } from '../../store/api';
 import { useDigestStatusEvents } from '../../events/useDigestStatusEvents';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
@@ -18,10 +15,11 @@ const PERIOD_LABEL: Record<'day' | 'week' | 'month', string> = {
   month: 'Last month',
 };
 
-
 function fmt(d: string): string {
   return new Date(d).toLocaleDateString(undefined, {
-    month: 'short', day: 'numeric', year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 }
 
@@ -29,11 +27,10 @@ function TopEntityRow({ e, rank }: { e: DigestTopEntity; rank: number }) {
   return (
     <li className="flex items-center gap-2 py-1.5 font-mono text-[13px]">
       <span className="w-5 shrink-0 text-right text-mute2 tnum">{rank}.</span>
-      <span className="inline-flex items-center text-mute2"><EntityGlyph type={e.type} /></span>
-      <Link
-        to={`/entities/${e.id}`}
-        className="flex-1 truncate text-ink hover:text-accent-deep"
-      >
+      <span className="inline-flex items-center text-mute2">
+        <EntityGlyph type={e.type} />
+      </span>
+      <Link to={`/entities/${e.id}`} className="flex-1 truncate text-ink hover:text-accent-deep">
         {e.canonicalName}
       </Link>
       <span className="text-mute2 tnum">{e.mentionCount}</span>
@@ -50,7 +47,6 @@ function TopCategoryRow({ c, rank }: { c: DigestTopCategory; rank: number }) {
     </li>
   );
 }
-
 
 export default function DigestDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -89,8 +85,8 @@ export default function DigestDetailPage() {
     data.scopeKind === 'category' && data.scopeFilterIds.length > 0
       ? `${data.scopeFilterIds.length} categories`
       : data.scopeKind === 'entity' && data.scopeFilterIds.length > 0
-      ? `${data.scopeFilterIds.length} entities`
-      : 'all articles';
+        ? `${data.scopeFilterIds.length} entities`
+        : 'all articles';
 
   return (
     <article className="mx-auto max-w-5xl space-y-8">
@@ -118,7 +114,8 @@ export default function DigestDetailPage() {
         </div>
         {data.status === 'ready' && data.model ? (
           <div className="font-mono text-[12px] text-mute2 tnum">
-            {data.model} · {(data.inputTokens + data.outputTokens).toLocaleString()} tokens · {data.latencyMs.toLocaleString()} ms
+            {data.model} · {(data.inputTokens + data.outputTokens).toLocaleString()} tokens ·{' '}
+            {data.latencyMs.toLocaleString()} ms
           </div>
         ) : null}
       </header>
@@ -154,13 +151,16 @@ export default function DigestDetailPage() {
               Summary
             </div>
             {data.summary.map((p, i) => (
-              <p key={i} className="pretty font-serif text-[18px] leading-relaxed text-ink text-justify">
+              <p
+                key={i}
+                className="pretty font-serif text-[18px] leading-relaxed text-ink text-justify"
+              >
                 {p}
               </p>
             ))}
           </section>
 
-          {(data.topEntities.length > 0 || data.topCategories.length > 0) ? (
+          {data.topEntities.length > 0 || data.topCategories.length > 0 ? (
             <section className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
               {data.topEntities.length > 0 ? (
                 <div>

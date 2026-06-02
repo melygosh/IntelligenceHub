@@ -249,11 +249,7 @@ export function ArticlesPanel({
             {/* Infinite-scroll sentinel + status line. */}
             <div ref={sentinelRef} aria-hidden className="h-px" />
             <p className="px-3 py-2 text-center font-mono text-[11px] text-mute2">
-              {isFetching
-                ? 'loading more…'
-                : hasMore
-                  ? 'scroll for more'
-                  : `all ${total} loaded`}
+              {isFetching ? 'loading more…' : hasMore ? 'scroll for more' : `all ${total} loaded`}
             </p>
           </>
         )}

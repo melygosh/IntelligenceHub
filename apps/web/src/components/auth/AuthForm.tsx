@@ -151,7 +151,15 @@ export function AuthSubmitButton({
 }
 
 /** Footer "prompt + link" pointing at the other auth page. */
-export function AuthAltAction({ prompt, to, label }: { prompt: string; to: string; label: string }) {
+export function AuthAltAction({
+  prompt,
+  to,
+  label,
+}: {
+  prompt: string;
+  to: string;
+  label: string;
+}) {
   return (
     <div className="mt-5 border-t border-border pt-4 text-center font-mono text-[13px] text-muted">
       {prompt}{' '}

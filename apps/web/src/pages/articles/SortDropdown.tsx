@@ -20,11 +20,7 @@ export function SortDropdown({
 }) {
   const valueLabel = LABEL_BY_ID.get(value) ?? null;
   return (
-    <FacetDropdown
-      label="Sort"
-      valueLabel={valueLabel}
-      isActive={value !== 'newest'}
-    >
+    <FacetDropdown label="Sort" valueLabel={valueLabel} isActive={value !== 'newest'}>
       {(close) =>
         OPTIONS.map((o) => {
           const on = o.id === value;

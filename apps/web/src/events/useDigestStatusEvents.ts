@@ -21,9 +21,7 @@ export function useDigestStatusEvents(): void {
   useServerEvents((event) => {
     if (event.type !== 'digest.status_changed') return;
     const { digestId, status } = event.payload;
-    dispatch(
-      api.util.invalidateTags(['Digests', { type: 'Digest', id: digestId }]),
-    );
+    dispatch(api.util.invalidateTags(['Digests', { type: 'Digest', id: digestId }]));
     if (status === 'ready') {
       push({
         severity: 'success',

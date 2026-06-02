@@ -33,7 +33,7 @@ export default function Register() {
       if (result.devModeConfirmLink) {
         sessionStorage.setItem('devModeConfirmLink', result.devModeConfirmLink);
       }
-      navigate('/auth/check-email', {
+      void navigate('/auth/check-email', {
         replace: true,
         state: { devModeConfirmLink: result.devModeConfirmLink },
       });
@@ -43,7 +43,11 @@ export default function Register() {
   }
 
   return (
-    <AuthFormShell eyebrow="Create account" title="Make your hub." onSubmit={handleSubmit(onSubmit)}>
+    <AuthFormShell
+      eyebrow="Create account"
+      title="Make your hub."
+      onSubmit={handleSubmit(onSubmit)}
+    >
       <AuthField
         id="email"
         label="Email"
@@ -83,8 +87,8 @@ export default function Register() {
           >
             ?
             <span className="invisible absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 border border-border bg-paper px-2 py-1.5 text-left font-mono text-[12px] leading-relaxed text-muted opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              Loads ~20 sample HN articles with pre-generated tags so you can
-              explore the graph without waiting for live RSS pulls.
+              Loads ~20 sample HN articles with pre-generated tags so you can explore the graph
+              without waiting for live RSS pulls.
             </span>
           </span>
         </span>

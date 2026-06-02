@@ -67,17 +67,17 @@ describe('pinSelectedFirst', () => {
     // but lives in the pool — it must still appear, pinned at the top.
     const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
     const pool = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'z' }];
-    expect(
-      pinSelectedFirst(items, new Set(['b', 'z']), pool).map((i) => i.id),
-    ).toEqual(['b', 'z', 'a', 'c']);
+    expect(pinSelectedFirst(items, new Set(['b', 'z']), pool).map((i) => i.id)).toEqual([
+      'b',
+      'z',
+      'a',
+      'c',
+    ]);
   });
 
   it('does not duplicate a selected item present in both items and pool', () => {
     const items = [{ id: 'a' }, { id: 'b' }];
     const pool = [{ id: 'a' }, { id: 'b' }];
-    expect(pinSelectedFirst(items, new Set(['a']), pool).map((i) => i.id)).toEqual([
-      'a',
-      'b',
-    ]);
+    expect(pinSelectedFirst(items, new Set(['a']), pool).map((i) => i.id)).toEqual(['a', 'b']);
   });
 });

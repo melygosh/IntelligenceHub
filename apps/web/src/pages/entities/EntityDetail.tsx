@@ -20,7 +20,9 @@ function formatDate(unixSeconds: number): string {
 function TypeBadge({ type }: { type: EntityKind }) {
   return (
     <span className="inline-flex items-center gap-1.5 border border-border bg-paper2 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
-      <span className="inline-flex items-center text-muted"><EntityGlyph type={type} /></span>
+      <span className="inline-flex items-center text-muted">
+        <EntityGlyph type={type} />
+      </span>
       <span>{type}</span>
     </span>
   );
@@ -41,7 +43,9 @@ function RelatedChip({ r }: { r: RelatedEntitySummary }) {
       to={`/entities/${r.id}`}
       className="inline-flex items-center gap-1.5 border border-border bg-paper px-2 py-1 font-mono text-[13px] text-ink hover:bg-paper2"
     >
-      <span className="inline-flex items-center text-mute2"><EntityGlyph type={r.type} /></span>
+      <span className="inline-flex items-center text-mute2">
+        <EntityGlyph type={r.type} />
+      </span>
       <span>{r.canonicalName}</span>
       <span className="text-mute2">· {r.weight}</span>
     </Link>
@@ -95,7 +99,9 @@ export default function EntityDetail() {
     <article className="mx-auto max-w-5xl space-y-8">
       <header className="space-y-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-          <h1 className="pretty font-serif text-[30px] leading-tight text-ink">{data.canonicalName}</h1>
+          <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
+            {data.canonicalName}
+          </h1>
           <span className="self-center">
             <TypeBadge type={data.type} />
           </span>
@@ -125,15 +131,15 @@ export default function EntityDetail() {
           ) : null}
         </div>
         {data.description ? (
-          <p className="font-serif text-[15.5px] leading-snug text-ink/85">
-            {data.description}
-          </p>
+          <p className="font-serif text-[15.5px] leading-snug text-ink/85">{data.description}</p>
         ) : null}
       </header>
 
       {data.aliases.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Also known as</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+            Also known as
+          </div>
           <ul className="flex flex-wrap gap-1.5">
             {data.aliases.map((a) => (
               <li
@@ -151,7 +157,9 @@ export default function EntityDetail() {
 
       {data.relatedEntities.length > 0 ? (
         <section className="space-y-2">
-          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Often appears with</div>
+          <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
+            Often appears with
+          </div>
           <ul className="flex flex-wrap gap-2">
             {(relatedExpanded
               ? data.relatedEntities
@@ -186,18 +194,12 @@ export default function EntityDetail() {
             <button
               type="button"
               onClick={() =>
-                setMentionsShown((n) =>
-                  Math.min(n + MENTIONS_STEP, data.mentioningArticles.length),
-                )
+                setMentionsShown((n) => Math.min(n + MENTIONS_STEP, data.mentioningArticles.length))
               }
               className="font-mono text-[12px] text-accent hover:text-accent-deep"
             >
-              Show{' '}
-              {Math.min(
-                MENTIONS_STEP,
-                data.mentioningArticles.length - mentionsShown,
-              )}{' '}
-              more ({mentionsShown} of {data.mentioningArticles.length})
+              Show {Math.min(MENTIONS_STEP, data.mentioningArticles.length - mentionsShown)} more (
+              {mentionsShown} of {data.mentioningArticles.length})
             </button>
           ) : null}
         </section>

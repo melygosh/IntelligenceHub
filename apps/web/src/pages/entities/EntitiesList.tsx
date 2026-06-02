@@ -12,7 +12,6 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { Sep } from '../../components/ui/Sep';
 import { fmtRelative } from '../../lib/fmtRelative';
 
-
 const TYPE_OPTIONS: { value: EntityKind | ''; label: string }[] = [
   { value: '', label: 'All types' },
   { value: 'company', label: 'Companies' },
@@ -30,11 +29,7 @@ const SORT_OPTIONS: { value: EntitySort; label: string }[] = [
 
 function isEntityKind(s: string | null): s is EntityKind {
   return (
-    s === 'company' ||
-    s === 'person' ||
-    s === 'product' ||
-    s === 'technology' ||
-    s === 'location'
+    s === 'company' || s === 'person' || s === 'product' || s === 'technology' || s === 'location'
   );
 }
 
@@ -102,7 +97,6 @@ function FilterMenu<T extends string>({
   );
 }
 
-
 export default function EntitiesList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawType = searchParams.get('type');
@@ -112,8 +106,7 @@ export default function EntitiesList() {
   const q = searchParams.get('q') ?? '';
 
   const parsedPage = Number(searchParams.get('page'));
-  const page =
-    Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
 
   const { data, isLoading, error } = useGetEntityListQuery({
     type: type || undefined,
@@ -140,7 +133,9 @@ export default function EntitiesList() {
     updateParams({ page: next > 1 ? String(next) : undefined }, { keepPage: true });
   };
 
-  const sortLabel = (SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Most mentioned').toLowerCase();
+  const sortLabel = (
+    SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Most mentioned'
+  ).toLowerCase();
 
   const subtitle = useMemo(() => {
     const parts: string[] = [];
@@ -186,7 +181,8 @@ export default function EntitiesList() {
             sorted by {sortLabel}
             {data ? (
               <>
-                {' '}· <span className="text-ink">{data.total}</span> entit
+                {' '}
+                · <span className="text-ink">{data.total}</span> entit
                 {data.total === 1 ? 'y' : 'ies'}
               </>
             ) : null}
@@ -246,9 +242,7 @@ export default function EntitiesList() {
                     <span
                       className="tnum"
                       title={
-                        e.lastSeen !== null
-                          ? new Date(e.lastSeen * 1000).toISOString()
-                          : undefined
+                        e.lastSeen !== null ? new Date(e.lastSeen * 1000).toISOString() : undefined
                       }
                     >
                       {fmtRelative(e.lastSeen)}

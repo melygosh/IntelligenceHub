@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ToastContext } from './toast-context';
 
 export type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
@@ -179,7 +173,15 @@ function SeverityIcon({ severity }: { severity: ToastSeverity }) {
   if (severity === 'error') {
     return (
       <svg viewBox="0 0 14 14" className="h-3.5 w-3.5">
-        <rect x="2" y="2" width="10" height="10" stroke="currentColor" strokeWidth="1.2" fill="none" />
+        <rect
+          x="2"
+          y="2"
+          width="10"
+          height="10"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          fill="none"
+        />
         <path
           d="M5 5 L9 9 M9 5 L5 9"
           stroke="currentColor"
@@ -207,7 +209,13 @@ function SeverityIcon({ severity }: { severity: ToastSeverity }) {
   return (
     <svg viewBox="0 0 14 14" className="h-3.5 w-3.5">
       <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
-      <path d="M7 6.5 V10" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <path
+        d="M7 6.5 V10"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
       <circle cx="7" cy="4.3" r="0.6" fill="currentColor" />
     </svg>
   );
@@ -247,31 +255,20 @@ function CloseIcon() {
 function MinimizeIcon() {
   return (
     <svg viewBox="0 0 12 12" className="h-3 w-3">
-      <path
-        d="M3 6 H9"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        fill="none"
-        strokeLinecap="round"
-      />
+      <path d="M3 6 H9" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
 
-function ProgressBar({
-  current,
-  total,
-  fill,
-}: {
-  current: number;
-  total: number;
-  fill: string;
-}) {
+function ProgressBar({ current, total, fill }: { current: number; total: number; fill: string }) {
   const safeTotal = total > 0 ? total : 1;
   const pct = Math.min(100, Math.max(0, (current / safeTotal) * 100));
   return (
     <div className="h-[3px] w-full bg-paper2">
-      <div className="h-full transition-[width] duration-200" style={{ width: `${pct}%`, background: fill }} />
+      <div
+        className="h-full transition-[width] duration-200"
+        style={{ width: `${pct}%`, background: fill }}
+      />
     </div>
   );
 }
@@ -289,10 +286,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         {inProgress ? <SpinnerIcon /> : <SeverityIcon severity={toast.severity} />}
       </span>
       <div className="min-w-0 flex-1">
-        <div
-          className="text-[14px] font-medium leading-snug"
-          style={{ color: s.titleColor }}
-        >
+        <div className="text-[14px] font-medium leading-snug" style={{ color: s.titleColor }}>
           {toast.title}
           {toast.subtitle ? (
             <span className="font-mono text-[12.5px] font-normal text-muted">
@@ -354,13 +348,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   );
 }
 
-function ToastHost({
-  toasts,
-  onDismiss,
-}: {
-  toasts: Toast[];
-  onDismiss: (id: string) => void;
-}) {
+function ToastHost({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: string) => void }) {
   return (
     <div
       aria-live="polite"

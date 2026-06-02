@@ -23,13 +23,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { Sep } from '../../components/ui/Sep';
 import { fmtRelative } from '../../lib/fmtRelative';
 
-function EntitySearchInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function EntitySearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   useSlashToFocus(inputRef);
 
@@ -102,7 +96,9 @@ function EntityPicker({
                     : 'border-border bg-paper text-ink hover:bg-paper2')
                 }
               >
-                <span className={on ? 'text-paper' : 'text-mute2'}><EntityGlyph type={e.type} /></span>
+                <span className={on ? 'text-paper' : 'text-mute2'}>
+                  <EntityGlyph type={e.type} />
+                </span>
                 <span>{e.canonicalName}</span>
                 {on ? <span aria-hidden="true">✓</span> : null}
               </button>
@@ -120,11 +116,7 @@ function EntityPicker({
   );
 }
 
-
-const STATUS_STYLE: Record<
-  DigestStatus,
-  { bg: string; fg: string; dot: string; label: string }
-> = {
+const STATUS_STYLE: Record<DigestStatus, { bg: string; fg: string; dot: string; label: string }> = {
   ready: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e', label: 'ready' },
   building: { bg: '#ece6d8', fg: '#6b6557', dot: '#9b9486', label: 'building' },
   failed: { bg: '#f5e6df', fg: '#7e2b1f', dot: '#7e2b1f', label: 'failed' },
@@ -193,8 +185,7 @@ function StatusLeading({ status }: { status: DigestStatus }) {
 function fmtWindow(fromIso: string, toIso: string): string {
   const f = new Date(fromIso);
   const t = new Date(toIso);
-  const fmt = (x: Date) =>
-    x.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const fmt = (x: Date) => x.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return `${fmt(f)} → ${fmt(t)}`;
 }
 
@@ -301,15 +292,15 @@ function DigestForm() {
   }
 
   function toggleCategory(id: string) {
-    setScopeFilterIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setScopeFilterIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const body: BuildDigestRequest = { period, scopeKind, scopeFilterIds };
-    await start(body).unwrap().catch(() => {});
+    await start(body)
+      .unwrap()
+      .catch(() => {});
     setScopeFilterIds([]);
   };
 
@@ -329,7 +320,9 @@ function DigestForm() {
     } else if (names.length > 0) {
       scopeSummary = `${count} entit${count === 1 ? 'y' : 'ies'}: ${names
         .slice(0, 3)
-        .join(', ')}${count > names.slice(0, 3).length ? ` +${count - names.slice(0, 3).length} more` : ''}`;
+        .join(
+          ', ',
+        )}${count > names.slice(0, 3).length ? ` +${count - names.slice(0, 3).length} more` : ''}`;
     } else {
       scopeSummary = `${count} entit${count === 1 ? 'y' : 'ies'}`;
     }
@@ -513,7 +506,10 @@ function DigestRow({ d }: { d: DigestSummary }) {
           <span className="text-muted">
             scope <span className="text-ink">{d.scopeKind}</span>
             {d.scopeFilterIds.length > 0 ? (
-              <span className="text-mute2"> · {d.scopeFilterIds.length} filter{d.scopeFilterIds.length === 1 ? '' : 's'}</span>
+              <span className="text-mute2">
+                {' '}
+                · {d.scopeFilterIds.length} filter{d.scopeFilterIds.length === 1 ? '' : 's'}
+              </span>
             ) : (
               <span className="text-mute2"> · all</span>
             )}
@@ -522,7 +518,9 @@ function DigestRow({ d }: { d: DigestSummary }) {
       </div>
 
       <div className="flex items-center gap-3 self-center font-mono text-[12.5px] text-mute2">
-        <span className="tnum" title={d.createdAt}>{fmtRelative(d.createdAt)}</span>
+        <span className="tnum" title={d.createdAt}>
+          {fmtRelative(d.createdAt)}
+        </span>
         <span className="text-border2">›</span>
       </div>
     </Link>
@@ -551,8 +549,8 @@ export default function DigestsPage() {
             title="No digests yet"
             subtitle={
               <>
-                Fill the form above and click <span className="text-ink">Generate digest</span>{' '}
-                to create one. Watch the new row appear at the top and update live as it builds.
+                Fill the form above and click <span className="text-ink">Generate digest</span> to
+                create one. Watch the new row appear at the top and update live as it builds.
               </>
             }
           />

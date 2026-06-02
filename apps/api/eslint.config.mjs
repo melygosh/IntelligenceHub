@@ -1,40 +1,28 @@
 // @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import gts from 'gts';
 import globals from 'globals';
-import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+// Google TypeScript Style (gts 7, flat config) is the single lint baseline
+// across the monorepo (spec NFR-4). gts brings eslint + @typescript-eslint +
+// prettier + node rules; we layer the API's runtime globals on top and scope
+// linting to type-checked source (test/ and scripts/ live outside tsconfig).
+export default [
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['dist/**', 'test/**', 'scripts/**', '*.config.*', 'eslint.config.mjs'],
   },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
+  ...gts,
   {
+    files: ['**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'commonjs',
       parserOptions: {
-        // e2e specs live outside src/ (tsconfig excludes test/), so let the
-        // project service fall back to an inferred project for them instead of
-        // erroring that they aren't part of any tsconfig.
-        projectService: {
-          allowDefaultProject: ['test/*.ts'],
-        },
+        // gts sets project: './tsconfig.json'; anchor the root so it resolves
+        // regardless of the cwd eslint is invoked from.
         tsconfigRootDir: import.meta.dirname,
       },
     },
   },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
-    },
-  },
-);
+];

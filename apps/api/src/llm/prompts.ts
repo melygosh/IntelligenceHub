@@ -125,15 +125,15 @@ export function userPromptFor(
       prompt += `User's categories (pick from this list only): [${userCategories.join(', ')}]\n`;
     }
     if (userAxes.length > 0) {
-      prompt += `User's axes (pick one value per axis, or omit the axis):\n`;
+      prompt += "User's axes (pick one value per axis, or omit the axis):\n";
       for (const ax of userAxes) {
         prompt += `  - ${ax.name}: [${ax.values.join(', ')}]\n`;
       }
     }
-    prompt += `\n`;
+    prompt += '\n';
   }
 
-  prompt += `Extract the structured analysis now.`;
+  prompt += 'Extract the structured analysis now.';
   return prompt;
 }
 

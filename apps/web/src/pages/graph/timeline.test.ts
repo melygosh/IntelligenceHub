@@ -37,8 +37,6 @@ describe('timelineBounds', () => {
     expect(timelineBounds(edges)).toEqual({ min: 100, max: 400 });
   });
   it('returns null when no buckets present', () => {
-    expect(
-      timelineBounds([{ from: 'a', to: 'b', kind: 'mentions', weight: null }]),
-    ).toBeNull();
+    expect(timelineBounds([{ from: 'a', to: 'b', kind: 'mentions', weight: null }])).toBeNull();
   });
 });

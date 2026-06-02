@@ -65,7 +65,7 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
     // Wipe cached query data so the Login page doesn't see stale `me` and bounce us
     // back to /articles (which would 401 and bounce again — an infinite redirect loop).
     dispatch(api.util.resetApiState());
-    navigate('/auth/login', { replace: true });
+    void navigate('/auth/login', { replace: true });
   }
 
   const pageTitle = usePageTitle();

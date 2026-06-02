@@ -192,7 +192,7 @@ export class ArticleProcessor {
     }
     if (article.hasEmbedding) {
       await log(
-        `article already has embedding (race with another worker?) — skipping`,
+        'article already has embedding (race with another worker?) — skipping',
       );
       return false;
     }

@@ -42,9 +42,7 @@ export default function AxesPage() {
       description="The LLM picks one value per axis per article, or omits the axis if none fit."
     >
       <form onSubmit={onAddAxis} className="space-y-2 border border-border bg-surface p-3">
-        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">
-          Add axis
-        </div>
+        <div className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted">Add axis</div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={newName}
@@ -138,7 +136,7 @@ function AxisRow({ axis }: { axis: Axis }) {
               confirmLabel: 'Delete',
               tone: 'danger',
             });
-            if (ok) deleteAxis(axis.id);
+            if (ok) void deleteAxis(axis.id);
           }}
         />
       </div>

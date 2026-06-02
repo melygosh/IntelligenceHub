@@ -30,8 +30,8 @@ export default function Login() {
   async function onSubmit(values: typeof LoginRequest._type) {
     try {
       const result = await loginUser(values).unwrap();
-      if (result.user.emailConfirmed) navigate('/dashboard', { replace: true });
-      else navigate('/auth/check-email', { replace: true });
+      if (result.user.emailConfirmed) void navigate('/dashboard', { replace: true });
+      else void navigate('/auth/check-email', { replace: true });
     } catch {
       // shown via `error` state below
     }

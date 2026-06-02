@@ -18,7 +18,6 @@ import { Sep } from '../../components/ui/Sep';
 import { ExternalIcon } from '../../components/ui/ExternalIcon';
 import { fmtRelative } from '../../lib/fmtRelative';
 
-
 // Icon set from docs/IntelligenceHub_design/Sources.html — currentColor + thin strokes.
 const PlayIcon = () => (
   <svg viewBox="0 0 12 12" className="h-3 w-3">
@@ -52,12 +51,23 @@ const TrashIcon = () => (
       fill="none"
       strokeLinecap="round"
     />
-    <path d="M5 5.5 V8.5 M7 5.5 V8.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+    <path
+      d="M5 5.5 V8.5 M7 5.5 V8.5"
+      stroke="currentColor"
+      strokeWidth="0.9"
+      strokeLinecap="round"
+    />
   </svg>
 );
 const WarnTriIcon = () => (
   <svg viewBox="0 0 12 12" className="h-3 w-3">
-    <path d="M6 1 L11 10 H1 Z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
+    <path
+      d="M6 1 L11 10 H1 Z"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      fill="none"
+      strokeLinejoin="round"
+    />
     <path d="M6 5 V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     <circle cx="6" cy="9" r="0.5" fill="currentColor" />
   </svg>
@@ -104,14 +114,12 @@ function RowActionBtn({
 
 // Soft-bg pill colors per status. Hex matches the design's STATUS_STYLE so the
 // pill's bg/fg/border stays visually distinct from the page chrome.
-const STATUS_STYLE: Record<
-  Feed['status'],
-  { bg: string; fg: string; dot: string; label: string }
-> = {
-  active: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e', label: 'active' },
-  paused: { bg: '#ece6d8', fg: '#6b6557', dot: '#9b9486', label: 'paused' },
-  error: { bg: '#f5e6df', fg: '#7e2b1f', dot: '#7e2b1f', label: 'error' },
-};
+const STATUS_STYLE: Record<Feed['status'], { bg: string; fg: string; dot: string; label: string }> =
+  {
+    active: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e', label: 'active' },
+    paused: { bg: '#ece6d8', fg: '#6b6557', dot: '#9b9486', label: 'paused' },
+    error: { bg: '#f5e6df', fg: '#7e2b1f', dot: '#7e2b1f', label: 'error' },
+  };
 
 function StatusBadge({ status }: { status: Feed['status'] }) {
   const s = STATUS_STYLE[status];
@@ -174,10 +182,7 @@ function StatsLine({ feeds }: { feeds: Feed[] }) {
   );
 }
 
-const REASON_LABEL: Record<
-  Extract<ValidateFeedResponse, { ok: false }>['reason'],
-  string
-> = {
+const REASON_LABEL: Record<Extract<ValidateFeedResponse, { ok: false }>['reason'], string> = {
   unreachable: 'Could not reach the URL',
   not_a_feed: 'Not a valid RSS or Atom feed',
   malformed_url: 'URL is malformed',
@@ -281,9 +286,7 @@ function AddFeedForm() {
         severity: 'error',
         title: 'Failed to add',
         subtitle: label,
-        body:
-          (err as { data?: { message?: string } }).data?.message ??
-          'Feed may already exist.',
+        body: (err as { data?: { message?: string } }).data?.message ?? 'Feed may already exist.',
       });
     }
   }
@@ -385,7 +388,14 @@ function AddFeedForm() {
               disabled={isAdding}
               className="inline-flex shrink-0 items-center gap-1.5 bg-accent px-3 py-1.5 font-mono text-[14px] text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-paper2 disabled:text-mute2"
             >
-              {isAdding ? <span>adding…</span> : <><span>Add to sources</span><span>→</span></>}
+              {isAdding ? (
+                <span>adding…</span>
+              ) : (
+                <>
+                  <span>Add to sources</span>
+                  <span>→</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -488,7 +498,12 @@ export default function FeedsPage() {
       if (duplicates > 0) parts.push(`${duplicates} duplicate`);
       if (filtered > 0) parts.push(`${filtered} filtered`);
       if (parts.length === 0) {
-        pushToast({ severity: 'info', title: 'Pull complete', subtitle: label, body: 'No new items.' });
+        pushToast({
+          severity: 'info',
+          title: 'Pull complete',
+          subtitle: label,
+          body: 'No new items.',
+        });
         return;
       }
       pushToast({
@@ -542,9 +557,7 @@ export default function FeedsPage() {
       pushToast({
         severity: 'error',
         title: 'Failed to enqueue pulls',
-        body:
-          (err as { data?: { message?: string } }).data?.message ??
-          'Request failed.',
+        body: (err as { data?: { message?: string } }).data?.message ?? 'Request failed.',
       });
     }
   }
@@ -650,109 +663,107 @@ export default function FeedsPage() {
                 sorted by last pull · desc
               </span>
             </div>
-          {data.feeds.map((feed) => {
-            const isPaused = feed.status === 'paused';
-            const isError = feed.status === 'error';
-            const isPulling = pendingPulls.has(feed.id);
-            return (
-              <article
-                key={feed.id}
-                className="grid grid-cols-[20px_1fr_auto] gap-x-4 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/40"
-              >
-                <div className="self-center">
-                  <StatusLeading status={feed.status} />
-                </div>
-
-                <div className="min-w-0">
-                  <div className="mb-1 flex flex-wrap items-baseline gap-2">
-                    {feed.title ? (
-                      <span
-                        className={`pretty text-[16px] font-medium leading-snug ${isPaused ? 'text-muted' : 'text-ink'}`}
-                      >
-                        {feed.title}
-                      </span>
-                    ) : (
-                      <span className="font-mono text-[13px] italic text-mute2">
-                        pulling first run…
-                      </span>
-                    )}
-                    <a
-                      href={feed.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex max-w-full items-center gap-1 truncate font-mono text-[12.5px] text-mute2 hover:text-ink"
-                    >
-                      <span className="truncate">{feed.url}</span>
-                      <span className="shrink-0">
-                        <ExternalIcon />
-                      </span>
-                    </a>
+            {data.feeds.map((feed) => {
+              const isPaused = feed.status === 'paused';
+              const isError = feed.status === 'error';
+              const isPulling = pendingPulls.has(feed.id);
+              return (
+                <article
+                  key={feed.id}
+                  className="grid grid-cols-[20px_1fr_auto] gap-x-4 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/40"
+                >
+                  <div className="self-center">
+                    <StatusLeading status={feed.status} />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px]">
-                    <StatusBadge status={feed.status} />
-                    <Sep />
-                    <span className="text-muted">
-                      last{' '}
-                      <span className="tnum text-ink" title={feed.lastPullAt ?? undefined}>
-                        {fmtRelative(feed.lastPullAt)}
-                      </span>
-                    </span>
-                    <Sep />
-                    {isError ? (
-                      <span className="text-critical">
-                        {feed.lastPullError ?? 'pull failed'}
-                      </span>
-                    ) : isPaused ? (
-                      <span className="italic text-mute2">no pulls while paused</span>
-                    ) : (
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-baseline gap-2">
+                      {feed.title ? (
+                        <span
+                          className={`pretty text-[16px] font-medium leading-snug ${isPaused ? 'text-muted' : 'text-ink'}`}
+                        >
+                          {feed.title}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[13px] italic text-mute2">
+                          pulling first run…
+                        </span>
+                      )}
+                      <a
+                        href={feed.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex max-w-full items-center gap-1 truncate font-mono text-[12.5px] text-mute2 hover:text-ink"
+                      >
+                        <span className="truncate">{feed.url}</span>
+                        <span className="shrink-0">
+                          <ExternalIcon />
+                        </span>
+                      </a>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px]">
+                      <StatusBadge status={feed.status} />
+                      <Sep />
                       <span className="text-muted">
-                        added{' '}
-                        <span className="tnum text-ink">
-                          {new Date(feed.createdAt).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                        last{' '}
+                        <span className="tnum text-ink" title={feed.lastPullAt ?? undefined}>
+                          {fmtRelative(feed.lastPullAt)}
                         </span>
                       </span>
-                    )}
+                      <Sep />
+                      {isError ? (
+                        <span className="text-critical">{feed.lastPullError ?? 'pull failed'}</span>
+                      ) : isPaused ? (
+                        <span className="italic text-mute2">no pulls while paused</span>
+                      ) : (
+                        <span className="text-muted">
+                          added{' '}
+                          <span className="tnum text-ink">
+                            {new Date(feed.createdAt).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-px self-center">
-                  {isPaused ? (
+                  <div className="flex items-center gap-px self-center">
+                    {isPaused ? (
+                      <RowActionBtn
+                        icon={<PlayIcon />}
+                        label="Resume"
+                        variant="primary"
+                        onClick={() => onTogglePause(feed)}
+                        disabled={isPulling}
+                      />
+                    ) : (
+                      <RowActionBtn
+                        icon={<PauseIcon />}
+                        label="Pause"
+                        onClick={() => onTogglePause(feed)}
+                        disabled={isPulling}
+                      />
+                    )}
                     <RowActionBtn
-                      icon={<PlayIcon />}
-                      label="Resume"
-                      variant="primary"
-                      onClick={() => onTogglePause(feed)}
+                      icon={isPulling ? <SpinnerIcon /> : <RefreshIcon />}
+                      label={isPulling ? 'Pulling…' : 'Pull now'}
+                      onClick={() => onPull(feed)}
+                      disabled={isPaused || isPulling}
+                    />
+                    <RowActionBtn
+                      icon={<TrashIcon />}
+                      label="Delete"
+                      variant="danger"
+                      onClick={() => onDelete(feed.id)}
                       disabled={isPulling}
                     />
-                  ) : (
-                    <RowActionBtn
-                      icon={<PauseIcon />}
-                      label="Pause"
-                      onClick={() => onTogglePause(feed)}
-                      disabled={isPulling}
-                    />
-                  )}
-                  <RowActionBtn
-                    icon={isPulling ? <SpinnerIcon /> : <RefreshIcon />}
-                    label={isPulling ? 'Pulling…' : 'Pull now'}
-                    onClick={() => onPull(feed)}
-                    disabled={isPaused || isPulling}
-                  />
-                  <RowActionBtn
-                    icon={<TrashIcon />}
-                    label="Delete"
-                    variant="danger"
-                    onClick={() => onDelete(feed.id)}
-                    disabled={isPulling}
-                  />
-                </div>
-              </article>
-            );
-          })}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       )}

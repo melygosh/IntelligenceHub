@@ -11,9 +11,7 @@ export function weightAsOf(buckets: Bucket[] | undefined, scrubT: number): numbe
 }
 
 /** Min/max bucket-start time across all co_mention edges, or null if none carry buckets. */
-export function timelineBounds(
-  edges: GraphEdge[],
-): { min: number; max: number } | null {
+export function timelineBounds(edges: GraphEdge[]): { min: number; max: number } | null {
   let min = Infinity;
   let max = -Infinity;
   for (const e of edges) {

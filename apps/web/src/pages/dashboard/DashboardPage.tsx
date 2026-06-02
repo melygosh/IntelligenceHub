@@ -115,19 +115,13 @@ function CardShell({
   return (
     <section className="border border-border bg-paper">
       <header className="flex items-baseline justify-between border-b border-border px-3 py-2">
-        <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
-          {title}
-        </h2>
+        <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">{title}</h2>
         <span className="font-mono text-[11.5px] tnum text-mute2">
           {count > 0 ? `top ${count}` : '—'}
         </span>
       </header>
       <div className="p-3">
-        {count === 0 ? (
-          <p className="font-mono text-[12.5px] text-mute2">{empty}</p>
-        ) : (
-          children
-        )}
+        {count === 0 ? <p className="font-mono text-[12.5px] text-mute2">{empty}</p> : children}
       </div>
     </section>
   );
@@ -141,17 +135,11 @@ function TopEntitiesCard({
   colours: ReadonlyMap<string, string>;
 }) {
   return (
-    <CardShell
-      title="Top entities"
-      count={rows.length}
-      empty="No mentions yet."
-    >
+    <CardShell title="Top entities" count={rows.length} empty="No mentions yet.">
       <ol className="flex flex-col">
         {rows.map((e, i) => (
           <li key={e.id} className="flex items-center gap-2 py-1.5">
-            <span className="w-5 font-mono text-[11.5px] tnum text-mute2">
-              {i + 1}
-            </span>
+            <span className="w-5 font-mono text-[11.5px] tnum text-mute2">{i + 1}</span>
             <span
               aria-hidden
               className="inline-block h-2 w-2 shrink-0"
@@ -174,13 +162,7 @@ function TopEntitiesCard({
   );
 }
 
-function TopCategoriesCard({
-  rows,
-  total,
-}: {
-  rows: DashboardTopCategory[];
-  total: number;
-}) {
+function TopCategoriesCard({ rows, total }: { rows: DashboardTopCategory[]; total: number }) {
   const max = rows.reduce((m, r) => Math.max(m, r.articleCount), 0);
   return (
     <CardShell
@@ -195,9 +177,7 @@ function TopCategoriesCard({
           return (
             <li key={c.id} className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="w-5 font-mono text-[11.5px] tnum text-mute2">
-                  {i + 1}
-                </span>
+                <span className="w-5 font-mono text-[11.5px] tnum text-mute2">{i + 1}</span>
                 <Link
                   to={`/articles?category=${c.id}`}
                   className="min-w-0 flex-1 truncate text-ink hover:text-accent-deep"
@@ -212,10 +192,7 @@ function TopCategoriesCard({
                 </span>
               </div>
               <div className="ml-7 h-1 bg-paper2">
-                <div
-                  className="h-1 bg-ink"
-                  style={{ width: `${barFraction * 100}%` }}
-                />
+                <div className="h-1 bg-ink" style={{ width: `${barFraction * 100}%` }} />
               </div>
             </li>
           );
@@ -227,17 +204,11 @@ function TopCategoriesCard({
 
 function TopFeedsCard({ rows }: { rows: DashboardTopFeed[] }) {
   return (
-    <CardShell
-      title="Top feeds"
-      count={rows.length}
-      empty="No feed activity in this window."
-    >
+    <CardShell title="Top feeds" count={rows.length} empty="No feed activity in this window.">
       <ol className="flex flex-col">
         {rows.map((f, i) => (
           <li key={f.id} className="flex items-center gap-2 py-1.5">
-            <span className="w-5 font-mono text-[11.5px] tnum text-mute2">
-              {i + 1}
-            </span>
+            <span className="w-5 font-mono text-[11.5px] tnum text-mute2">{i + 1}</span>
             <FeedStatusPip status={f.status} />
             <Link
               to={`/articles?feed=${f.id}`}
@@ -272,4 +243,3 @@ function FeedStatusPip({ status }: { status: DashboardTopFeed['status'] }) {
     />
   );
 }
-

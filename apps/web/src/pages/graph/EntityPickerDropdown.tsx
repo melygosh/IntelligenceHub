@@ -25,20 +25,17 @@ export function EntityPickerDropdown({
   cap: number;
 }) {
   const [q, setQ] = useState('');
-  const { data, fetchNextPage, hasNextPage, isFetching } =
-    useGetEntitiesInfiniteQuery({ q: q || undefined, sort: 'mentions' });
+  const { data, fetchNextPage, hasNextPage, isFetching } = useGetEntitiesInfiniteQuery({
+    q: q || undefined,
+    sort: 'mentions',
+  });
 
-  const items = useMemo(
-    () => data?.pages.flatMap((p) => p.entities) ?? [],
-    [data],
-  );
+  const items = useMemo(() => data?.pages.flatMap((p) => p.entities) ?? [], [data]);
   // Retain every entity loaded this session so a selected entity stays pinned
   // to the top even after a later search (or clearing the search) no longer
   // returns it. Accumulated DURING RENDER (React's "store info from prior
   // renders" pattern) — the conditional setState stops once nothing is new.
-  const [seenById, setSeenById] = useState<Map<string, (typeof items)[number]>>(
-    new Map(),
-  );
+  const [seenById, setSeenById] = useState<Map<string, (typeof items)[number]>>(new Map());
   if (items.some((e) => !seenById.has(e.id))) {
     const next = new Map(seenById);
     for (const e of items) next.set(e.id, e);
@@ -73,11 +70,7 @@ export function EntityPickerDropdown({
 
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (
-      hasNextPage &&
-      !isFetching &&
-      el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    ) {
+    if (hasNextPage && !isFetching && el.scrollHeight - el.scrollTop - el.clientHeight < 80) {
       void fetchNextPage();
     }
   };
@@ -100,8 +93,8 @@ export function EntityPickerDropdown({
             />
             <div className="mt-2 flex items-center justify-between font-mono text-[11.5px] text-muted">
               <span>
-                <span className={atCap ? 'text-accent-deep' : 'text-ink'}>{count}</span> /{' '}
-                {cap} selected
+                <span className={atCap ? 'text-accent-deep' : 'text-ink'}>{count}</span> / {cap}{' '}
+                selected
               </span>
               <span className="flex gap-3">
                 <button

@@ -30,9 +30,7 @@ export const UNCATEGORISED_COLOUR = '#888280'; // slate
  * (The old hash-the-uuid approach collided badly: with a handful of categories
  * several would map to the same colour.)
  */
-export function buildCategoryColours(
-  orderedCategoryIds: readonly string[],
-): Map<string, string> {
+export function buildCategoryColours(orderedCategoryIds: readonly string[]): Map<string, string> {
   const map = new Map<string, string>();
   orderedCategoryIds.forEach((id, i) => {
     map.set(id, GRAPH_PALETTE[i % GRAPH_PALETTE.length]);

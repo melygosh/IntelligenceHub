@@ -1,8 +1,5 @@
 import { useMemo } from 'react';
-import {
-  FacetDropdown,
-  CheckboxIcon,
-} from '../../components/filters/FacetDropdown';
+import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
 import type { ArticleStatus } from '@intelligencehub/shared';
 
 // Fixed catalog of statuses surfaced to the user. 'duplicate' is intentionally
@@ -40,11 +37,7 @@ export function StatusDropdown({
     else onChange([...selected, id]);
   };
   return (
-    <FacetDropdown
-      label="Status"
-      valueLabel={valueLabel}
-      isActive={selected.length > 0}
-    >
+    <FacetDropdown label="Status" valueLabel={valueLabel} isActive={selected.length > 0}>
       {() => (
         <>
           {OPTIONS.map((o) => {

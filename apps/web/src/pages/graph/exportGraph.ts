@@ -19,10 +19,7 @@ export type ExportJson = {
   graph: GraphResponse;
 };
 
-export function buildExportJson(
-  graph: GraphResponse,
-  filters: ExportFilterContext,
-): ExportJson {
+export function buildExportJson(graph: GraphResponse, filters: ExportFilterContext): ExportJson {
   return {
     meta: {
       exportedAt: Math.floor(Date.now() / 1000),

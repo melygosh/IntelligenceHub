@@ -23,17 +23,18 @@ export function PageHeader({
       </div>
       <h1
         className={
-          'pretty font-serif text-[30px] leading-tight text-ink' +
-          (hasSubtitle ? ' mb-3' : '')
+          'pretty font-serif text-[30px] leading-tight text-ink' + (hasSubtitle ? ' mb-3' : '')
         }
       >
         {title}
       </h1>
-      {hasSubtitle
-        ? typeof subtitle === 'string'
-          ? <p className="font-mono text-[12.5px] text-mute2">{subtitle}</p>
-          : subtitle
-        : null}
+      {hasSubtitle ? (
+        typeof subtitle === 'string' ? (
+          <p className="font-mono text-[12.5px] text-mute2">{subtitle}</p>
+        ) : (
+          subtitle
+        )
+      ) : null}
     </header>
   );
 }

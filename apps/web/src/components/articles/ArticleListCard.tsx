@@ -73,7 +73,13 @@ export function ArticleListRow({ item, rank }: { item: ArticleListItemData; rank
 
         <span className="self-center text-border2 transition-colors group-hover:text-mute2">
           <svg viewBox="0 0 8 12" className="h-3 w-2">
-            <path d="M1 1 L6 6 L1 11" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path
+              d="M1 1 L6 6 L1 11"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              fill="none"
+              strokeLinecap="round"
+            />
           </svg>
         </span>
       </Link>

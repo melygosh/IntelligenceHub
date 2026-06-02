@@ -34,10 +34,7 @@ export function useFeedPullEvents({
     } else if (event.type === 'feed.pull.failed') {
       dispatch(api.util.invalidateTags(['Feeds']));
       onFailed?.(event.payload);
-    } else if (
-      event.type === 'article.analyzed' &&
-      event.payload.status === 'ready'
-    ) {
+    } else if (event.type === 'article.analyzed' && event.payload.status === 'ready') {
       dispatch(api.util.invalidateTags(['Articles']));
     }
   });

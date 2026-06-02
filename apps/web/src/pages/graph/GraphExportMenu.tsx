@@ -84,7 +84,9 @@ export function GraphExportMenu({ getCanvasRoot, graph, filters }: Props) {
         aria-label="Export graph"
       >
         {busy ? 'Exporting…' : 'Export'}
-        <span aria-hidden className="text-[10px] leading-none">▾</span>
+        <span aria-hidden className="text-[10px] leading-none">
+          ▾
+        </span>
       </summary>
       <div className="absolute right-0 top-full z-20 mt-1 flex min-w-[120px] flex-col border border-border bg-paper shadow-sm">
         {FORMATS.map((f) => {

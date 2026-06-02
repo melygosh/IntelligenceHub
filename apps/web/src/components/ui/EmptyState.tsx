@@ -18,16 +18,9 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
-      className={
-        'px-5 py-10 text-center' + (className ? ' ' + className : '')
-      }
-    >
+    <div className={'px-5 py-10 text-center' + (className ? ' ' + className : '')}>
       <p
-        className={
-          'font-serif text-[22px] ' +
-          (variant === 'error' ? 'text-critical' : 'text-ink')
-        }
+        className={'font-serif text-[22px] ' + (variant === 'error' ? 'text-critical' : 'text-ink')}
       >
         {title}
       </p>

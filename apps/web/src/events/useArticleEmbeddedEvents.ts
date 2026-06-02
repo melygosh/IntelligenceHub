@@ -15,10 +15,6 @@ export function useArticleEmbeddedEvents(): void {
   const dispatch = useDispatch();
   useServerEvents((event) => {
     if (event.type !== 'article.embedded') return;
-    dispatch(
-      api.util.invalidateTags([
-        { type: 'RelatedSemantic', id: event.payload.articleId },
-      ]),
-    );
+    dispatch(api.util.invalidateTags([{ type: 'RelatedSemantic', id: event.payload.articleId }]));
   });
 }

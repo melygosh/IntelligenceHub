@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { useGetFeedsQuery } from '../../store/api';
-import {
-  FacetDropdown,
-  CheckboxIcon,
-} from '../../components/filters/FacetDropdown';
+import { FacetDropdown, CheckboxIcon } from '../../components/filters/FacetDropdown';
 
 /**
  * Multi-select feed dropdown for the articles list (US-7). Mirrors
@@ -32,11 +29,7 @@ export function FeedDropdown({
     else onChange([...selected, id]);
   };
   return (
-    <FacetDropdown
-      label="Feed"
-      valueLabel={valueLabel}
-      isActive={selected.length > 0}
-    >
+    <FacetDropdown label="Feed" valueLabel={valueLabel} isActive={selected.length > 0}>
       {() => (
         <>
           {data?.feeds.map((f) => {

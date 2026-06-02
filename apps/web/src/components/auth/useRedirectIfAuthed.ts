@@ -9,7 +9,7 @@ export function useRedirectIfAuthed(): void {
   const { data: me } = useGetMeQuery();
   const navigate = useNavigate();
   useEffect(() => {
-    if (me?.emailConfirmed) navigate('/articles', { replace: true });
-    else if (me) navigate('/auth/check-email', { replace: true });
+    if (me?.emailConfirmed) void navigate('/articles', { replace: true });
+    else if (me) void navigate('/auth/check-email', { replace: true });
   }, [me, navigate]);
 }

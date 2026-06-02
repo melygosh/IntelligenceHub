@@ -131,7 +131,16 @@ export function AuthBackdrop() {
         }
         if (n.kind === 'round') {
           return (
-            <rect key={n.id} x={n.x - r} y={n.y - r} width={r * 2} height={r * 2} rx={r * 0.5} fill="#6b6557" opacity="0.55" />
+            <rect
+              key={n.id}
+              x={n.x - r}
+              y={n.y - r}
+              width={r * 2}
+              height={r * 2}
+              rx={r * 0.5}
+              fill="#6b6557"
+              opacity="0.55"
+            />
           );
         }
         if (n.kind === 'dia') {
@@ -148,7 +157,17 @@ export function AuthBackdrop() {
             />
           );
         }
-        return <rect key={n.id} x={n.x - r} y={n.y - r} width={r * 2} height={r * 2} fill="#6b6557" opacity="0.55" />;
+        return (
+          <rect
+            key={n.id}
+            x={n.x - r}
+            y={n.y - r}
+            width={r * 2}
+            height={r * 2}
+            fill="#6b6557"
+            opacity="0.55"
+          />
+        );
       })}
     </svg>
   );

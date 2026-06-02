@@ -1,9 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type {
-  BaseQueryFn,
-  FetchArgs,
-  FetchBaseQueryError,
-} from '@reduxjs/toolkit/query/react';
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import type {
   ArticleDetail,
   ArticleListResponse,
@@ -77,7 +73,22 @@ const baseQueryWithUnconfirmedHandling: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithUnconfirmedHandling,
-  tagTypes: ['Me', 'Feeds', 'Articles', 'Article', 'Entity', 'Categories', 'Axes', 'Regeneration', 'Digests', 'Digest', 'Telemetry', 'Graph', 'Dashboard', 'RelatedSemantic'],
+  tagTypes: [
+    'Me',
+    'Feeds',
+    'Articles',
+    'Article',
+    'Entity',
+    'Categories',
+    'Axes',
+    'Regeneration',
+    'Digests',
+    'Digest',
+    'Telemetry',
+    'Graph',
+    'Dashboard',
+    'RelatedSemantic',
+  ],
   endpoints: (build) => ({
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
@@ -148,13 +159,7 @@ export const api = createApi({
         feedIds?: string[];
         importances?: ('high' | 'normal' | 'junk')[];
         axisValueIds?: string[];
-        statuses?: (
-          | 'ready'
-          | 'pending'
-          | 'filtered'
-          | 'failed'
-          | 'duplicate'
-        )[];
+        statuses?: ('ready' | 'pending' | 'filtered' | 'failed' | 'duplicate')[];
         period?: 'all' | '24h' | '7d' | '30d' | 'custom';
         from?: string;
         to?: string;
@@ -187,8 +192,7 @@ export const api = createApi({
           if (arg.to) params.set('to', arg.to);
           if (arg.q) params.set('q', arg.q);
           if (arg.page !== undefined) params.set('page', String(arg.page));
-          if (arg.pageSize !== undefined)
-            params.set('pageSize', String(arg.pageSize));
+          if (arg.pageSize !== undefined) params.set('pageSize', String(arg.pageSize));
           if (arg.sort && arg.sort !== 'newest') params.set('sort', arg.sort);
         }
         const qs = params.toString();
@@ -220,10 +224,7 @@ export const api = createApi({
         url: '/graph',
         method: 'POST',
         body: {
-          categoryIds:
-            arg?.categoryIds && arg.categoryIds.length > 0
-              ? arg.categoryIds
-              : undefined,
+          categoryIds: arg?.categoryIds && arg.categoryIds.length > 0 ? arg.categoryIds : undefined,
           period: arg?.period,
           from: arg?.from,
           to: arg?.to,
@@ -283,29 +284,27 @@ export const api = createApi({
     // Pages accumulate in the RTK cache keyed by {q, sort}, so closing and
     // reopening the dropdown reuses them (5-min keepUnusedDataFor) instead of
     // refetching. pageParam is the 1-based page number.
-    getEntities: build.infiniteQuery<
-      EntityListResponse,
-      { q?: string; sort?: EntitySort },
-      number
-    >({
-      infiniteQueryOptions: {
-        initialPageParam: 1,
-        getNextPageParam: (lastPage, allPages, lastPageParam) => {
-          const loaded = allPages.reduce((n, p) => n + p.entities.length, 0);
-          return loaded < lastPage.total ? lastPageParam + 1 : undefined;
+    getEntities: build.infiniteQuery<EntityListResponse, { q?: string; sort?: EntitySort }, number>(
+      {
+        infiniteQueryOptions: {
+          initialPageParam: 1,
+          getNextPageParam: (lastPage, allPages, lastPageParam) => {
+            const loaded = allPages.reduce((n, p) => n + p.entities.length, 0);
+            return loaded < lastPage.total ? lastPageParam + 1 : undefined;
+          },
         },
+        query: ({ queryArg, pageParam }) => {
+          const params = new URLSearchParams();
+          if (queryArg.q) params.set('q', queryArg.q);
+          params.set('sort', queryArg.sort ?? 'mentions');
+          params.set('page', String(pageParam));
+          params.set('pageSize', '50');
+          return `/entities?${params.toString()}`;
+        },
+        keepUnusedDataFor: 300,
+        providesTags: ['Entity'],
       },
-      query: ({ queryArg, pageParam }) => {
-        const params = new URLSearchParams();
-        if (queryArg.q) params.set('q', queryArg.q);
-        params.set('sort', queryArg.sort ?? 'mentions');
-        params.set('page', String(pageParam));
-        params.set('pageSize', '50');
-        return `/entities?${params.toString()}`;
-      },
-      keepUnusedDataFor: 300,
-      providesTags: ['Entity'],
-    }),
+    ),
     getCategories: build.query<CategoryList, void>({
       query: () => '/categories',
       providesTags: ['Categories'],
@@ -314,10 +313,7 @@ export const api = createApi({
       query: (body) => ({ url: '/categories', method: 'POST', body }),
       invalidatesTags: ['Categories'],
     }),
-    updateCategory: build.mutation<
-      Category,
-      { id: string; body: UpdateCategoryRequest }
-    >({
+    updateCategory: build.mutation<Category, { id: string; body: UpdateCategoryRequest }>({
       query: ({ id, body }) => ({
         url: `/categories/${id}`,
         method: 'PATCH',
@@ -347,8 +343,7 @@ export const api = createApi({
     }),
     getCurrentRegeneration: build.query<RegenerationRun | null, void>({
       query: () => '/regeneration/current',
-      transformErrorResponse: (err) =>
-        (err as FetchBaseQueryError).status === 404 ? null : err,
+      transformErrorResponse: (err) => ((err as FetchBaseQueryError).status === 404 ? null : err),
       providesTags: ['Regeneration'],
     }),
     startRegeneration: build.mutation<StartRegenerationResponse, void>({
@@ -376,11 +371,12 @@ export const api = createApi({
     }),
     getRelatedSemantic: build.query<RelatedSemanticResponse, string>({
       query: (articleId) => `/articles/${articleId}/related-semantic`,
-      providesTags: (_r, _e, articleId) => [
-        { type: 'RelatedSemantic', id: articleId },
-      ],
+      providesTags: (_r, _e, articleId) => [{ type: 'RelatedSemantic', id: articleId }],
     }),
-    getDashboard: build.query<DashboardResponse, { period: DashboardPeriod; from?: string; to?: string }>({
+    getDashboard: build.query<
+      DashboardResponse,
+      { period: DashboardPeriod; from?: string; to?: string }
+    >({
       query: ({ period, from, to }) => {
         const params = new URLSearchParams({ period });
         if (from) params.set('from', from);
