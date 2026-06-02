@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Shell from './components/layout/Shell';
 import AuthGuard from './components/layout/AuthGuard';
+import { ServerEventsProvider } from './events/ServerEventsProvider';
 import { ToastProvider } from './components/toast/ToastHost';
 import { ConfirmProvider } from './components/confirm/ConfirmProvider';
 import { PageTitleProvider } from './components/layout/PageTitleContext';
@@ -45,7 +46,9 @@ function AppRoutes() {
       <Route
         element={
           <AuthGuard>
-            <Shell />
+            <ServerEventsProvider>
+              <Shell />
+            </ServerEventsProvider>
           </AuthGuard>
         }
       >
