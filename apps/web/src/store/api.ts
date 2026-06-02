@@ -241,10 +241,14 @@ export const api = createApi({
           timeline: arg?.timeline ? true : undefined,
         },
       }),
-      // Provide both: existing mutations + SSE handlers that invalidate
-      // 'Articles' (feed pull, regen, axis/category updates) still keep the
-      // graph in sync; future graph-only invalidations can target 'Graph'.
-      providesTags: ['Graph', 'Articles'],
+      // Only 'Graph' — deliberately NOT 'Articles'. The graph is a built
+      // snapshot the user (re)computes with the Build button; live-refetching
+      // it on every article churn (article.analyzed, feed pull, regen,
+      // axis/category edits all invalidate 'Articles') re-ran POST /graph and
+      // re-fit the canvas mid-exploration, which is jarring — matching the
+      // documented "reload-on-open, not live-update" intent in
+      // useArticleAnalyzedEvents. Build (an arg change) refetches as before.
+      providesTags: ['Graph'],
     }),
     getArticle: build.query<ArticleDetail, string>({
       query: (id) => `/articles/${id}`,
