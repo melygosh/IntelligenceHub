@@ -42,7 +42,7 @@ export class CategoriesController {
   async create(
     @CurrentUser() user: AuthUserContext,
     @Body(new ZodValidationPipe(CreateCategoryRequest))
-    body: typeof CreateCategoryRequest._type,
+    body: CreateCategoryRequest,
   ): Promise<Category> {
     return this.categories.create(user.userId, body.name);
   }
@@ -52,7 +52,7 @@ export class CategoriesController {
     @CurrentUser() user: AuthUserContext,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateCategoryRequest))
-    body: typeof UpdateCategoryRequest._type,
+    body: UpdateCategoryRequest,
   ): Promise<Category> {
     return this.categories.rename(user.userId, id, body.name);
   }

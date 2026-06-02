@@ -42,7 +42,7 @@ export class AxesController {
   async create(
     @CurrentUser() user: AuthUserContext,
     @Body(new ZodValidationPipe(CreateAxisRequest))
-    body: typeof CreateAxisRequest._type,
+    body: CreateAxisRequest,
   ): Promise<Axis> {
     return this.axes.create(user.userId, body.name, body.values);
   }
@@ -52,7 +52,7 @@ export class AxesController {
     @CurrentUser() user: AuthUserContext,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateAxisRequest))
-    body: typeof UpdateAxisRequest._type,
+    body: UpdateAxisRequest,
   ): Promise<Axis> {
     return this.axes.update(user.userId, id, body);
   }

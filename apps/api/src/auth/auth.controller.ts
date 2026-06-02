@@ -39,7 +39,7 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ZodValidationPipe(RegisterRequest))
   async register(
-    @Body() body: typeof RegisterRequest._type,
+    @Body() body: RegisterRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
     const { user, token, devModeConfirmLink } = await this.auth.register(
@@ -56,7 +56,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(LoginRequest))
   async login(
-    @Body() body: typeof LoginRequest._type,
+    @Body() body: LoginRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
     const { user, token } = await this.auth.login(body.email, body.password);
@@ -81,7 +81,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async confirm(
     @Body(new ZodValidationPipe(ConfirmEmailRequest))
-    body: typeof ConfirmEmailRequest._type,
+    body: ConfirmEmailRequest,
   ): Promise<ConfirmEmailResponse> {
     const user = await this.auth.confirmEmail(body.token);
     return { user };

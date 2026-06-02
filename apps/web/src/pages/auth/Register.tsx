@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 import { RegisterRequest } from '@intelligencehub/shared';
 import { useRegisterMutation } from '../../store/api';
 import { isMutationErrorMessage } from '../../lib/auth';
@@ -22,12 +23,12 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<typeof RegisterRequest._input, unknown, typeof RegisterRequest._type>({
+  } = useForm<z.input<typeof RegisterRequest>, unknown, RegisterRequest>({
     resolver: zodResolver(RegisterRequest),
     defaultValues: { email: '', password: '', loadDemoData: false },
   });
 
-  async function onSubmit(values: typeof RegisterRequest._type) {
+  async function onSubmit(values: RegisterRequest) {
     try {
       const result = await registerUser(values).unwrap();
       if (result.devModeConfirmLink) {

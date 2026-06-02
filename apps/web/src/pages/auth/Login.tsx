@@ -22,12 +22,12 @@ export default function Login() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<typeof LoginRequest._type>({
+  } = useForm<LoginRequest>({
     resolver: zodResolver(LoginRequest),
     defaultValues: { email: '', password: '' },
   });
 
-  async function onSubmit(values: typeof LoginRequest._type) {
+  async function onSubmit(values: LoginRequest) {
     try {
       const result = await loginUser(values).unwrap();
       if (result.user.emailConfirmed) void navigate('/dashboard', { replace: true });

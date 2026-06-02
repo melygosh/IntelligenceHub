@@ -34,7 +34,7 @@ export class DigestController {
   async start(
     @CurrentUser() user: AuthUserContext,
     @Body(new ZodValidationPipe(BuildDigestRequest))
-    body: typeof BuildDigestRequest._type,
+    body: BuildDigestRequest,
   ): Promise<DigestSummary> {
     return this.digests.start(user.userId, body);
   }

@@ -21,7 +21,7 @@ export class DashboardController {
   async get(
     @CurrentUser() user: AuthUserContext,
     @Query(new ZodValidationPipe(GetDashboardQuery))
-    query: typeof GetDashboardQuery._type,
+    query: GetDashboardQuery,
   ): Promise<DashboardResponse> {
     return this.dashboard.buildMine(user.userId, {
       period: query.period ?? '7d',

@@ -46,7 +46,7 @@ export class FeedsController {
   async create(
     @CurrentUser() user: AuthUserContext,
     @Body(new ZodValidationPipe(CreateFeedRequest))
-    body: typeof CreateFeedRequest._type,
+    body: CreateFeedRequest,
   ): Promise<Feed> {
     return this.feedsService.create(
       user.userId,
@@ -60,7 +60,7 @@ export class FeedsController {
   @HttpCode(HttpStatus.OK)
   async validate(
     @Body(new ZodValidationPipe(ValidateFeedRequest))
-    body: typeof ValidateFeedRequest._type,
+    body: ValidateFeedRequest,
   ): Promise<ValidateFeedResponse> {
     return this.feedsService.validate(body.url);
   }
@@ -70,7 +70,7 @@ export class FeedsController {
     @CurrentUser() user: AuthUserContext,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateFeedRequest))
-    body: typeof UpdateFeedRequest._type,
+    body: UpdateFeedRequest,
   ): Promise<Feed> {
     return this.feedsService.updateStatus(user.userId, id, body.status);
   }
