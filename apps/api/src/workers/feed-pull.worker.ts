@@ -239,12 +239,13 @@ export class FeedPullWorker extends WorkerHost {
     feedId: string,
     item: FetchedItem,
   ): Promise<'inserted' | 'filtered' | 'duplicate'> {
-    // Sibling search over already-handled rows: 'ready' originals anchor the
-    // cross-source "similar" feature, while 'pending'/'failed' siblings mean a
-    // prior attempt already exists — matching them stops a re-pull from
-    // re-inserting and re-enqueuing the same item (the article-analyze queue
-    // owns the retry). Legacy 'filtered'/'duplicate' rows are ignored by design.
-    const [existing] = await this.db
+    // Sibling search over ALL already-stored rows for this user matching the
+    // URL or content hash, across every status AND feed. decideDedupAction
+    // needs the full set: a same-feed sibling of ANY status (incl. a prior
+    // 'duplicate'/'filtered' row) means this is a re-pull and must NOT insert
+    // again — otherwise a feed's own duplicate/filtered rows multiply on every
+    // sweep (FR-5).
+    const siblings = await this.db
       .select({
         id: articles.id,
         status: articles.status,
@@ -254,15 +255,20 @@ export class FeedPullWorker extends WorkerHost {
       .where(
         and(
           eq(articles.userId, userId),
-          inArray(articles.status, ['ready', 'pending', 'failed']),
+          inArray(articles.status, [
+            'ready',
+            'pending',
+            'failed',
+            'duplicate',
+            'filtered',
+          ]),
           or(
             eq(articles.url, item.normalisedUrl),
             eq(articles.contentHash, item.contentHash),
           ),
         ),
-      )
-      .limit(1);
-    const decision = decideDedupAction(existing, feedId);
+      );
+    const decision = decideDedupAction(siblings, feedId);
     if (decision.kind === 'insert-duplicate-row') {
       await this.db.insert(articles).values({
         userId,
