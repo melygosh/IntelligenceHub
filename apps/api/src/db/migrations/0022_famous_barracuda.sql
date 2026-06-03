@@ -1,0 +1,1 @@
+CREATE INDEX "articles_user_status_ts_idx" ON "articles" USING btree ("user_id","status","ts" DESC NULLS LAST);

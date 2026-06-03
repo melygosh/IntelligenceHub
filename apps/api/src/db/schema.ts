@@ -113,6 +113,16 @@ export const articles = pgTable(
   },
   (t) => ({
     userTsIdx: index('articles_user_ts_idx').on(t.userId, t.ts.desc()),
+    // The default list (status='ready' + ts DESC), its COUNT(*), and the
+    // dashboard topFeeds/totalArticles all filter user_id + status and sort by
+    // ts. Without status in the index they seq-scan the whole table (the
+    // 'filtered' rows vastly outnumber 'ready'); this composite turns those into
+    // index scans. Superset of userTsIdx for those access paths.
+    userStatusTsIdx: index('articles_user_status_ts_idx').on(
+      t.userId,
+      t.status,
+      t.ts.desc(),
+    ),
     feedIdx: index('articles_feed_idx').on(t.feedId),
     userContentHashIdx: index('articles_user_contenthash_idx').on(
       t.userId,
