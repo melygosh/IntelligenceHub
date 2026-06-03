@@ -59,6 +59,9 @@ export const feeds = pgTable(
     title: text('title'),
     iconUrl: text('icon_url'),
     status: text('status').notNull().default('active'),
+    // Consecutive failed pulls; reset to 0 on any success or manual re-activate.
+    // When it crosses the give-up threshold the sweep auto-disables the feed.
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
     lastPullAt: timestamp('last_pull_at', { withTimezone: true }),
     lastPullError: text('last_pull_error'),
     createdAt: timestamp('created_at', { withTimezone: true })

@@ -15,7 +15,9 @@ export const Feed = z.object({
   url: z.string().url(),
   title: z.string().nullable(),
   iconUrl: z.string().nullable(),
-  status: z.enum(['active', 'paused', 'error']),
+  // 'disabled' = auto-quarantined after too many consecutive pull failures
+  // (excluded from the scheduled sweep; re-activating it resets the counter).
+  status: z.enum(['active', 'paused', 'error', 'disabled']),
   lastPullAt: z.string().datetime().nullable(),
   lastPullError: z.string().nullable(),
   createdAt: z.string().datetime(),

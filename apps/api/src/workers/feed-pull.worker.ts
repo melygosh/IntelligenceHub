@@ -46,6 +46,12 @@ export const FEED_PULL_SWEEP_JOB = 'sweep';
 // the cross-source similar counter — see env.ts for the trade-off.
 const CONCURRENCY = Number(process.env.FEED_PULL_CONCURRENCY) || 1;
 
+// After this many CONSECUTIVE failed pulls, a feed is auto-disabled (quarantined
+// out of the sweep) so a permanently-dead source stops burning a fetch budget
+// every tick forever. A success or a manual re-activate resets the counter.
+const FEED_GIVE_UP_AFTER_FAILURES =
+  Number(process.env.FEED_GIVE_UP_AFTER_FAILURES) || 10;
+
 @Processor(QUEUE_NAMES.FEED_PULL, { concurrency: CONCURRENCY })
 export class FeedPullWorker extends WorkerHost {
   private readonly log = new Logger(FeedPullWorker.name);
@@ -180,6 +186,7 @@ export class FeedPullWorker extends WorkerHost {
           title: fetched.title,
           iconUrl: fetched.iconUrl,
           status: 'active',
+          consecutiveFailures: 0,
           lastPullAt: new Date(),
           lastPullError: null,
         })
@@ -217,15 +224,27 @@ export class FeedPullWorker extends WorkerHost {
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      // Count consecutive failures; once a feed crosses the give-up threshold,
+      // quarantine it as 'disabled' so the sweep (which selects active+error)
+      // stops re-fetching a permanently-dead source every tick. A later success
+      // or a manual re-activate resets the counter back to 0.
+      const failures = (feed.consecutiveFailures ?? 0) + 1;
+      const disabled = failures >= FEED_GIVE_UP_AFTER_FAILURES;
       await this.db
         .update(feeds)
-        .set({ status: 'error', lastPullAt: new Date(), lastPullError: msg })
+        .set({
+          status: disabled ? 'disabled' : 'error',
+          consecutiveFailures: failures,
+          lastPullAt: new Date(),
+          lastPullError: msg,
+        })
         .where(eq(feeds.id, feedId));
       this.log.error(
         JSON.stringify({
-          event: 'feed.pull.failed',
+          event: disabled ? 'feed.pull.disabled' : 'feed.pull.failed',
           feedId,
           userId,
+          consecutiveFailures: failures,
           error: msg,
         }),
       );

@@ -119,6 +119,7 @@ const STATUS_STYLE: Record<Feed['status'], { bg: string; fg: string; dot: string
     active: { bg: '#dde5d2', fg: '#2f4a26', dot: '#4d6b3e', label: 'active' },
     paused: { bg: '#ece6d8', fg: '#6b6557', dot: '#9b9486', label: 'paused' },
     error: { bg: '#f5e6df', fg: '#7e2b1f', dot: '#7e2b1f', label: 'error' },
+    disabled: { bg: '#e7e2da', fg: '#54504a', dot: '#8a857c', label: 'disabled' },
   };
 
 function StatusBadge({ status }: { status: Feed['status'] }) {
@@ -164,6 +165,7 @@ function StatsLine({ feeds }: { feeds: Feed[] }) {
   const active = feeds.filter((f) => f.status === 'active').length;
   const paused = feeds.filter((f) => f.status === 'paused').length;
   const errors = feeds.filter((f) => f.status === 'error').length;
+  const disabled = feeds.filter((f) => f.status === 'disabled').length;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px]">
       <span className="text-muted">your feeds</span>
@@ -178,6 +180,13 @@ function StatsLine({ feeds }: { feeds: Feed[] }) {
       <Sep />
       <span className="tnum text-ink">{errors}</span>
       <span className="text-muted">errors</span>
+      {disabled > 0 ? (
+        <>
+          <Sep />
+          <span className="tnum text-ink">{disabled}</span>
+          <span className="text-muted">disabled</span>
+        </>
+      ) : null}
     </div>
   );
 }

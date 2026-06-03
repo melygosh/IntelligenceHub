@@ -3,7 +3,7 @@ import { EntityKind, ArticlesPeriod } from './articles.js';
 
 // Same shape as feeds.ts inlines on the Feed schema; mirrored here so the
 // dashboard contract is standalone.
-const DashboardFeedStatus = z.enum(['active', 'paused', 'error']);
+const DashboardFeedStatus = z.enum(['active', 'paused', 'error', 'disabled']);
 
 // Same enum as the graph + articles pages, re-exported for the dashboard's
 // own URL parameter so consumers don't need a cross-domain import.

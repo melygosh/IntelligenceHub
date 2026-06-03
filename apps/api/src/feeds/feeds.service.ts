@@ -156,9 +156,11 @@ export class FeedsService {
     feedId: string,
     status: 'active' | 'paused',
   ): Promise<Feed> {
+    // Reset the failure counter: re-activating (or pausing) a feed gives it a
+    // fresh budget, so a previously auto-disabled feed re-enters the sweep clean.
     const [updated] = await this.db
       .update(feeds)
-      .set({ status })
+      .set({ status, consecutiveFailures: 0 })
       .where(and(eq(feeds.id, feedId), eq(feeds.userId, userId)))
       .returning();
     if (!updated) {
