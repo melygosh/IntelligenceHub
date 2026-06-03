@@ -6,11 +6,7 @@ import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
 import { articles, feeds } from '../db/schema';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
-import {
-  feedPullJobOpts,
-  isFeedPullInFlight,
-  type FeedPullJobData,
-} from '../feeds/feeds.service';
+import { feedPullJobOpts, type FeedPullJobData } from '../feeds/feeds.service';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 // value import required for Nest DI metadata
@@ -35,7 +31,7 @@ type ProcessResult = {
   llmErrors: number;
 };
 
-type SweepResult = { enqueued: number; skippedInFlight: number };
+type SweepResult = { enqueued: number };
 
 // Job name for the scheduled sweep (vs the per-feed 'pull'). The sweep fans
 // out a 'pull' for every active feed across ALL users — it runs without a
@@ -80,12 +76,17 @@ export class FeedPullWorker extends WorkerHost {
   /**
    * Scheduled fan-out: enqueue a 'pull' for every active OR errored feed
    * across all users. Each enqueue carries the per-(user,feed) deduplication
-   * id, so a feed still being pulled from a prior tick is skipped rather than
-   * piling up a second job. `error` feeds ARE swept so a transient failure
-   * (timeout/5xx/DNS blip) self-heals on the next tick — a successful pull
-   * flips them back to 'active'. Without this, one blip would silently drop a
-   * feed from automation until a manual pull. Only `paused` (explicit user
-   * action) is excluded.
+   * id, so a feed still being pulled from a prior tick is collapsed by Redis-side
+   * deduplication rather than piling up a second job. `error` feeds ARE swept so
+   * a transient failure (timeout/5xx/DNS blip) self-heals on the next tick — a
+   * successful pull flips them back to 'active'. Without this, one blip would
+   * silently drop a feed from automation until a manual pull. Only `paused`
+   * (explicit user action) is excluded.
+   *
+   * Enqueued in one addBulk (a single Redis pipeline) instead of N serial
+   * `add()`s. We no longer pre-check `isFeedPullInFlight` per feed: that was N
+   * extra round-trips reading a private BullMQ key purely to populate a log
+   * counter — the deduplication.id already handles the actual collapse.
    */
   private async runSweep(job: Job<FeedPullJobData>): Promise<SweepResult> {
     const active = await this.db
@@ -93,36 +94,26 @@ export class FeedPullWorker extends WorkerHost {
       .from(feeds)
       .where(inArray(feeds.status, ['active', 'error']));
 
-    let enqueued = 0;
-    let skippedInFlight = 0;
-    for (const f of active) {
-      const inFlight = await isFeedPullInFlight(
-        this.feedPullQueue,
-        f.userId,
-        f.id,
-      );
-      await this.feedPullQueue.add(
-        'pull',
-        { feedId: f.id, userId: f.userId },
-        feedPullJobOpts(f.userId, f.id),
-      );
-      if (inFlight) skippedInFlight += 1;
-      else enqueued += 1;
-    }
+    await this.feedPullQueue.addBulk(
+      active.map((f) => ({
+        name: 'pull',
+        data: { feedId: f.id, userId: f.userId },
+        opts: feedPullJobOpts(f.userId, f.id),
+      })),
+    );
 
     this.log.log(
       JSON.stringify({
         event: 'feed.pull.sweep',
         jobId: job.id,
         activeFeeds: active.length,
-        enqueued,
-        skippedInFlight,
+        enqueued: active.length,
       }),
     );
     await job.log(
-      `swept ${active.length} active feeds · enqueued ${enqueued} · skipped ${skippedInFlight} in-flight`,
+      `swept ${active.length} feeds · enqueued in one addBulk (Redis dedup collapses in-flight)`,
     );
-    return { enqueued, skippedInFlight };
+    return { enqueued: active.length };
   }
 
   private async runPull(job: Job<FeedPullJobData>): Promise<ProcessResult> {
