@@ -335,6 +335,9 @@ importers:
       typescript-eslint:
         specifier: ^8.60.1
         version: 8.60.1(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3)
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
 
 packages:
 
