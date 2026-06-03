@@ -82,7 +82,12 @@ export class RegenerationService {
     await this.queue.add(
       'regenerate',
       { runId: inserted.id, userId },
-      { removeOnComplete: true, removeOnFail: false },
+      // Retain a rolling window of completed coordinator jobs (matches feed.pull)
+      // so a finished regeneration stays visible in Bull Board; keep ALL failures
+      // (removeOnFail: false) since a coordinator that couldn't start is rare and
+      // worth inspecting. The durable per-run record still lives in
+      // regeneration_run.
+      { removeOnComplete: 100, removeOnFail: false },
     );
 
     this.events.publish(userId, {
