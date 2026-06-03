@@ -10,6 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   BuildDigestRequest,
   type DigestDetail,
@@ -29,6 +30,9 @@ import {
 export class DigestController {
   constructor(private readonly digests: DigestService) {}
 
+  // Each call enqueues a real LLM digest build — cap to prevent a single account
+  // running up cost/queue depth.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('start')
   @HttpCode(HttpStatus.ACCEPTED)
   async start(

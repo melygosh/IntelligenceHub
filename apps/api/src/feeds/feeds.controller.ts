@@ -11,6 +11,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   CreateFeedRequest,
   type Feed,
@@ -56,6 +57,10 @@ export class FeedsController {
     );
   }
 
+  // Tight per-route limit: validate performs an authenticated server-side fetch
+  // of a user-supplied URL. The SSRF guard blocks private hosts, but without a
+  // cap this is an amplification/recon primitive against arbitrary public hosts.
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('validate')
   @HttpCode(HttpStatus.OK)
   async validate(
@@ -84,6 +89,7 @@ export class FeedsController {
     await this.feedsService.deleteMine(user.userId, id);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('pull-all')
   @HttpCode(HttpStatus.ACCEPTED)
   async pullAll(
@@ -92,6 +98,7 @@ export class FeedsController {
     return this.feedsService.enqueuePullAll(user.userId);
   }
 
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post(':id/pull')
   @HttpCode(HttpStatus.ACCEPTED)
   async pull(

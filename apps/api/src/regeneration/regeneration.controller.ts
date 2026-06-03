@@ -6,6 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type {
   RegenerationRun,
   StartRegenerationResponse,
@@ -23,6 +24,9 @@ import {
 export class RegenerationController {
   constructor(private readonly regen: RegenerationService) {}
 
+  // Whole-corpus LLM re-tag — the most expensive user-triggerable operation.
+  // (Service also enforces one active run per user; this caps churn/abuse.)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('start')
   @HttpCode(HttpStatus.ACCEPTED)
   async start(

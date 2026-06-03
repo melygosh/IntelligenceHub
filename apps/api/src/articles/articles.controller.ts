@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import type {
@@ -231,6 +232,7 @@ export class ArticlesController {
    * (the worker hook only embeds NEW analyses). Returns the count enqueued
    * so the caller can decide how long to wait.
    */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('embed-backfill-mine')
   async embedBackfillMine(
     @CurrentUser() user: AuthUserContext,
