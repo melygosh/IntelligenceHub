@@ -116,7 +116,6 @@ export type CategorizeInput = {
   userCategories: string[];
   userAxes: { name: string; values: string[] }[];
   configHash: string;
-  entities?: ExtractedEntity[];
   operationTrigger?: LlmOperation;
 };
 

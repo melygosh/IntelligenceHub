@@ -24,12 +24,21 @@ export function SearchInput({
     setLocal(value);
   }
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // Hold onChange in a ref so the debounce effect doesn't depend on its
+  // identity. Consumers pass a fresh inline onChange each render; if it were a
+  // dep, any parent re-render mid-type (e.g. an SSE-driven list refresh) would
+  // clear and restart the 250ms timer, silently delaying — or starving — the
+  // committed search. Keyed only on local/value, the timer survives re-renders.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
   useEffect(() => {
     const t = setTimeout(() => {
-      if (local !== value) onChange(local);
+      if (local !== value) onChangeRef.current(local);
     }, 250);
     return () => clearTimeout(t);
-  }, [local, value, onChange]);
+  }, [local, value]);
   useSlashToFocus(inputRef);
 
   return (

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import type { RelatedSemanticResponse } from '@intelligencehub/shared';
 import { DB } from '../db/db.module';
@@ -94,10 +94,20 @@ export class RelatedSemanticService {
         FROM articles
         WHERE id = ${articleId}::uuid AND user_id = ${userId}::uuid
       `);
-      const has =
-        (sourceCheck as unknown as { rows: Array<{ has_embedding: boolean }> })
-          .rows[0]?.has_embedding ?? false;
-      return { status: has ? 'ready' : 'pending', items: [] };
+      const sourceRow = (
+        sourceCheck as unknown as { rows: Array<{ has_embedding: boolean }> }
+      ).rows[0];
+      // Source absent (not the caller's article, or a bogus UUID) → 404. Without
+      // this the caller gets status='pending' and the controller enqueues a
+      // backfill job keyed on an article they don't own. Owned-but-unembedded
+      // still returns 'pending' (sourceRow exists, has_embedding=false).
+      if (!sourceRow) {
+        throw new NotFoundException('Article not found');
+      }
+      return {
+        status: sourceRow.has_embedding ? 'ready' : 'pending',
+        items: [],
+      };
     }
 
     const items = rows

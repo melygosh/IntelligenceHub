@@ -98,7 +98,6 @@ export class LlmService implements ILlmService {
         userCategories: input.userCategories,
         userAxes: input.userAxes,
         configHash: input.configHash,
-        entities: extract.entities,
         operationTrigger: 'categorize_article_v1',
       };
       const cat = await this.withSemaphore(async () => {
@@ -177,6 +176,7 @@ export class LlmService implements ILlmService {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
+      const t0 = Date.now();
       try {
         const result = await adapter.categorizeArticle(input);
         await this.recordTelemetry({
@@ -201,7 +201,8 @@ export class LlmService implements ILlmService {
             outputTokens: 0,
             cacheReadTokens: 0,
             cacheCreationTokens: 0,
-            latencyMs: 0,
+            // Record real elapsed (a failed attempt still burned wall-clock).
+            latencyMs: Date.now() - t0,
           },
           operation: 'categorize_article_v1',
           errorMessage: (err as Error).message,
@@ -433,6 +434,7 @@ export class LlmService implements ILlmService {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
+      const t0 = Date.now();
       try {
         const result = await adapter.analyzeArticle(input);
         await this.recordTelemetry({
@@ -457,7 +459,11 @@ export class LlmService implements ILlmService {
             outputTokens: 0,
             cacheReadTokens: 0,
             cacheCreationTokens: 0,
-            latencyMs: 0,
+            // A failed attempt still burned wall-clock (a timeout burns up to
+            // LLM_TIMEOUT_MS); record it so the dashboard doesn't read failures
+            // as instant. Tokens stay 0 — the adapter throws before returning
+            // usage.
+            latencyMs: Date.now() - t0,
           },
           operation: input.operationTrigger ?? 'analyze_article_v4',
           errorMessage: (err as Error).message,

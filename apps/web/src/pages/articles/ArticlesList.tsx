@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useArticleAnalyzedEvents } from '../../events/useArticleAnalyzedEvents';
 import {
@@ -481,130 +481,137 @@ function SimilarSidebar({ articleId, onClose }: { articleId: string; onClose: ()
   );
 }
 
-function ArticleRow({
-  article,
-  feed,
-  onOpenSimilar,
-}: {
-  article: ArticleListItem;
-  feed: Feed | undefined;
-  onOpenSimilar: (articleId: string) => void;
-}) {
-  const date = new Date(article.ts);
-  const isJunk = article.importance === 'junk';
-  return (
-    <article className="group grid grid-cols-[14px_1fr] gap-x-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/60">
-      <ImportanceDot level={article.importance} />
-      <div className="min-w-0">
-        {/* Title row with hover-only external link */}
-        <div className="flex items-baseline gap-2">
-          <Link
-            to={`/articles/${article.id}`}
-            className={
-              'pretty leading-snug hover:text-accent ' +
-              (isJunk ? 'text-[14.5px] italic text-muted' : 'text-[15.5px] font-medium text-ink')
-            }
-          >
-            {article.title}
-          </Link>
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            title="Open original"
-            className="opacity-0 transition-opacity hover:text-accent group-hover:opacity-100 focus:opacity-100"
-          >
-            <ExternalIcon />
-          </a>
-        </div>
-
-        {/* Optional 2-line summary clamp */}
-        {article.summary && !isJunk ? (
-          <div
-            className="pretty mt-1 text-[13px] leading-snug text-muted"
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {article.summary}
+// Memoized: a page can render many rows, each formatting a date (toLocaleString
+// is not cheap). Props are stable across non-data re-renders — `article` and
+// `feed` come from memoized sources and `onOpenSimilar` is a stable setState
+// setter — so toggling the SimilarSidebar (openSimilarId) no longer re-renders
+// and re-formats every row.
+const ArticleRow = memo(
+  ({
+    article,
+    feed,
+    onOpenSimilar,
+  }: {
+    article: ArticleListItem;
+    feed: Feed | undefined;
+    onOpenSimilar: (articleId: string) => void;
+  }) => {
+    const date = new Date(article.ts);
+    const isJunk = article.importance === 'junk';
+    return (
+      <article className="group grid grid-cols-[14px_1fr] gap-x-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-paper2/60">
+        <ImportanceDot level={article.importance} />
+        <div className="min-w-0">
+          {/* Title row with hover-only external link */}
+          <div className="flex items-baseline gap-2">
+            <Link
+              to={`/articles/${article.id}`}
+              className={
+                'pretty leading-snug hover:text-accent ' +
+                (isJunk ? 'text-[14.5px] italic text-muted' : 'text-[15.5px] font-medium text-ink')
+              }
+            >
+              {article.title}
+            </Link>
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Open original"
+              className="opacity-0 transition-opacity hover:text-accent group-hover:opacity-100 focus:opacity-100"
+            >
+              <ExternalIcon />
+            </a>
           </div>
-        ) : null}
 
-        {/* Meta strip */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
-          <span className="inline-flex items-center gap-1.5">
-            <SourceFavicon feed={feed} />
-            <span className="text-muted">{feed?.title ?? 'Unknown source'}</span>
-          </span>
-          <Sep />
-          <span className="tnum text-muted" title={date.toISOString()}>
-            {date.toLocaleString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-          {article.importance ? (
-            <>
-              <Sep />
-              <ImportanceBadge level={article.importance} />
-            </>
+          {/* Optional 2-line summary clamp */}
+          {article.summary && !isJunk ? (
+            <div
+              className="pretty mt-1 text-[13px] leading-snug text-muted"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {article.summary}
+            </div>
           ) : null}
-          {article.status !== 'ready' ? (
-            <>
-              <Sep />
-              <StatusChip status={article.status} filterReason={article.filterReason} />
-            </>
-          ) : null}
-          {article.similarCount > 0 ? (
-            <>
-              <Sep />
-              <SimilarBadge
-                count={article.similarCount}
-                onClick={() => onOpenSimilar(article.id)}
-              />
-            </>
-          ) : null}
-          {article.categoryNames.length > 0 ? (
-            <>
-              <Sep />
-              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                {article.categoryNames.map((n) => (
-                  <span
-                    key={n}
-                    className="border border-border bg-paper2 px-1.5 py-px font-mono text-[11.5px] text-muted"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </span>
-            </>
-          ) : null}
-          {article.entities.length > 0 ? (
-            <>
-              <Sep />
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                {article.entities.slice(0, 4).map((e) => (
-                  <EntityChipInline key={e.id} entity={e} />
-                ))}
-                {article.entities.length > 4 ? (
-                  <span className="font-mono text-[12.5px] tnum text-mute2">
-                    +{article.entities.length - 4}
-                  </span>
-                ) : null}
-              </span>
-            </>
-          ) : null}
+
+          {/* Meta strip */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12.5px] text-mute2">
+            <span className="inline-flex items-center gap-1.5">
+              <SourceFavicon feed={feed} />
+              <span className="text-muted">{feed?.title ?? 'Unknown source'}</span>
+            </span>
+            <Sep />
+            <span className="tnum text-muted" title={date.toISOString()}>
+              {date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+            {article.importance ? (
+              <>
+                <Sep />
+                <ImportanceBadge level={article.importance} />
+              </>
+            ) : null}
+            {article.status !== 'ready' ? (
+              <>
+                <Sep />
+                <StatusChip status={article.status} filterReason={article.filterReason} />
+              </>
+            ) : null}
+            {article.similarCount > 0 ? (
+              <>
+                <Sep />
+                <SimilarBadge
+                  count={article.similarCount}
+                  onClick={() => onOpenSimilar(article.id)}
+                />
+              </>
+            ) : null}
+            {article.categoryNames.length > 0 ? (
+              <>
+                <Sep />
+                <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  {article.categoryNames.map((n) => (
+                    <span
+                      key={n}
+                      className="border border-border bg-paper2 px-1.5 py-px font-mono text-[11.5px] text-muted"
+                    >
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : null}
+            {article.entities.length > 0 ? (
+              <>
+                <Sep />
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  {article.entities.slice(0, 4).map((e) => (
+                    <EntityChipInline key={e.id} entity={e} />
+                  ))}
+                  {article.entities.length > 4 ? (
+                    <span className="font-mono text-[12.5px] tnum text-mute2">
+                      +{article.entities.length - 4}
+                    </span>
+                  ) : null}
+                </span>
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </article>
-  );
-}
+      </article>
+    );
+  },
+);
 
 export default function ArticlesList() {
   const [searchParams, setSearchParams] = useSearchParams();
