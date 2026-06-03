@@ -168,3 +168,68 @@ export function formatBuildDigestUserMessage(input: {
   });
   return `Period: ${input.period}\nScope: ${input.scopeLabel}\n\nArticles (${input.articles.length}):\n${lines.join('\n')}\n\nProduce the digest.`;
 }
+
+/**
+ * Categorize-only prompt for the split-cache path: the article's summary/
+ * importance/entities are already known (reused from the extract cache), so we
+ * only ask the LLM for the two user-specific fields. Still operates on the FULL
+ * body — no quality loss vs the combined prompt. DO NOT EDIT without versioning
+ * (changing bytes affects prompt caching + the operation key meaning).
+ */
+export const CATEGORIZE_SYSTEM_PROMPT = `You are a classification assistant for a news intelligence dashboard.
+
+Given a news article (title + body) and the user's category list and axes, produce two fields:
+
+1. **categoryNames** — pick zero or more of the user's categories (provided in the user message) that genuinely apply to this article. Do NOT invent new categories. Do NOT force-fit if none apply. Emit [] freely.
+
+2. **axisAssignments** — for each axis listed in the user message, pick exactly one of the allowed values that best fits the article, OR omit the axis entirely if no value is a clean fit. Never invent values not in the list. Emit [] when no axis applies.
+
+Be strict: if the text doesn't clearly support an assignment, omit it.`;
+
+export const CATEGORIZE_OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['categoryNames', 'axisAssignments'],
+  properties: {
+    categoryNames: {
+      type: 'array',
+      maxItems: 20,
+      items: { type: 'string', minLength: 1, maxLength: 64 },
+    },
+    axisAssignments: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['axisName', 'value'],
+        properties: {
+          axisName: { type: 'string', minLength: 1, maxLength: 64 },
+          value: { type: 'string', minLength: 1, maxLength: 64 },
+        },
+      },
+    },
+  },
+} as const;
+
+/** User-side message for the categorize-only call. Mirrors userPromptFor's
+ * category/axis section but drops the extraction instructions. */
+export function categorizeUserPromptFor(
+  title: string,
+  body: string,
+  userCategories: string[],
+  userAxes: { name: string; values: string[] }[],
+): string {
+  let prompt = `Article title:\n${title}\n\nArticle body:\n${body}\n\n`;
+  if (userCategories.length > 0) {
+    prompt += `User's categories (pick from this list only): [${userCategories.join(', ')}]\n`;
+  }
+  if (userAxes.length > 0) {
+    prompt += "User's axes (pick one value per axis, or omit the axis):\n";
+    for (const ax of userAxes) {
+      prompt += `  - ${ax.name}: [${ax.values.join(', ')}]\n`;
+    }
+  }
+  prompt += '\nAssign categories and axes now.';
+  return prompt;
+}
