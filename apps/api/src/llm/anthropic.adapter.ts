@@ -4,21 +4,29 @@ import {
   BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type BuildDigestLlmInput,
+  type CategorizeInput,
 } from '@intelligencehub/shared';
 import { loadEnv, resolveProviderEnv } from '../common/config/env';
 import type {
   LlmAdapter,
   LlmAnalyzeResult,
+  LlmCategorizeResult,
   LlmDigestResult,
 } from './llm-adapter.interface';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
   BUILD_DIGEST_SYSTEM_PROMPT,
+  CATEGORIZE_OUTPUT_SCHEMA,
+  CATEGORIZE_SYSTEM_PROMPT,
+  categorizeUserPromptFor,
   formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
-import { parseAnthropicAnalysis } from './parse-analysis';
+import {
+  parseAnthropicAnalysis,
+  parseAnthropicCategorize,
+} from './parse-analysis';
 
 const BUILD_DIGEST_OUTPUT_SCHEMA = {
   type: 'object' as const,
@@ -111,6 +119,61 @@ export class AnthropicAdapter implements LlmAdapter {
         latencyMs,
       },
       model: this.model,
+    };
+  }
+
+  async categorizeArticle(
+    input: CategorizeInput,
+  ): Promise<LlmCategorizeResult> {
+    const client = this.getClient();
+    const t0 = Date.now();
+    const body = this.truncateForBudget(input.body);
+
+    const response = await client.messages.create({
+      model: this.model,
+      max_tokens: this.maxTokens,
+      system: [
+        {
+          type: 'text',
+          text: CATEGORIZE_SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      tools: [
+        {
+          name: 'record_categories',
+          description: 'Record the article categories and axis assignments.',
+          input_schema:
+            CATEGORIZE_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: 'tool', name: 'record_categories' },
+      messages: [
+        {
+          role: 'user',
+          content: categorizeUserPromptFor(
+            input.title,
+            body,
+            input.userCategories,
+            input.userAxes,
+          ),
+        },
+      ],
+    });
+
+    const latencyMs = Date.now() - t0;
+    const data = parseAnthropicCategorize(response.content);
+
+    return {
+      data,
+      model: this.model,
+      telemetry: {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: response.usage.cache_creation_input_tokens ?? 0,
+        latencyMs,
+      },
     };
   }
 
