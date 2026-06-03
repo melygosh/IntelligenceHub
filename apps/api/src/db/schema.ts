@@ -129,6 +129,13 @@ export const articles = pgTable(
       t.contentHash,
     ),
     userUrlIdx: index('articles_user_url_idx').on(t.userId, t.url),
+    // duplicate_of is an FK with ON DELETE SET NULL. Postgres does NOT auto-index
+    // FK columns, so the SET-NULL action seq-scanned the whole table on every
+    // article/feed delete. Partial: only the handful of duplicate rows are
+    // non-null, so the index stays tiny.
+    duplicateOfIdx: index('articles_duplicate_of_idx')
+      .on(t.duplicateOf)
+      .where(sql`${t.duplicateOf} is not null`),
     searchVectorIdx: index('articles_search_vector_idx').using(
       'gin',
       t.searchVector,
@@ -322,6 +329,10 @@ export const articleAxisValue = pgTable(
   (t) => ({
     pk: primaryKey({ columns: [t.articleId, t.axisId] }),
     axisIdx: index('article_axis_value_axis_idx').on(t.axisId),
+    // axis_value_id is an FK with ON DELETE CASCADE but was unindexed, so
+    // deleting an axis value seq-scanned this join table. (article_id/axis_id
+    // are covered by the PK; axis_id by axisIdx — this was the one FK gap.)
+    axisValueIdx: index('article_axis_value_value_idx').on(t.axisValueId),
   }),
 );
 

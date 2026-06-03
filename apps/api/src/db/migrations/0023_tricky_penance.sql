@@ -1,0 +1,2 @@
+CREATE INDEX "article_axis_value_value_idx" ON "article_axis_value" USING btree ("axis_value_id");--> statement-breakpoint
+CREATE INDEX "articles_duplicate_of_idx" ON "articles" USING btree ("duplicate_of") WHERE "articles"."duplicate_of" is not null;
