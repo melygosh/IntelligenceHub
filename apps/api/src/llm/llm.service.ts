@@ -89,20 +89,42 @@ export class LlmService implements ILlmService {
 
     // Path 2: extract reused, categorize missing → cheap categorize-only call.
     if (extract && !noConfig) {
-      const cat = await this.withSemaphore(() =>
-        this.categorizeWithRetry({
-          title: input.title,
-          body: input.body,
-          articleId: input.articleId,
-          userId: input.userId,
-          contentHash: input.contentHash,
-          userCategories: input.userCategories,
-          userAxes: input.userAxes,
-          configHash: input.configHash,
-          entities: extract.entities,
-          operationTrigger: 'categorize_article_v1',
-        }),
-      );
+      const catInput: CategorizeInput = {
+        title: input.title,
+        body: input.body,
+        articleId: input.articleId,
+        userId: input.userId,
+        contentHash: input.contentHash,
+        userCategories: input.userCategories,
+        userAxes: input.userAxes,
+        configHash: input.configHash,
+        entities: extract.entities,
+        operationTrigger: 'categorize_article_v1',
+      };
+      const cat = await this.withSemaphore(async () => {
+        try {
+          return await this.categorizeWithRetry(catInput);
+        } catch (primaryErr) {
+          // Mirror the cold path's failover: a rate-limit/timeout on the
+          // categorize-only call (the common config-tuning path) should fail
+          // over to the fallback provider, not drop straight to the BullMQ
+          // retry. Without this, Path 2 silently lacked the FR-3 guarantee the
+          // cold and digest paths both have.
+          if (!this.fallbackProvider) throw primaryErr;
+          const reason = this.classifyErrorToReason(primaryErr);
+          this.log.warn(
+            JSON.stringify({
+              event: 'llm.failover.fire',
+              articleId: input.articleId,
+              primary: provider,
+              fallback: this.fallbackProvider,
+              reason,
+              operation: 'categorize_article_v1',
+            }),
+          );
+          return this.callOnceWithFallbackCategorize(catInput, reason);
+        }
+      });
       await this.safeWriteCategorize(
         input.contentHash,
         provider,
@@ -546,6 +568,50 @@ export class LlmService implements ILlmService {
           latencyMs: Date.now() - t0,
         },
         operation: input.operationTrigger ?? 'analyze_article_v4',
+        provider,
+        failoverReason,
+        errorMessage: msg,
+      });
+      throw err;
+    }
+  }
+
+  private async callOnceWithFallbackCategorize(
+    input: CategorizeInput,
+    failoverReason: string,
+  ): Promise<CategorizeResult> {
+    const provider = this.fallbackProvider!;
+    const adapter = this.adapterFor(provider);
+    const model = this.modelFor(provider);
+    const t0 = Date.now();
+    try {
+      const result = await adapter.categorizeArticle(input);
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: input.articleId,
+        model: result.model,
+        status: 'success',
+        telemetry: result.telemetry,
+        operation: 'categorize_article_v1',
+        provider,
+        failoverReason,
+      });
+      return result.data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await this.recordTelemetry({
+        userId: input.userId,
+        articleId: input.articleId,
+        model,
+        status: 'error',
+        telemetry: {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheCreationTokens: 0,
+          latencyMs: Date.now() - t0,
+        },
+        operation: 'categorize_article_v1',
         provider,
         failoverReason,
         errorMessage: msg,
