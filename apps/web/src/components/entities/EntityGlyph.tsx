@@ -10,6 +10,20 @@ const GLYPHS: Record<EntityKind, React.ReactNode> = {
     <rect x="2.2" y="2.2" width="5.6" height="5.6" fill="currentColor" transform="rotate(45 5 5)" />
   ),
   location: <circle cx="5" cy="5" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.5" />,
+  // Fallback kind for entities the model typed outside the offered enum
+  // (dashed square = "needs reclassification").
+  unknown: (
+    <rect
+      x="1.5"
+      y="1.5"
+      width="7"
+      height="7"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeDasharray="2 1.4"
+    />
+  ),
 };
 
 export function EntityGlyph({

@@ -14,6 +14,47 @@ import {
 // tool_use block and read its input, without importing the SDK type.
 type ContentBlockLike = { type: string; input?: unknown };
 
+// The five entity kinds actually offered to the model (the analyze output
+// schema's enum). 'unknown' is deliberately absent — it is our fallback, not a
+// model option.
+const MODEL_ENTITY_TYPES = new Set([
+  'company',
+  'person',
+  'product',
+  'technology',
+  'location',
+]);
+
+/**
+ * Rewrite (in place) any entity `type` the model emitted outside the offered
+ * enum to 'unknown', before Zod validation. Anthropic tool_use does NOT enforce
+ * enums, so the model occasionally returns e.g. "organization"/"event"; without
+ * this, one stray value fails safeParse and rejects the ENTIRE analysis (summary
+ * + every other entity), forcing a retry/failover. Coercing the single offending
+ * entity to 'unknown' preserves the rest and surfaces it for manual
+ * reclassification in the UI. A missing/non-string type is left to fail — that
+ * is a malformed response, not an enum stray.
+ */
+function coerceUnknownEntityTypes(raw: unknown): unknown {
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    Array.isArray((raw as { entities?: unknown }).entities)
+  ) {
+    for (const e of (raw as { entities: unknown[] }).entities) {
+      if (
+        e &&
+        typeof e === 'object' &&
+        typeof (e as { type?: unknown }).type === 'string' &&
+        !MODEL_ENTITY_TYPES.has((e as { type: string }).type)
+      ) {
+        (e as { type: string }).type = 'unknown';
+      }
+    }
+  }
+  return raw;
+}
+
 /** Anthropic returns structured output as a forced `tool_use` block; its
  * `input` is the candidate result. Throws if the block is missing or the input
  * fails schema validation. */
@@ -24,7 +65,9 @@ export function parseAnthropicAnalysis(
   if (!toolUse) {
     throw new Error('Anthropic response missing tool_use block');
   }
-  const parsed = ArticleAnalysisResult.safeParse(toolUse.input);
+  const parsed = ArticleAnalysisResult.safeParse(
+    coerceUnknownEntityTypes(toolUse.input),
+  );
   if (!parsed.success) {
     throw new Error(
       `Anthropic response failed Zod validation: ${parsed.error.message}`,
@@ -50,7 +93,7 @@ export function parseOpenAiAnalysis(
       `OpenAI response was not valid JSON: ${(err as Error).message}`,
     );
   }
-  const parsed = ArticleAnalysisResult.safeParse(raw);
+  const parsed = ArticleAnalysisResult.safeParse(coerceUnknownEntityTypes(raw));
   if (!parsed.success) {
     throw new Error(
       `OpenAI response failed Zod validation: ${parsed.error.message}`,

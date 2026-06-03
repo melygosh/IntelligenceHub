@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
-export const EntityKind = z.enum(['company', 'person', 'product', 'technology', 'location']);
+// 'unknown' is NOT offered to the LLM (the analyze output schema only exposes
+// the five real kinds). It is a server-side fallback: the parser rewrites any
+// entity type the model emits outside the real set to 'unknown' rather than
+// rejecting the whole analysis, and the UI lets a user reclassify it.
+export const EntityKind = z.enum([
+  'company',
+  'person',
+  'product',
+  'technology',
+  'location',
+  'unknown',
+]);
 export type EntityKind = z.infer<typeof EntityKind>;
 
 export const ArticleEntitySummary = z.object({

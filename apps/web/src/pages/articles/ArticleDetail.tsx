@@ -16,13 +16,21 @@ import { Sep } from '../../components/ui/Sep';
 
 type EntityType = ArticleEntitySummary['type'];
 
-const TYPE_GROUP_ORDER: EntityType[] = ['company', 'person', 'product', 'technology', 'location'];
+const TYPE_GROUP_ORDER: EntityType[] = [
+  'company',
+  'person',
+  'product',
+  'technology',
+  'location',
+  'unknown',
+];
 const TYPE_GROUP_LABEL: Record<EntityType, string> = {
   company: 'Companies',
   person: 'People',
   product: 'Products',
   technology: 'Technologies',
   location: 'Locations',
+  unknown: 'Other',
 };
 
 const IMPORTANCE_COLOR: Record<string, string> = {

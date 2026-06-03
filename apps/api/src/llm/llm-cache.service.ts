@@ -121,7 +121,7 @@ export class LlmResponseCacheService {
           eq(llmResponseCache.contentHash, contentHash),
           eq(llmResponseCache.provider, provider),
           eq(llmResponseCache.model, model),
-          eq(llmResponseCache.operation, 'extract_article_v1'),
+          eq(llmResponseCache.operation, 'extract_article_v2'),
           eq(llmResponseCache.configHash, ''),
         ),
       )
@@ -160,7 +160,7 @@ export class LlmResponseCacheService {
         contentHash,
         provider,
         model,
-        operation: 'extract_article_v1',
+        operation: 'extract_article_v2',
         responseJson: extract,
         configHash: '',
       })

@@ -56,6 +56,10 @@ export type LlmOperation =
   | 'analyze_article_v2'
   | 'analyze_article_v3'
   | 'analyze_article_v4'
+  // v5: broadened entity-type guidance + strict JSON-Schema enum in the prompt,
+  // plus the parser 'unknown' fallback. Bumped so analyses re-run on the new
+  // prompt (paired with extract_article_v2 below).
+  | 'analyze_article_v5'
   // Telemetry-only label for the regeneration path (FR-10 wants process vs
   // regeneration distinguishable). NOTE: this is NOT used as the LLM
   // response-cache key — regeneration shares the 'analyze_article_v4' cache so
@@ -64,6 +68,9 @@ export type LlmOperation =
   // Split-cache: article-specific extract (summary/importance/entities,
   // configHash='') and the per-user categorize (categories/axes).
   | 'extract_article_v1'
+  // v2: extraction prompt changed (entity-type enum), so the extract cache is
+  // bumped to force re-extraction rather than serving v1 (old-prompt) results.
+  | 'extract_article_v2'
   | 'categorize_article_v1'
   | 'build_digest_v1'
   | 'build_digest_v2';

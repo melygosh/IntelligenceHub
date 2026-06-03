@@ -64,6 +64,43 @@ describe('parseOpenAiAnalysis', () => {
   });
 });
 
+describe('entity-type unknown fallback', () => {
+  // The exact failure mode observed live: the model emits an entity type outside
+  // the offered enum (e.g. "organization" for NATO). Pre-fix this rejected the
+  // WHOLE analysis; now the one entity is coerced to 'unknown' and the rest
+  // survives.
+  const withStrayType = {
+    summary: 'NATO secretary general visited the capital today.',
+    importance: 'normal',
+    entities: [
+      { canonicalName: 'NATO', type: 'organization', aliases: [] },
+      { canonicalName: 'Jens Stoltenberg', type: 'person', aliases: [] },
+    ],
+    categoryNames: [],
+    axisAssignments: [],
+  };
+
+  it('coerces an out-of-enum entity type to "unknown" (anthropic) without rejecting the analysis', () => {
+    const out = parseAnthropicAnalysis([
+      { type: 'tool_use', input: structuredClone(withStrayType) },
+    ]);
+    expect(out.entities[0].type).toBe('unknown'); // organization -> unknown
+    expect(out.entities[1].type).toBe('person'); // valid type untouched
+    expect(out.summary).toBe(withStrayType.summary); // rest of analysis preserved
+  });
+
+  it('coerces an out-of-enum entity type to "unknown" (openai)', () => {
+    const out = parseOpenAiAnalysis(JSON.stringify(withStrayType));
+    expect(out.entities[0].type).toBe('unknown');
+    expect(out.entities[1].type).toBe('person');
+  });
+
+  it('leaves all-valid entity types unchanged', () => {
+    const out = parseOpenAiAnalysis(JSON.stringify(VALID));
+    expect(out.entities[0].type).toBe('company');
+  });
+});
+
 describe('parseAnthropicCategorize', () => {
   it('extracts categories + axes from a tool_use block', () => {
     const out = parseAnthropicCategorize([

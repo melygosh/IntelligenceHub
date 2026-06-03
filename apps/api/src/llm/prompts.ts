@@ -21,7 +21,15 @@ Given a news article (title + body), produce a structured analysis with five fie
 
 3. **entities** — named entities explicitly mentioned in the title or body. For each:
    - canonicalName: the standard form of the entity name (e.g. "Microsoft", not "MSFT" or "Microsoft Corp.")
-   - type: exactly one of "company", "person", "product", "technology", "location"
+   - type: the entity's kind. This field is governed by a STRICT JSON Schema enumeration — your value MUST be one of the listed strings, copied exactly, and the schema permits NO other value under any circumstance:
+         { "type": "string", "enum": ["company", "person", "product", "technology", "location"] }
+     Choose the single best-fitting value using these definitions:
+       - "company"    — any NAMED ORGANIZATION that acts as an entity: businesses, institutions, government bodies and agencies, regulators, international bodies and alliances (e.g. NATO, the UN, the EU), NGOs, political parties, sports clubs, universities, media outlets.
+       - "person"     — an individual human being identified by name.
+       - "product"    — a named product, service, brand, work, or offering (apps, devices, vehicles, shows, titled publications).
+       - "technology" — a technology, language, framework, protocol, standard, method, or scientific/technical concept.
+       - "location"   — a geographic place: country, city, region, body of water, landmark, venue, or address.
+     Output EXACTLY ONE of the five enum strings — never a synonym, plural, capitalised variant, or any value outside the enum.
    - aliases: other ways this SAME entity is written — alternate spellings, abbreviations, ticker symbols, official short forms, and transliterations (e.g. Cyrillic <-> Latin). Sources:
        (a) Variants explicitly shown in the article — "Microsoft Corp. (MSFT)" yields aliases ["Microsoft Corp.", "MSFT"].
        (b) Confident world-knowledge variants. Only include if you are confident; do not invent obscure aliases.
@@ -34,6 +42,7 @@ Given a news article (title + body), produce a structured analysis with five fie
    - "ChatGPT" -> type=product, aliases=[], description="OpenAI's conversational AI assistant"
    - "Rust" -> type=technology, aliases=[], description="Systems programming language with a focus on memory safety"
    - "San Francisco" -> type=location, aliases=["SF"], description="City in northern California"
+   - "NATO" -> type=company, aliases=["North Atlantic Treaty Organization"], description="Intergovernmental military alliance of European and North American states"
    - Obscure local startup mentioned once with no context -> description=null
    Maximum 20 entities per article. Prefer specific named entities over generic categories. Do not invent entities not present in the text.
 

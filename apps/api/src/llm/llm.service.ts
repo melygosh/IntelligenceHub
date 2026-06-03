@@ -443,7 +443,7 @@ export class LlmService implements ILlmService {
           model: result.model,
           status: 'success',
           telemetry: result.telemetry,
-          operation: input.operationTrigger ?? 'analyze_article_v4',
+          operation: input.operationTrigger ?? 'analyze_article_v5',
         });
         return result.data;
       } catch (err) {
@@ -465,7 +465,7 @@ export class LlmService implements ILlmService {
             // usage.
             latencyMs: Date.now() - t0,
           },
-          operation: input.operationTrigger ?? 'analyze_article_v4',
+          operation: input.operationTrigger ?? 'analyze_article_v5',
           errorMessage: (err as Error).message,
         });
         // Retry only on validation failure (likely transient model wobble).
@@ -554,7 +554,7 @@ export class LlmService implements ILlmService {
         model: result.model,
         status: 'success',
         telemetry: result.telemetry,
-        operation: input.operationTrigger ?? 'analyze_article_v4',
+        operation: input.operationTrigger ?? 'analyze_article_v5',
         provider,
         failoverReason,
       });
@@ -573,7 +573,7 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: input.operationTrigger ?? 'analyze_article_v4',
+        operation: input.operationTrigger ?? 'analyze_article_v5',
         provider,
         failoverReason,
         errorMessage: msg,
@@ -727,7 +727,7 @@ export class LlmService implements ILlmService {
       articleId: args.articleId,
       provider: args.provider ?? this.provider,
       model: args.model,
-      operation: args.operation ?? 'analyze_article_v4',
+      operation: args.operation ?? 'analyze_article_v5',
       status: args.status,
       inputTokens: args.telemetry.inputTokens,
       outputTokens: args.telemetry.outputTokens,

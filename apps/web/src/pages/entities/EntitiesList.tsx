@@ -19,6 +19,8 @@ const TYPE_OPTIONS: { value: EntityKind | ''; label: string }[] = [
   { value: 'product', label: 'Products' },
   { value: 'technology', label: 'Technology' },
   { value: 'location', label: 'Locations' },
+  // Lets a user filter to entities the model mis-typed, to review/reclassify them.
+  { value: 'unknown', label: 'Unknown' },
 ];
 
 const SORT_OPTIONS: { value: EntitySort; label: string }[] = [
@@ -29,7 +31,12 @@ const SORT_OPTIONS: { value: EntitySort; label: string }[] = [
 
 function isEntityKind(s: string | null): s is EntityKind {
   return (
-    s === 'company' || s === 'person' || s === 'product' || s === 'technology' || s === 'location'
+    s === 'company' ||
+    s === 'person' ||
+    s === 'product' ||
+    s === 'technology' ||
+    s === 'location' ||
+    s === 'unknown'
   );
 }
 
