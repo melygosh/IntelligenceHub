@@ -5,9 +5,14 @@ import {
   type ArticleAnalysisResult,
   type BuildDigestLlmInput,
   type BuildDigestLlmResult,
+  type CategorizeInput,
+  type CategorizeResult,
+  type ExtractResult,
   type LlmOperation,
   type LlmProvider,
   type LlmService as ILlmService,
+  splitAnalysis,
+  mergeAnalysis,
 } from '@intelligencehub/shared';
 import { DB } from '../db/db.module';
 import type { Db } from '../db/client';
@@ -51,28 +56,68 @@ export class LlmService implements ILlmService {
   async analyzeArticle(
     input: ArticleAnalysisInput,
   ): Promise<ArticleAnalysisResult> {
-    // Cache lookup keyed by content_hash + provider + model + operation
-    const cached = await this.cache.read(
+    const provider = this.provider;
+    const model = this.activeModel;
+    const noConfig =
+      input.userCategories.length === 0 && input.userAxes.length === 0;
+
+    const extract = await this.cache.readExtract(
       input.contentHash,
-      this.provider,
-      this.activeModel,
-      'analyze_article_v4',
-      input.configHash,
+      provider,
+      model,
     );
-    if (cached) {
+    const categorize = noConfig
+      ? { categoryNames: [], axisAssignments: [] }
+      : await this.cache.readCategorize(
+          input.contentHash,
+          provider,
+          model,
+          input.configHash,
+        );
+
+    // Path 1: both halves known → 0 LLM calls.
+    if (extract && categorize) {
       this.log.log(
         JSON.stringify({
-          event: 'llm.cache_hit',
+          event: 'llm.split_cache_hit',
           articleId: input.articleId,
           contentHash: input.contentHash,
         }),
       );
-      return cached;
+      return mergeAnalysis(extract, categorize);
     }
 
+    // Path 2: extract reused, categorize missing → cheap categorize-only call.
+    if (extract && !noConfig) {
+      const cat = await this.withSemaphore(() =>
+        this.categorizeWithRetry({
+          title: input.title,
+          body: input.body,
+          articleId: input.articleId,
+          userId: input.userId,
+          contentHash: input.contentHash,
+          userCategories: input.userCategories,
+          userAxes: input.userAxes,
+          configHash: input.configHash,
+          entities: extract.entities,
+          operationTrigger: 'categorize_article_v1',
+        }),
+      );
+      await this.safeWriteCategorize(
+        input.contentHash,
+        provider,
+        model,
+        input.configHash,
+        cat,
+      );
+      return mergeAnalysis(extract, cat);
+    }
+
+    // Path 3 (cold): one full combined call; split + cache both halves.
     return this.withSemaphore(async () => {
+      let full: ArticleAnalysisResult;
       try {
-        return await this.callWithRetry(input);
+        full = await this.callWithRetry(input);
       } catch (primaryErr) {
         if (!this.fallbackProvider) throw primaryErr;
         const reason = this.classifyErrorToReason(primaryErr);
@@ -80,14 +125,124 @@ export class LlmService implements ILlmService {
           JSON.stringify({
             event: 'llm.failover.fire',
             articleId: input.articleId,
-            primary: this.provider,
+            primary: provider,
             fallback: this.fallbackProvider,
             reason,
           }),
         );
-        return await this.callOnceWithFallback(input, reason);
+        full = await this.callOnceWithFallback(input, reason);
       }
+      const { extract: ex, categorize: cat } = splitAnalysis(full);
+      await this.safeWriteExtract(input.contentHash, provider, model, ex);
+      if (!noConfig) {
+        await this.safeWriteCategorize(
+          input.contentHash,
+          provider,
+          model,
+          input.configHash,
+          cat,
+        );
+      }
+      return full;
     });
+  }
+
+  private async categorizeWithRetry(
+    input: CategorizeInput,
+  ): Promise<CategorizeResult> {
+    const adapter =
+      this.provider === 'anthropic' ? this.anthropic : this.openai;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await adapter.categorizeArticle(input);
+        await this.recordTelemetry({
+          userId: input.userId,
+          articleId: input.articleId,
+          model: result.model,
+          status: 'success',
+          telemetry: result.telemetry,
+          operation: 'categorize_article_v1',
+        });
+        return result.data;
+      } catch (err) {
+        lastError = err as Error;
+        const status = this.classifyError(err);
+        await this.recordTelemetry({
+          userId: input.userId,
+          articleId: input.articleId,
+          model: this.activeModel,
+          status,
+          telemetry: {
+            inputTokens: 0,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheCreationTokens: 0,
+            latencyMs: 0,
+          },
+          operation: 'categorize_article_v1',
+          errorMessage: (err as Error).message,
+        });
+        // Retry only on validation failure (likely transient model wobble).
+        // Rate limit / timeout / network errors break out here and hand off to
+        // failover (if configured) or the BullMQ job retry — the SDK does not
+        // retry (maxRetries: 0), so our layer owns all retry.
+        if (status !== 'invalid_response') break;
+        this.log.warn(
+          JSON.stringify({
+            event: 'llm.retry',
+            articleId: input.articleId,
+            attempt,
+            reason: status,
+          }),
+        );
+      }
+    }
+    throw lastError ?? new Error('LLM call failed');
+  }
+
+  private async safeWriteExtract(
+    contentHash: string,
+    provider: LlmProvider,
+    model: string,
+    extract: ExtractResult,
+  ): Promise<void> {
+    try {
+      await this.cache.writeExtract(contentHash, provider, model, extract);
+    } catch (err) {
+      this.log.warn(
+        JSON.stringify({
+          event: 'llm.extract_cache_write_failed',
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+  }
+
+  private async safeWriteCategorize(
+    contentHash: string,
+    provider: LlmProvider,
+    model: string,
+    configHash: string,
+    categorize: CategorizeResult,
+  ): Promise<void> {
+    try {
+      await this.cache.writeCategorize(
+        contentHash,
+        provider,
+        model,
+        configHash,
+        categorize,
+      );
+    } catch (err) {
+      this.log.warn(
+        JSON.stringify({
+          event: 'llm.categorize_cache_write_failed',
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
   }
 
   async buildDigest(input: BuildDigestLlmInput): Promise<{
@@ -266,27 +421,6 @@ export class LlmService implements ILlmService {
           telemetry: result.telemetry,
           operation: input.operationTrigger ?? 'analyze_article_v4',
         });
-        try {
-          await this.cache.write(
-            input.contentHash,
-            this.provider,
-            result.model,
-            'analyze_article_v4',
-            input.configHash,
-            result.data,
-          );
-        } catch (cacheErr) {
-          this.log.warn(
-            JSON.stringify({
-              event: 'llm.cache_write_failed',
-              articleId: input.articleId,
-              provider: this.provider,
-              error:
-                cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
-            }),
-          );
-          // Swallow — primary call succeeded, result is valid even without cache.
-        }
         return result.data;
       } catch (err) {
         lastError = err as Error;
@@ -396,27 +530,6 @@ export class LlmService implements ILlmService {
         provider,
         failoverReason,
       });
-      try {
-        await this.cache.write(
-          input.contentHash,
-          provider,
-          result.model,
-          'analyze_article_v4',
-          input.configHash,
-          result.data,
-        );
-      } catch (cacheErr) {
-        this.log.warn(
-          JSON.stringify({
-            event: 'llm.cache_write_failed',
-            articleId: input.articleId,
-            provider,
-            error:
-              cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
-          }),
-        );
-        // Swallow — fallback call succeeded, result is valid even without cache.
-      }
       return result.data;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
