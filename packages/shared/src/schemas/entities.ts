@@ -42,6 +42,11 @@ export type RecentEntitiesResponse = z.infer<typeof RecentEntitiesResponse>;
 export const EntitySort = z.enum(['recent', 'mentions', 'name']);
 export type EntitySort = z.infer<typeof EntitySort>;
 
+// Manual reclassification of an entity's type (e.g. fixing an 'unknown' the
+// model couldn't place). Accepts any EntityKind including 'unknown'.
+export const UpdateEntityRequest = z.object({ type: EntityKind });
+export type UpdateEntityRequest = z.infer<typeof UpdateEntityRequest>;
+
 /** A row in the entity directory — superset of RecentEntity with first-seen. */
 export const EntityListItem = z.object({
   id: z.string().uuid(),

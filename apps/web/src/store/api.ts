@@ -258,6 +258,16 @@ export const api = createApi({
       query: (id) => `/entities/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Entity', id }],
     }),
+    updateEntityType: build.mutation<EntityDetail, { id: string; type: EntityKind }>({
+      query: ({ id, type }) => ({
+        url: `/entities/${id}`,
+        method: 'PATCH',
+        body: { type },
+      }),
+      // Refresh this entity's detail + any entity list (type column / filter) +
+      // the graph (node type drives colouring/grouping).
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'Entity', id }, 'Entity', 'Graph'],
+    }),
     getRecentEntities: build.query<RecentEntitiesResponse, void>({
       query: () => '/entities',
       providesTags: ['Entity'],
@@ -409,6 +419,7 @@ export const {
   useGetArticlesQuery,
   useGetArticleQuery,
   useGetEntityQuery,
+  useUpdateEntityTypeMutation,
   useGetRecentEntitiesQuery,
   useGetEntityListQuery,
   useGetEntitiesInfiniteQuery,

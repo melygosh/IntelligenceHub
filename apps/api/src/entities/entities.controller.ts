@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  Patch,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -13,8 +15,10 @@ import {
   EntityKind,
   EntitySort,
   MAX_PAGE_SIZE,
+  UpdateEntityRequest,
 } from '@intelligencehub/shared';
 import { EntitiesService } from './entities.service';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequireConfirmedEmailGuard } from '../common/guards/require-confirmed-email.guard';
 import {
@@ -64,6 +68,22 @@ export class EntitiesController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<EntityDetail> {
     const result = await this.entitiesService.getById(id, user.userId);
+    if (!result) throw new NotFoundException();
+    return result;
+  }
+
+  @Patch(':id')
+  async updateType(
+    @CurrentUser() user: AuthUserContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(UpdateEntityRequest))
+    body: UpdateEntityRequest,
+  ): Promise<EntityDetail> {
+    const result = await this.entitiesService.updateType(
+      id,
+      user.userId,
+      body.type,
+    );
     if (!result) throw new NotFoundException();
     return result;
   }

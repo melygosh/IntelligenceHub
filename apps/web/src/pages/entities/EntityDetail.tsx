@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useGetEntityQuery } from '../../store/api';
-import type { EntityKind, RelatedEntitySummary } from '@intelligencehub/shared';
+import type { RelatedEntitySummary } from '@intelligencehub/shared';
 import { MentionTimeline } from './MentionTimeline';
 import { useSetPageTitle } from '../../components/layout/usePageTitle';
 import { ArticleListCard } from '../../components/articles/ArticleListCard';
 import { EntityGlyph } from '../../components/entities/EntityGlyph';
+import { EntityTypeSelect } from '../../components/entities/EntityTypeSelect';
 import { LoadingHint } from '../../components/ui/LoadingHint';
 import { EmptyState } from '../../components/ui/EmptyState';
 
@@ -15,17 +16,6 @@ function formatDate(unixSeconds: number): string {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function TypeBadge({ type }: { type: EntityKind }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 border border-border bg-paper2 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink">
-      <span className="inline-flex items-center text-muted">
-        <EntityGlyph type={type} />
-      </span>
-      <span>{type}</span>
-    </span>
-  );
 }
 
 function StatPair({ label, value, title }: { label: string; value: string; title?: string }) {
@@ -102,9 +92,6 @@ export default function EntityDetail() {
           <h1 className="pretty font-serif text-[30px] leading-tight text-ink">
             {data.canonicalName}
           </h1>
-          <span className="self-center">
-            <TypeBadge type={data.type} />
-          </span>
           <Link
             to="/graph?period=all"
             state={{ anchorEntityId: data.id }}
@@ -112,6 +99,9 @@ export default function EntityDetail() {
           >
             view in graph →
           </Link>
+          <span className="ml-auto self-center">
+            <EntityTypeSelect entityId={data.id} current={data.type} />
+          </span>
         </div>
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 font-mono text-[11.5px]">
           <StatPair label="mentions" value={String(data.mentionCount)} />

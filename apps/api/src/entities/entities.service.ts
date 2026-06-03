@@ -141,6 +141,25 @@ export class EntitiesService {
     return { items, total };
   }
 
+  /**
+   * Reclassify an entity's type. User-scoped: the WHERE clause means a user can
+   * only ever update their OWN entity (a foreign id updates 0 rows → null →
+   * 404). Returns the refreshed detail so the client reflects the change.
+   */
+  async updateType(
+    id: string,
+    userId: string,
+    type: EntityKind,
+  ): Promise<EntityDetail | null> {
+    const [updated] = await this.db
+      .update(entities)
+      .set({ type })
+      .where(and(eq(entities.id, id), eq(entities.userId, userId)))
+      .returning({ id: entities.id });
+    if (!updated) return null;
+    return this.getById(id, userId);
+  }
+
   async getById(id: string, userId: string): Promise<EntityDetail | null> {
     const [e] = await this.db
       .select({
