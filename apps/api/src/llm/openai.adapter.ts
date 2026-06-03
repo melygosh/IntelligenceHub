@@ -4,21 +4,26 @@ import {
   BuildDigestLlmResult,
   type ArticleAnalysisInput,
   type BuildDigestLlmInput,
+  type CategorizeInput,
 } from '@intelligencehub/shared';
 import { loadEnv, resolveProviderEnv } from '../common/config/env';
 import type {
   LlmAdapter,
   LlmAnalyzeResult,
+  LlmCategorizeResult,
   LlmDigestResult,
 } from './llm-adapter.interface';
 import {
   ANALYZE_ARTICLE_OUTPUT_SCHEMA,
   ANALYZE_ARTICLE_SYSTEM_PROMPT,
   BUILD_DIGEST_SYSTEM_PROMPT,
+  CATEGORIZE_OUTPUT_SCHEMA,
+  CATEGORIZE_SYSTEM_PROMPT,
+  categorizeUserPromptFor,
   formatBuildDigestUserMessage,
   userPromptFor,
 } from './prompts';
-import { parseOpenAiAnalysis } from './parse-analysis';
+import { parseOpenAiAnalysis, parseOpenAiCategorize } from './parse-analysis';
 
 @Injectable()
 export class OpenAiAdapter implements LlmAdapter {
@@ -74,6 +79,55 @@ export class OpenAiAdapter implements LlmAdapter {
 
     const latencyMs = Date.now() - t0;
     const data = parseOpenAiAnalysis(completion.choices[0]?.message.content);
+
+    return {
+      data,
+      telemetry: {
+        inputTokens: completion.usage?.prompt_tokens ?? 0,
+        outputTokens: completion.usage?.completion_tokens ?? 0,
+        cacheReadTokens:
+          completion.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+        cacheCreationTokens: 0, // OpenAI doesn't expose write metrics separately
+        latencyMs,
+      },
+      model: this.model,
+    };
+  }
+
+  async categorizeArticle(
+    input: CategorizeInput,
+  ): Promise<LlmCategorizeResult> {
+    const client = this.getClient();
+    const t0 = Date.now();
+    const body = this.truncateForBudget(input.body);
+
+    const completion = await client.chat.completions.create({
+      model: this.model,
+      max_completion_tokens: this.maxTokens,
+      messages: [
+        { role: 'system', content: CATEGORIZE_SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: categorizeUserPromptFor(
+            input.title,
+            body,
+            input.userCategories,
+            input.userAxes,
+          ),
+        },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'record_categories',
+          strict: true,
+          schema: CATEGORIZE_OUTPUT_SCHEMA,
+        },
+      },
+    });
+
+    const latencyMs = Date.now() - t0;
+    const data = parseOpenAiCategorize(completion.choices[0]?.message.content);
 
     return {
       data,
