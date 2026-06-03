@@ -30,6 +30,10 @@ type ProcessResult = {
   inserted: number;
   filtered: number;
   duplicates: number;
+  // Per-item failures during insert/dedup. Isolated: a bad item is logged and
+  // skipped, the rest of the batch continues (Principle 2 — one item never
+  // sinks the whole pull).
+  itemErrors: number;
   llmErrors: number;
 };
 
@@ -157,6 +161,7 @@ export class FeedPullWorker extends WorkerHost {
         inserted: 0,
         filtered: 0,
         duplicates: 0,
+        itemErrors: 0,
         llmErrors: 0,
       };
     }
@@ -172,16 +177,33 @@ export class FeedPullWorker extends WorkerHost {
       let inserted = 0;
       let filtered = 0;
       let duplicates = 0;
+      let itemErrors = 0;
       // Analysis is async now (enqueued per article), so the pull never knows
       // an LLM outcome at done-time. Kept at 0 for the event's stable shape;
       // analysis results surface via article.analyzed events instead.
       const llmErrors = 0;
 
       for (const item of fetched.items) {
-        const outcome = await this.handleItem(userId, feedId, item);
-        if (outcome === 'inserted') inserted += 1;
-        else if (outcome === 'filtered') filtered += 1;
-        else duplicates += 1;
+        // Per-item isolation: a single malformed/un-insertable item is logged
+        // and skipped rather than aborting the loop and failing the whole pull
+        // (which would also drop every item after it).
+        try {
+          const outcome = await this.handleItem(userId, feedId, item);
+          if (outcome === 'inserted') inserted += 1;
+          else if (outcome === 'filtered') filtered += 1;
+          else duplicates += 1;
+        } catch (err) {
+          itemErrors += 1;
+          this.log.warn(
+            JSON.stringify({
+              event: 'feed.pull.item_failed',
+              feedId,
+              userId,
+              url: item.normalisedUrl,
+              error: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        }
       }
 
       await this.db
@@ -206,11 +228,12 @@ export class FeedPullWorker extends WorkerHost {
           inserted,
           filtered,
           duplicates,
+          itemErrors,
           llmErrors,
         }),
       );
       await job.log(
-        `done: ${fetched.items.length} fetched · inserted ${inserted} · filtered ${filtered} · duplicates ${duplicates} · llmErrors ${llmErrors}`,
+        `done: ${fetched.items.length} fetched · inserted ${inserted} · filtered ${filtered} · duplicates ${duplicates} · itemErrors ${itemErrors} · llmErrors ${llmErrors}`,
       );
 
       this.events.publish(userId, {
@@ -224,6 +247,7 @@ export class FeedPullWorker extends WorkerHost {
         inserted,
         filtered,
         duplicates,
+        itemErrors,
         llmErrors,
       };
     } catch (err) {
