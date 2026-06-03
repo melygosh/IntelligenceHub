@@ -61,6 +61,10 @@ export type LlmOperation =
   // response-cache key — regeneration shares the 'analyze_article_v4' cache so
   // it can hit results created during initial processing (FR-9 cache reuse).
   | 'regenerate_article_v4'
+  // Split-cache: article-specific extract (summary/importance/entities,
+  // configHash='') and the per-user categorize (categories/axes).
+  | 'extract_article_v1'
+  | 'categorize_article_v1'
   | 'build_digest_v1'
   | 'build_digest_v2';
 
@@ -84,3 +88,66 @@ export const BuildDigestLlmResult = z.object({
   summary: z.array(z.string().min(20)).min(2).max(3),
 });
 export type BuildDigestLlmResult = z.infer<typeof BuildDigestLlmResult>;
+
+// Article-specific half of the analysis (identical for every user). Cached by
+// contentHash alone (configHash='').
+export const ExtractResult = z.object({
+  summary: z.string().min(1).max(800),
+  importance: Importance,
+  entities: z.array(ExtractedEntity).max(20),
+});
+export type ExtractResult = z.infer<typeof ExtractResult>;
+
+// User-specific half (depends on the user's categories + axes).
+export const CategorizeResult = z.object({
+  categoryNames: z.array(z.string().min(1).max(64)).max(20).default([]),
+  axisAssignments: z.array(AxisAssignment).max(10).default([]),
+});
+export type CategorizeResult = z.infer<typeof CategorizeResult>;
+
+// Input to a categorize-only call. Same shape as ArticleAnalysisInput plus the
+// already-extracted entities as an optional context hint.
+export type CategorizeInput = {
+  title: string;
+  body: string;
+  articleId: string;
+  userId: string;
+  contentHash: string;
+  userCategories: string[];
+  userAxes: { name: string; values: string[] }[];
+  configHash: string;
+  entities?: ExtractedEntity[];
+  operationTrigger?: LlmOperation;
+};
+
+/** Split a full analysis into its article-specific + user-specific halves. */
+export function splitAnalysis(full: ArticleAnalysisResult): {
+  extract: ExtractResult;
+  categorize: CategorizeResult;
+} {
+  return {
+    extract: {
+      summary: full.summary,
+      importance: full.importance,
+      entities: full.entities,
+    },
+    categorize: {
+      categoryNames: full.categoryNames,
+      axisAssignments: full.axisAssignments,
+    },
+  };
+}
+
+/** Recombine an extract + categorize into the full analysis shape consumers expect. */
+export function mergeAnalysis(
+  extract: ExtractResult,
+  categorize: CategorizeResult,
+): ArticleAnalysisResult {
+  return {
+    summary: extract.summary,
+    importance: extract.importance,
+    entities: extract.entities,
+    categoryNames: categorize.categoryNames,
+    axisAssignments: categorize.axisAssignments,
+  };
+}
