@@ -8,11 +8,12 @@
  * meaningfully changes; document the reason in the commit message.
  */
 
-export const ANALYZE_ARTICLE_SYSTEM_PROMPT = `You are an information-extraction assistant for a news intelligence dashboard.
+export function analyzeArticleSystemPrompt(summaryMaxChars: number): string {
+  return `You are an information-extraction assistant for a news intelligence dashboard.
 
 Given a news article (title + body), produce a structured analysis with five fields:
 
-1. **summary** — 2-4 plain sentences capturing what the article is about and what's notable. Avoid generic phrases like "this article discusses" or "the author explains". Get to the substance. Maximum 800 characters.
+1. **summary** — 2-4 plain sentences capturing what the article is about and what's notable. Avoid generic phrases like "this article discusses" or "the author explains". Get to the substance. Maximum ${summaryMaxChars} characters.
 
 2. **importance** — exactly one of:
    - "high": substantive news with concrete, verifiable claims that move a market, an industry, a policy, or an org's strategy. Major product launches from significant companies, regulatory decisions, leadership transitions at top firms, large funding rounds (>$50M), security breaches with confirmed scope.
@@ -51,75 +52,78 @@ Given a news article (title + body), produce a structured analysis with five fie
 5. **axisAssignments** — for each axis listed in the user message, pick exactly one of the allowed values that best fits the article, OR omit the axis entirely if no value is a clean fit. Never invent values not in the list. Emit [] when no axis applies.
 
 Be strict: if the text doesn't clearly support a claim about importance or an entity, err toward "normal" and fewer entities. Junk articles should still get a useful summary so the user can verify the verdict.`;
+}
 
 /**
  * JSON schema describing the expected output shape. Both adapters use this same
  * schema — Anthropic via tool_use, OpenAI via response_format/json_schema.
  */
-export const ANALYZE_ARTICLE_OUTPUT_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: [
-    'summary',
-    'importance',
-    'entities',
-    'categoryNames',
-    'axisAssignments',
-  ],
-  properties: {
-    summary: { type: 'string', minLength: 1, maxLength: 800 },
-    importance: { type: 'string', enum: ['high', 'normal', 'junk'] },
-    entities: {
-      type: 'array',
-      maxItems: 20,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        // FR-6: description IS in `required` even though it's optional in
-        // intent — OpenAI strict mode + Anthropic tool_use both reject a
-        // property that's listed but not required. The LLM emits null when
-        // it doesn't have a description; the Zod schema accepts both null
-        // and missing (cached pre-FR-6 responses).
-        required: ['canonicalName', 'type', 'aliases', 'description'],
-        properties: {
-          canonicalName: { type: 'string', minLength: 1, maxLength: 120 },
-          type: {
-            type: 'string',
-            enum: ['company', 'person', 'product', 'technology', 'location'],
+export function analyzeArticleOutputSchema(summaryMaxChars: number) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      'summary',
+      'importance',
+      'entities',
+      'categoryNames',
+      'axisAssignments',
+    ],
+    properties: {
+      summary: { type: 'string', minLength: 1, maxLength: summaryMaxChars },
+      importance: { type: 'string', enum: ['high', 'normal', 'junk'] },
+      entities: {
+        type: 'array',
+        maxItems: 20,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          // FR-6: description IS in `required` even though it's optional in
+          // intent — OpenAI strict mode + Anthropic tool_use both reject a
+          // property that's listed but not required. The LLM emits null when
+          // it doesn't have a description; the Zod schema accepts both null
+          // and missing (cached pre-FR-6 responses).
+          required: ['canonicalName', 'type', 'aliases', 'description'],
+          properties: {
+            canonicalName: { type: 'string', minLength: 1, maxLength: 120 },
+            type: {
+              type: 'string',
+              enum: ['company', 'person', 'product', 'technology', 'location'],
+            },
+            aliases: {
+              type: 'array',
+              maxItems: 10,
+              items: { type: 'string', minLength: 1, maxLength: 120 },
+            },
+            description: {
+              type: ['string', 'null'],
+              minLength: 1,
+              maxLength: 200,
+            },
           },
-          aliases: {
-            type: 'array',
-            maxItems: 10,
-            items: { type: 'string', minLength: 1, maxLength: 120 },
-          },
-          description: {
-            type: ['string', 'null'],
-            minLength: 1,
-            maxLength: 200,
+        },
+      },
+      categoryNames: {
+        type: 'array',
+        maxItems: 20,
+        items: { type: 'string', minLength: 1, maxLength: 64 },
+      },
+      axisAssignments: {
+        type: 'array',
+        maxItems: 10,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['axisName', 'value'],
+          properties: {
+            axisName: { type: 'string', minLength: 1, maxLength: 64 },
+            value: { type: 'string', minLength: 1, maxLength: 64 },
           },
         },
       },
     },
-    categoryNames: {
-      type: 'array',
-      maxItems: 20,
-      items: { type: 'string', minLength: 1, maxLength: 64 },
-    },
-    axisAssignments: {
-      type: 'array',
-      maxItems: 10,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['axisName', 'value'],
-        properties: {
-          axisName: { type: 'string', minLength: 1, maxLength: 64 },
-          value: { type: 'string', minLength: 1, maxLength: 64 },
-        },
-      },
-    },
-  },
-} as const;
+  } as const;
+}
 
 export function userPromptFor(
   title: string,
@@ -152,7 +156,11 @@ export function userPromptFor(
  * any change invalidates every cached prefix in flight. If the prompt
  * meaningfully changes, version it as 'build_digest_v2'.
  */
-export const BUILD_DIGEST_SYSTEM_PROMPT = `You are a news editor producing a short digest. Read the supplied articles and produce a 2-3 paragraph editorial summary that surfaces the dominant themes of the period, the most significant events, and any notable shifts or developments. Each paragraph should be 2-4 sentences. The output must be tightly written, factual, and free of marketing language. Cite specific entities (companies, people, products) when relevant; do not invent facts not present in the input articles. Return ONLY structured output via the provided tool — no prose outside the tool call.
+export function buildDigestSystemPrompt(
+  minParagraphs: number,
+  maxParagraphs: number,
+): string {
+  return `You are a news editor producing a short digest. Read the supplied articles and produce a ${minParagraphs}-${maxParagraphs} paragraph editorial summary that surfaces the dominant themes of the period, the most significant events, and any notable shifts or developments. Each paragraph should be 2-4 sentences. The output must be tightly written, factual, and free of marketing language. Cite specific entities (companies, people, products) when relevant; do not invent facts not present in the input articles. Return ONLY structured output via the provided tool — no prose outside the tool call.
 
 The user provides:
 - period (day, week, or month)
@@ -161,7 +169,32 @@ The user provides:
 
 You produce:
 - title: a 5-9 word editorial headline that captures the dominant story of the period. No trailing punctuation. The UI renders it as "Last week: {title}" (or day/month). Make it specific (name the actors or the theme), not generic ("a busy week in tech"). Avoid clickbait.
-- summary: array of 2-3 paragraph strings (the editorial digest)`;
+- summary: array of ${minParagraphs}-${maxParagraphs} paragraph strings (the editorial digest)`;
+}
+
+/**
+ * Output schema for the digest (title + N-paragraph summary). Shared by both
+ * adapters so the paragraph bounds stay in one place.
+ */
+export function buildDigestOutputSchema(
+  minParagraphs: number,
+  maxParagraphs: number,
+) {
+  return {
+    type: 'object' as const,
+    additionalProperties: false,
+    properties: {
+      title: { type: 'string' as const, minLength: 6, maxLength: 120 },
+      summary: {
+        type: 'array' as const,
+        items: { type: 'string' as const, minLength: 20 },
+        minItems: minParagraphs,
+        maxItems: maxParagraphs,
+      },
+    },
+    required: ['title', 'summary'],
+  };
+}
 
 /**
  * Format the user-side message for buildDigest. Shared by both adapters.

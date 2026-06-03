@@ -81,6 +81,26 @@ const EnvSchema = z
       .int()
       .positive()
       .default(4000),
+    // Max characters for the article summary. Drives the analyze prompt's
+    // guidance + the output JSON schema's maxLength. (The shared Zod keeps a
+    // generous absolute ceiling as a safety net; this is the prompt-enforced
+    // target.) Changing it only affects NEW analyses — cached extracts keep
+    // their length until re-analyzed.
+    SUMMARY_MAX_CHARS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(800),
+    ),
+    // Digest length = number of editorial paragraphs. Drives the digest prompt
+    // + both adapters' output-schema min/maxItems. Defaults preserve today's
+    // 2-3 paragraph digest.
+    DIGEST_MIN_PARAGRAPHS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(2),
+    ),
+    DIGEST_MAX_PARAGRAPHS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(3),
+    ),
     // Output-token cap for digest generation (a short title + 2-3 bullet
     // summary), kept separate from the per-article limit since the shapes
     // differ. §5.2: no hardcoded model config — both adapters read this.

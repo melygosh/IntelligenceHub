@@ -5,6 +5,13 @@ import type { DigestPeriod } from './digests.js';
 export const Importance = z.enum(['high', 'normal', 'junk']);
 export type Importance = z.infer<typeof Importance>;
 
+// Absolute ceiling for the article summary length. The real, per-deployment
+// target is the SUMMARY_MAX_CHARS env var (it drives the analyze prompt + the
+// output JSON schema); this shared Zod bound can't read api env, so it's only a
+// generous safety net — a near-limit or slightly-over summary is never rejected
+// outright. Bump it if you ever configure SUMMARY_MAX_CHARS above this.
+const SUMMARY_MAX_CHARS_CEILING = 4000;
+
 export const ExtractedEntity = z.object({
   canonicalName: z.string().min(1).max(120),
   type: EntityKind,
@@ -23,7 +30,7 @@ export const AxisAssignment = z.object({
 export type AxisAssignment = z.infer<typeof AxisAssignment>;
 
 export const ArticleAnalysisResult = z.object({
-  summary: z.string().min(1).max(800),
+  summary: z.string().min(1).max(SUMMARY_MAX_CHARS_CEILING),
   importance: Importance,
   entities: z.array(ExtractedEntity).max(20),
   categoryNames: z.array(z.string().min(1).max(64)).max(20).default([]),
@@ -96,14 +103,17 @@ export const BuildDigestLlmResult = z.object({
   // No trailing punctuation. Min/max chars are a soft guard against single-
   // word stubs or runaway sentences; the prompt does the real shaping.
   title: z.string().min(6).max(120),
-  summary: z.array(z.string().min(20)).min(2).max(3),
+  // Paragraph bounds are configurable via DIGEST_MIN/MAX_PARAGRAPHS (they drive
+  // the digest prompt + the output schema's min/maxItems); this Zod keeps a
+  // generous range as a safety net since it can't read api env.
+  summary: z.array(z.string().min(20)).min(1).max(12),
 });
 export type BuildDigestLlmResult = z.infer<typeof BuildDigestLlmResult>;
 
 // Article-specific half of the analysis (identical for every user). Cached by
 // contentHash alone (configHash='').
 export const ExtractResult = z.object({
-  summary: z.string().min(1).max(800),
+  summary: z.string().min(1).max(SUMMARY_MAX_CHARS_CEILING),
   importance: Importance,
   entities: z.array(ExtractedEntity).max(20),
 });

@@ -14,9 +14,10 @@ import type {
   LlmDigestResult,
 } from './llm-adapter.interface';
 import {
-  ANALYZE_ARTICLE_OUTPUT_SCHEMA,
-  ANALYZE_ARTICLE_SYSTEM_PROMPT,
-  BUILD_DIGEST_SYSTEM_PROMPT,
+  analyzeArticleOutputSchema,
+  analyzeArticleSystemPrompt,
+  buildDigestOutputSchema,
+  buildDigestSystemPrompt,
   CATEGORIZE_OUTPUT_SCHEMA,
   CATEGORIZE_SYSTEM_PROMPT,
   categorizeUserPromptFor,
@@ -35,6 +36,9 @@ export class OpenAiAdapter implements LlmAdapter {
   private readonly maxTokens: number;
   private readonly digestMaxTokens: number;
   private readonly timeoutMs: number;
+  private readonly summaryMaxChars: number;
+  private readonly digestMinParagraphs: number;
+  private readonly digestMaxParagraphs: number;
 
   constructor() {
     const { apiKey, model } = resolveProviderEnv('openai');
@@ -44,6 +48,9 @@ export class OpenAiAdapter implements LlmAdapter {
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
     this.digestMaxTokens = env.LLM_TOKEN_LIMIT_PER_DIGEST;
     this.timeoutMs = env.LLM_TIMEOUT_MS;
+    this.summaryMaxChars = env.SUMMARY_MAX_CHARS;
+    this.digestMinParagraphs = env.DIGEST_MIN_PARAGRAPHS;
+    this.digestMaxParagraphs = env.DIGEST_MAX_PARAGRAPHS;
   }
 
   async analyzeArticle(input: ArticleAnalysisInput): Promise<LlmAnalyzeResult> {
@@ -56,7 +63,10 @@ export class OpenAiAdapter implements LlmAdapter {
       max_completion_tokens: this.maxTokens,
       messages: [
         // Static instructions first → OpenAI's automatic prefix caching fires for prefixes >=1024 tokens
-        { role: 'system', content: ANALYZE_ARTICLE_SYSTEM_PROMPT },
+        {
+          role: 'system',
+          content: analyzeArticleSystemPrompt(this.summaryMaxChars),
+        },
         {
           role: 'user',
           content: userPromptFor(
@@ -72,7 +82,7 @@ export class OpenAiAdapter implements LlmAdapter {
         json_schema: {
           name: 'article_analysis',
           strict: true,
-          schema: ANALYZE_ARTICLE_OUTPUT_SCHEMA,
+          schema: analyzeArticleOutputSchema(this.summaryMaxChars),
         },
       },
     });
@@ -150,7 +160,13 @@ export class OpenAiAdapter implements LlmAdapter {
       model: this.model,
       max_completion_tokens: this.digestMaxTokens,
       messages: [
-        { role: 'system', content: BUILD_DIGEST_SYSTEM_PROMPT },
+        {
+          role: 'system',
+          content: buildDigestSystemPrompt(
+            this.digestMinParagraphs,
+            this.digestMaxParagraphs,
+          ),
+        },
         { role: 'user', content: formatBuildDigestUserMessage(input) },
       ],
       response_format: {
@@ -158,20 +174,10 @@ export class OpenAiAdapter implements LlmAdapter {
         json_schema: {
           name: 'build_digest_v2',
           strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              title: { type: 'string', minLength: 6, maxLength: 120 },
-              summary: {
-                type: 'array',
-                items: { type: 'string', minLength: 20 },
-                minItems: 2,
-                maxItems: 3,
-              },
-            },
-            required: ['title', 'summary'],
-          },
+          schema: buildDigestOutputSchema(
+            this.digestMinParagraphs,
+            this.digestMaxParagraphs,
+          ),
         },
       },
     });

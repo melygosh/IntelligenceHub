@@ -14,9 +14,10 @@ import type {
   LlmDigestResult,
 } from './llm-adapter.interface';
 import {
-  ANALYZE_ARTICLE_OUTPUT_SCHEMA,
-  ANALYZE_ARTICLE_SYSTEM_PROMPT,
-  BUILD_DIGEST_SYSTEM_PROMPT,
+  analyzeArticleOutputSchema,
+  analyzeArticleSystemPrompt,
+  buildDigestOutputSchema,
+  buildDigestSystemPrompt,
   CATEGORIZE_OUTPUT_SCHEMA,
   CATEGORIZE_SYSTEM_PROMPT,
   categorizeUserPromptFor,
@@ -28,21 +29,6 @@ import {
   parseAnthropicCategorize,
 } from './parse-analysis';
 
-const BUILD_DIGEST_OUTPUT_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    title: { type: 'string' as const, minLength: 6, maxLength: 120 },
-    summary: {
-      type: 'array' as const,
-      items: { type: 'string' as const, minLength: 20 },
-      minItems: 2,
-      maxItems: 3,
-    },
-  },
-  required: ['title', 'summary'],
-  additionalProperties: false,
-};
-
 @Injectable()
 export class AnthropicAdapter implements LlmAdapter {
   // Lazy: only constructed if/when this adapter is actually used, so a missing
@@ -53,6 +39,9 @@ export class AnthropicAdapter implements LlmAdapter {
   private readonly maxTokens: number;
   private readonly digestMaxTokens: number;
   private readonly timeoutMs: number;
+  private readonly summaryMaxChars: number;
+  private readonly digestMinParagraphs: number;
+  private readonly digestMaxParagraphs: number;
 
   constructor() {
     const { apiKey, model } = resolveProviderEnv('anthropic');
@@ -62,6 +51,9 @@ export class AnthropicAdapter implements LlmAdapter {
     this.maxTokens = env.LLM_TOKEN_LIMIT_PER_ARTICLE;
     this.digestMaxTokens = env.LLM_TOKEN_LIMIT_PER_DIGEST;
     this.timeoutMs = env.LLM_TIMEOUT_MS;
+    this.summaryMaxChars = env.SUMMARY_MAX_CHARS;
+    this.digestMinParagraphs = env.DIGEST_MIN_PARAGRAPHS;
+    this.digestMaxParagraphs = env.DIGEST_MAX_PARAGRAPHS;
   }
 
   async analyzeArticle(input: ArticleAnalysisInput): Promise<LlmAnalyzeResult> {
@@ -77,7 +69,7 @@ export class AnthropicAdapter implements LlmAdapter {
       system: [
         {
           type: 'text',
-          text: ANALYZE_ARTICLE_SYSTEM_PROMPT,
+          text: analyzeArticleSystemPrompt(this.summaryMaxChars),
           // Cache the (static) system prompt; saves ~10x on input tokens for the
           // cached portion across repeated articles within the 5-minute TTL.
           cache_control: { type: 'ephemeral' },
@@ -87,8 +79,9 @@ export class AnthropicAdapter implements LlmAdapter {
         {
           name: 'record_analysis',
           description: 'Record the structured analysis of the article.',
-          input_schema:
-            ANALYZE_ARTICLE_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+          input_schema: analyzeArticleOutputSchema(
+            this.summaryMaxChars,
+          ) as unknown as Anthropic.Tool.InputSchema,
         },
       ],
       tool_choice: { type: 'tool', name: 'record_analysis' },
@@ -186,7 +179,10 @@ export class AnthropicAdapter implements LlmAdapter {
       system: [
         {
           type: 'text',
-          text: BUILD_DIGEST_SYSTEM_PROMPT,
+          text: buildDigestSystemPrompt(
+            this.digestMinParagraphs,
+            this.digestMaxParagraphs,
+          ),
           cache_control: { type: 'ephemeral' },
         },
       ],
@@ -194,8 +190,10 @@ export class AnthropicAdapter implements LlmAdapter {
         {
           name: 'submit_digest',
           description: 'Submit the assembled digest summary.',
-          input_schema:
-            BUILD_DIGEST_OUTPUT_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+          input_schema: buildDigestOutputSchema(
+            this.digestMinParagraphs,
+            this.digestMaxParagraphs,
+          ) as unknown as Anthropic.Tool.InputSchema,
         },
       ],
       tool_choice: { type: 'tool', name: 'submit_digest' },
