@@ -1,4 +1,7 @@
-import { ArticleAnalysisResult } from '@intelligencehub/shared';
+import {
+  ArticleAnalysisResult,
+  CategorizeResult,
+} from '@intelligencehub/shared';
 
 /**
  * Pure parse + Zod-validate helpers for the two adapters' `analyzeArticle`
@@ -51,6 +54,48 @@ export function parseOpenAiAnalysis(
   if (!parsed.success) {
     throw new Error(
       `OpenAI response failed Zod validation: ${parsed.error.message}`,
+    );
+  }
+  return parsed.data;
+}
+
+/** Anthropic categorize: structured output via forced tool_use; validate the
+ * tool input against CategorizeResult. Throws on missing block / invalid shape. */
+export function parseAnthropicCategorize(
+  content: ReadonlyArray<ContentBlockLike>,
+): CategorizeResult {
+  const toolUse = content.find((b) => b.type === 'tool_use');
+  if (!toolUse) {
+    throw new Error('Anthropic categorize response missing tool_use block');
+  }
+  const parsed = CategorizeResult.safeParse(toolUse.input);
+  if (!parsed.success) {
+    throw new Error(
+      `Anthropic categorize response failed Zod validation: ${parsed.error.message}`,
+    );
+  }
+  return parsed.data;
+}
+
+/** OpenAI categorize: JSON string content → CategorizeResult. */
+export function parseOpenAiCategorize(
+  content: string | null | undefined,
+): CategorizeResult {
+  if (!content) {
+    throw new Error('OpenAI categorize response had no content');
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch (err) {
+    throw new Error(
+      `OpenAI categorize response was not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  const parsed = CategorizeResult.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(
+      `OpenAI categorize response failed Zod validation: ${parsed.error.message}`,
     );
   }
   return parsed.data;

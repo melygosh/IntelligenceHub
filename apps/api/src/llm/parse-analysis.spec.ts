@@ -1,4 +1,9 @@
-import { parseAnthropicAnalysis, parseOpenAiAnalysis } from './parse-analysis';
+import {
+  parseAnthropicAnalysis,
+  parseOpenAiAnalysis,
+  parseAnthropicCategorize,
+  parseOpenAiCategorize,
+} from './parse-analysis';
 
 // A schema-valid ArticleAnalysisResult payload. entities/categoryNames/
 // axisAssignments have Zod defaults, so a summary + importance is the minimum.
@@ -56,5 +61,53 @@ describe('parseOpenAiAnalysis', () => {
     expect(() => parseOpenAiAnalysis(JSON.stringify({ summary: 42 }))).toThrow(
       /failed Zod validation/,
     );
+  });
+});
+
+describe('parseAnthropicCategorize', () => {
+  it('extracts categories + axes from a tool_use block', () => {
+    const out = parseAnthropicCategorize([
+      {
+        type: 'tool_use',
+        input: { categoryNames: ['Tech'], axisAssignments: [] },
+      },
+    ]);
+    expect(out.categoryNames).toEqual(['Tech']);
+    expect(out.axisAssignments).toEqual([]);
+  });
+
+  it('throws when the tool_use block is missing', () => {
+    expect(() => parseAnthropicCategorize([{ type: 'text' }])).toThrow();
+  });
+
+  it('throws on an invalid shape', () => {
+    expect(() =>
+      parseAnthropicCategorize([
+        { type: 'tool_use', input: { categoryNames: 'nope' } },
+      ]),
+    ).toThrow();
+  });
+});
+
+describe('parseOpenAiCategorize', () => {
+  it('parses a JSON string payload', () => {
+    const out = parseOpenAiCategorize(
+      JSON.stringify({
+        categoryNames: [],
+        axisAssignments: [{ axisName: 'Tone', value: 'neutral' }],
+      }),
+    );
+    expect(out.axisAssignments[0]).toEqual({
+      axisName: 'Tone',
+      value: 'neutral',
+    });
+  });
+
+  it('throws on empty content', () => {
+    expect(() => parseOpenAiCategorize(null)).toThrow();
+  });
+
+  it('throws on non-JSON', () => {
+    expect(() => parseOpenAiCategorize('not json')).toThrow();
   });
 });
