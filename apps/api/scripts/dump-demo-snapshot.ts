@@ -20,7 +20,7 @@ import { join } from 'node:path';
 dotenvConfig({ path: join(__dirname, '..', '..', '..', '.env') });
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
   articleAxisValue,
   articleCategory,
@@ -34,6 +34,37 @@ import {
   users,
 } from '../src/db/schema';
 import { loadEnv } from '../src/common/config/env';
+
+// Hand-curated demo set: a coherent "US news week" — Trump-centric politics as a
+// dense co-mention hub, plus elections / economy / a sports sidebar, and a couple
+// of junk items to show importance grading. English-only (readable by anyone).
+// Ordered high-importance first. Re-run after re-curating this list.
+const CURATED_URLS = [
+  // High
+  'https://www.nytimes.com/2026/06/02/business/media/scott-pelley-cbs-bari-weiss.html',
+  'https://thehill.com/homenews/campaign/5907672-trump-iowa-primary-loss',
+  'https://www.nytimes.com/2026/06/02/us/politics/trump-irs-settlement.html',
+  'https://www.nytimes.com/2026/06/03/us/politics/house-vote-trump-iran-war-powers.html',
+  'https://www.nytimes.com/2026/06/02/us/politics/todd-blanche-house-hearing.html',
+  'https://www.nytimes.com/2026/06/02/us/politics/supreme-court-alabama-congressional-map.html',
+  'https://www.nytimes.com/2026/06/02/us/elections/new-mexico-democrat-governor-haaland.html',
+  'https://www.nytimes.com/2026/06/03/business/trump-tariffs-force-labor.html',
+  // Normal — politics / elections / economy
+  'https://thehill.com/homenews/campaign/5907526-adam-hamawy-democratic-primary-new-jersey-house-race',
+  'https://thehill.com/video-clips/5907518-watch-live-rubio-house-foreign-relations-committee-state-department-fiscal-2027-budget-iran-war-ebola',
+  'https://thehill.com/video-clips/5907520-watch-live-scott-bessent-senate-hearing-treasury-budget-affordability-iran-war-gas-prices',
+  'https://www.nytimes.com/2026/06/02/us/politics/platner-senate-democrats-washington-meeting.html',
+  'https://thehill.com/homenews/campaign/5902998-scott-wiener-connie-chan-nancy-pelosi-house-seat',
+  'https://www.nytimes.com/2026/06/03/business/iran-war-oecd-economy.html',
+  'https://www.nytimes.com/2026/06/02/us/politics/trump-iran-strait-of-hormuz.html',
+  // Sports sidebar
+  'https://www.bbc.com/sport/cricket/articles/cx21wj02zmjo?at_medium=RSS&at_campaign=rss',
+  'https://www.nytimes.com/2026/06/03/arts/music/nba-finals-music.html',
+  'https://www.bbc.com/sport/tennis/articles/clypeq8ljp6o?at_medium=RSS&at_campaign=rss',
+  // Junk (importance grading)
+  'https://www.nytimes.com/2026/06/03/arts/television/late-night-trump-iran-war-negotiations.html',
+  'https://thehill.com/opinion/campaign/5906021-partisan-divisions-america-250',
+];
 
 async function main(): Promise<void> {
   const email = process.argv[2];
@@ -56,8 +87,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Pull ready articles with their projected fields.
-  const articleRows = await db
+  // Pull the curated ready articles, then re-sort to the CURATED_URLS order
+  // (high-importance first) since SQL won't preserve the list order.
+  const fetched = await db
     .select({
       id: articles.id,
       url: articles.url,
@@ -69,13 +101,26 @@ async function main(): Promise<void> {
       importance: articles.importance,
     })
     .from(articles)
-    .where(and(eq(articles.userId, user.id), eq(articles.status, 'ready')))
-    .orderBy(desc(articles.ts))
-    .limit(20);
+    .where(
+      and(
+        eq(articles.userId, user.id),
+        eq(articles.status, 'ready'),
+        inArray(articles.url, CURATED_URLS),
+      ),
+    );
+  const articleRows = [...fetched].sort(
+    (a, b) => CURATED_URLS.indexOf(a.url) - CURATED_URLS.indexOf(b.url),
+  );
 
   if (articleRows.length === 0) {
     console.error('No ready articles found for this user.');
     process.exit(1);
+  }
+  const missing = CURATED_URLS.filter(
+    (u) => !articleRows.some((a) => a.url === u),
+  );
+  if (missing.length > 0) {
+    console.warn(`WARNING: ${missing.length} curated URLs not found:\n  ${missing.join('\n  ')}`);
   }
 
   const articleIds = articleRows.map((a) => a.id);
@@ -164,35 +209,36 @@ async function main(): Promise<void> {
     axesByArticle.set(a.articleId, list);
   }
 
-  // Build the demo-data JSON.
-  const HN_FEED = 'demo://hn-snapshot';
-  const TECHCRUNCH_FEED = 'demo://techcrunch-mirror';
-  const VERGE_FEED = 'demo://verge-mirror';
+  // Build the demo-data JSON. Originals anchor to the main feed; the first few
+  // are syndicated to the two mirror feeds as duplicates to populate the
+  // "N similar in other feeds" counter.
+  const FEED_MAIN = 'demo://nyt-snapshot';
+  const FEED_HILL = 'demo://thehill-snapshot';
+  const FEED_BBC = 'demo://bbc-snapshot';
 
   const seed = {
     feeds: [
       {
-        url: HN_FEED,
-        title: 'Hacker News (demo snapshot)',
-        iconUrl: 'https://news.ycombinator.com/favicon.ico',
+        url: FEED_MAIN,
+        title: 'The New York Times (demo snapshot)',
+        iconUrl: 'https://www.nytimes.com/favicon.ico',
       },
       {
-        url: TECHCRUNCH_FEED,
-        title: 'TechCrunch (demo snapshot)',
-        iconUrl: 'https://techcrunch.com/favicon.ico',
+        url: FEED_HILL,
+        title: 'The Hill (demo snapshot)',
+        iconUrl: 'https://thehill.com/favicon.ico',
       },
       {
-        url: VERGE_FEED,
-        title: 'The Verge (demo snapshot)',
-        iconUrl: 'https://www.theverge.com/icons/favicon.ico',
+        url: FEED_BBC,
+        title: 'BBC News (demo snapshot)',
+        iconUrl: 'https://www.bbc.com/favicon.ico',
       },
     ],
-    // Hand-curated category set (Step 3 below also re-tags articles).
-    categories: ['AI infra', 'Web dev', 'Hardware', 'Crypto regulation', 'DevTools'],
+    categories: ['Politics', 'Elections', 'Economy', 'Sports'],
     articles: [
-      // Pass 1: all 20 originals anchored to the HN feed.
+      // Pass 1: all originals anchored to the main feed.
       ...articleRows.map((a) => ({
-        feedUrl: HN_FEED,
+        feedUrl: FEED_MAIN,
         url: a.url,
         title: a.title,
         body: a.body,
@@ -208,8 +254,8 @@ async function main(): Promise<void> {
       // to alternating TechCrunch / Verge feeds with URL variants so
       // they're distinguishable while still sharing content_hash.
       ...articleRows.slice(0, 7).flatMap((a, i) => {
-        const mirrorFeed = i % 2 === 0 ? TECHCRUNCH_FEED : VERGE_FEED;
-        const mirrorTag = mirrorFeed === TECHCRUNCH_FEED ? 'techcrunch' : 'verge';
+        const mirrorFeed = i % 2 === 0 ? FEED_HILL : FEED_BBC;
+        const mirrorTag = mirrorFeed === FEED_HILL ? 'thehill' : 'bbc';
         return [
           {
             feedUrl: mirrorFeed,

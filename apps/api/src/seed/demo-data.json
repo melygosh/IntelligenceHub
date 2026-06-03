@@ -1,235 +1,67 @@
 {
   "feeds": [
     {
-      "url": "demo://hn-snapshot",
-      "title": "Hacker News (demo snapshot)",
-      "iconUrl": "https://news.ycombinator.com/favicon.ico"
+      "url": "demo://nyt-snapshot",
+      "title": "The New York Times (demo snapshot)",
+      "iconUrl": "https://www.nytimes.com/favicon.ico"
     },
     {
-      "url": "demo://techcrunch-mirror",
-      "title": "TechCrunch (demo snapshot)",
-      "iconUrl": "https://techcrunch.com/favicon.ico"
+      "url": "demo://thehill-snapshot",
+      "title": "The Hill (demo snapshot)",
+      "iconUrl": "https://thehill.com/favicon.ico"
     },
     {
-      "url": "demo://verge-mirror",
-      "title": "The Verge (demo snapshot)",
-      "iconUrl": "https://www.theverge.com/icons/favicon.ico"
+      "url": "demo://bbc-snapshot",
+      "title": "BBC News (demo snapshot)",
+      "iconUrl": "https://www.bbc.com/favicon.ico"
     }
   ],
   "categories": [
-    "AI infra",
-    "Web dev",
-    "Hardware",
-    "Crypto regulation",
-    "DevTools"
+    "Politics",
+    "Elections",
+    "Economy",
+    "Sports"
   ],
   "articles": [
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://retrogamecoders.com/overhead-camera-view",
-      "title": "C64 Basic: Game Map Overhead \"Camera View\"",
-      "body": "\n<p>Article URL: <a href=\"https://retrogamecoders.com/overhead-camera-view/\">https://retrogamecoders.com/overhead-camera-view/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279842\">https://news.ycombinator.com/item?id=48279842</a></p>\n<p>Points: 6</p>\n<p># Comments: 0</p>\n",
-      "contentHash": "eb0c1bed3499908529cd23321253151d19ed8c5b78dc9c06612f60c82fbdc5cb",
-      "ts": "2026-05-26T13:47:39.000Z",
-      "summary": "A tutorial on implementing an overhead \"camera view\" game map system in C64 Basic, demonstrating how to create a scrolling view of a game world on the Commodore 64. The article provides technical guidance for retro game developers working with the classic 1980s platform.",
-      "importance": "junk",
-      "entities": [
-        {
-          "canonicalName": "Commodore 64",
-          "type": "product",
-          "aliases": [
-            "C64"
-          ]
-        },
-        {
-          "canonicalName": "Retro Game Coders",
-          "type": "company",
-          "aliases": []
-        }
-      ],
-      "categoryNames": [
-        "DevTools"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "tutorial"
-        },
-        {
-          "axisName": "reader level",
-          "value": "intermediate"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26",
-      "title": "Spain blocks prediction markets Polymarket, Kalshi over lack of gambling licence",
-      "body": "\n<p>Article URL: <a href=\"https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/\">https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279316\">https://news.ycombinator.com/item?id=48279316</a></p>\n<p>Points: 11</p>\n<p># Comments: 0</p>\n",
-      "contentHash": "f55ba54e6f2dcdf45f4d133edf021b6c846a6838f79c47779a2afcdbd5f9a213",
-      "ts": "2026-05-26T13:08:13.000Z",
-      "summary": "Spain's financial regulator has blocked the prediction markets Polymarket and Kalshi from operating within the country, citing a lack of required gambling licenses. The move represents a regulatory enforcement action against the two platforms, which operate on blockchain-based prediction markets that allow users to bet on real-world events. This is one of the first major jurisdictional blockers against these platforms in Europe.",
-      "importance": "normal",
-      "entities": [
-        {
-          "canonicalName": "Spain",
-          "type": "location",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Polymarket",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Kalshi",
-          "type": "product",
-          "aliases": []
-        }
-      ],
-      "categoryNames": [
-        "Crypto regulation"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "news"
-        },
-        {
-          "axisName": "region",
-          "value": "EU"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs",
-      "title": "Outsourcing plus LocalAI will soon become more economical vs. Frontier labs",
-      "body": "\n<p>Article URL: <a href=\"https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/\">https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278610\">https://news.ycombinator.com/item?id=48278610</a></p>\n<p>Points: 25</p>\n<p># Comments: 15</p>\n",
-      "contentHash": "4dcd7648317b2c4d9ffa66b22bd75ab3d88e3df190706852c7b4a35f563f0663",
-      "ts": "2026-05-26T12:08:33.000Z",
-      "summary": "The article argues that combining outsourced services with local AI models will become more cost-effective than relying on frontier AI labs' API pricing in the near future. This reflects shifting economics in AI deployment as local inference improves and becomes cheaper relative to proprietary cloud-based solutions.",
-      "importance": "normal",
-      "entities": [
-        {
-          "canonicalName": "LocalAI",
-          "type": "technology",
-          "aliases": []
-        },
-        {
-          "canonicalName": "SignalBloom",
-          "type": "company",
-          "aliases": []
-        }
-      ],
-      "categoryNames": [
-        "AI infra"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "analysis"
-        },
-        {
-          "axisName": "reader level",
-          "value": "intermediate"
-        },
-        {
-          "axisName": "region",
-          "value": "global"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://vllm.ai/blog/2026-05-26-eagle-3-1",
-      "title": "Eagle 3.1: Collaboration Between the EAGLE Team, vLLM Team, and TorchSpec Team",
-      "body": "\n<p>Article URL: <a href=\"https://vllm.ai/blog/2026-05-26-eagle-3-1\">https://vllm.ai/blog/2026-05-26-eagle-3-1</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278407\">https://news.ycombinator.com/item?id=48278407</a></p>\n<p>Points: 28</p>\n<p># Comments: 11</p>\n",
-      "contentHash": "e785c2d5b5bd28131b579c982b6c7788bbc8fd39154879845a50489c160f1856",
-      "ts": "2026-05-26T11:46:10.000Z",
-      "summary": "Eagle 3.1 is a software release resulting from collaboration between the EAGLE Team, vLLM Team, and TorchSpec Team. The article is hosted on vLLM's official blog and has received modest engagement (28 points, 11 comments on Hacker News).",
-      "importance": "normal",
-      "entities": [
-        {
-          "canonicalName": "Eagle",
-          "type": "product",
-          "aliases": [
-            "Eagle 3.1"
-          ]
-        },
-        {
-          "canonicalName": "vLLM",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "TorchSpec",
-          "type": "technology",
-          "aliases": []
-        }
-      ],
-      "categoryNames": [
-        "AI infra"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "news"
-        },
-        {
-          "axisName": "reader level",
-          "value": "expert"
-        },
-        {
-          "axisName": "region",
-          "value": "global"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier",
-      "title": "Netherlands blocks US takeover of vital digital supplier",
-      "body": "\n<p>Article URL: <a href=\"https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/\">https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278406\">https://news.ycombinator.com/item?id=48278406</a></p>\n<p>Points: 181</p>\n<p># Comments: 52</p>\n",
-      "contentHash": "a4cb195b079fa306c1e7d485817dd2997b45bd23893fcab7fe17fb08808fdf70",
-      "ts": "2026-05-26T11:46:08.000Z",
-      "summary": "The Netherlands has blocked a US acquisition of a critical digital infrastructure supplier, citing national security concerns. The move reflects escalating trade tensions and strategic competition between the US and European nations over control of essential technology assets.",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/business/media/scott-pelley-cbs-bari-weiss.html",
+      "title": "CBS News Fires Scott Pelley of ‘60 Minutes’",
+      "body": "Mr. Pelley, a former “CBS Evening News” anchor, was ousted after months of tensions between staff and Bari Weiss, the network’s editor in chief.",
+      "contentHash": "d5ee06ddc163ffded9e7d3e43ce2f6bd27a490219fe3dd23ed3f28ee031e2fd4",
+      "ts": "2026-06-03T11:58:10.000Z",
+      "summary": "CBS News fired Scott Pelley, longtime anchor of \"60 Minutes\" and former \"CBS Evening News\" anchor, amid months of reported tensions between staff and Bari Weiss, the network's editor in chief. The dismissal marks a significant personnel change at one of America's most prominent news organizations.",
       "importance": "high",
       "entities": [
         {
-          "canonicalName": "Netherlands",
-          "type": "location",
+          "canonicalName": "Scott Pelley",
+          "type": "person",
           "aliases": []
         },
         {
-          "canonicalName": "United States",
-          "type": "location",
+          "canonicalName": "CBS News",
+          "type": "company",
           "aliases": [
-            "US",
-            "USA"
+            "CBS"
           ]
+        },
+        {
+          "canonicalName": "60 Minutes",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "CBS Evening News",
+          "type": "product",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Bari Weiss",
+          "type": "person",
+          "aliases": []
         }
       ],
-      "categoryNames": [
-        "Hardware",
-        "Crypto regulation"
-      ],
+      "categoryNames": [],
       "axisAssignments": [
         {
           "axisName": "content type",
@@ -237,7 +69,7 @@
         },
         {
           "axisName": "region",
-          "value": "EU"
+          "value": "US"
         },
         {
           "axisName": "tonality",
@@ -246,109 +78,48 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.githubstatus.com/?today=",
-      "title": "GitHub Actions down again today",
-      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/?today\">https://www.githubstatus.com/?today</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278374\">https://news.ycombinator.com/item?id=48278374</a></p>\n<p>Points: 383</p>\n<p># Comments: 189</p>\n",
-      "contentHash": "d469d2826ea250e31d812a280332eca3cbdae1c93efc9d1830a675883584ea12",
-      "ts": "2026-05-26T11:42:58.000Z",
-      "summary": "GitHub Actions experienced a service outage today. The incident gained significant traction on Hacker News with 383 points and 189 comments, indicating substantial user impact and community concern.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/homenews/campaign/5907672-trump-iowa-primary-loss",
+      "title": "Iowa hands Trump first major statewide primary loss of 2026 in governor's race",
+      "body": "Zach Lahn defeated Rep. Randy Feenstra in the Iowa Republican gubernatorial primary, marking President Trump's first major primary loss of the 2026 midterm election cycle.",
+      "contentHash": "d75dce61baad21a834ba32b3ba6b5c97c260da8052fc21a50507c99ce6cd1117",
+      "ts": "2026-06-03T14:09:12.000Z",
+      "summary": "Zach Lahn defeated Rep. Randy Feenstra in the Iowa Republican gubernatorial primary, marking President Trump's first major primary loss of the 2026 midterm cycle.",
+      "importance": "high",
       "entities": [
         {
-          "canonicalName": "GitHub",
-          "type": "company",
+          "canonicalName": "Zach Lahn",
+          "type": "person",
           "aliases": []
         },
         {
-          "canonicalName": "GitHub Actions",
-          "type": "product",
-          "aliases": []
-        }
-      ],
-      "categoryNames": [
-        "DevTools"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "news"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.githubstatus.com/incidents/gnftqj9htp0g",
-      "title": "Incident with Actions and Pages",
-      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/incidents/gnftqj9htp0g\">https://www.githubstatus.com/incidents/gnftqj9htp0g</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278090\">https://news.ycombinator.com/item?id=48278090</a></p>\n<p>Points: 39</p>\n<p># Comments: 11</p>\n",
-      "contentHash": "ba1c6f13f3515bffc3f3622a70b2a8f4dc899b597a34f7e57982cd21b88284d7",
-      "ts": "2026-05-26T11:10:19.000Z",
-      "summary": "GitHub experienced an incident affecting Actions and Pages functionality. The incident report was published on GitHub's status page and received discussion on Hacker News with 39 points and 11 comments, indicating community interest in the service disruption.",
-      "importance": "normal",
-      "entities": [
-        {
-          "canonicalName": "GitHub",
-          "type": "company",
-          "aliases": []
-        },
-        {
-          "canonicalName": "GitHub Actions",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "GitHub Pages",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Hacker News",
-          "type": "product",
+          "canonicalName": "Randy Feenstra",
+          "type": "person",
           "aliases": [
-            "news.ycombinator.com",
-            "Y Combinator News",
-            "YCombinator News",
-            "HN"
+            "Rep. Randy Feenstra"
           ]
-        }
-      ],
-      "categoryNames": [
-        "DevTools",
-        "Web dev"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "news"
         },
         {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify",
-      "title": "Uber president says AI spending is getting 'harder to justify'",
-      "body": "\n<p>Article URL: <a href=\"https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify\">https://www.theverge.com/transportation/937116/uber-ai-investment-hard-to-justify</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48277485\">https://news.ycombinator.com/item?id=48277485</a></p>\n<p>Points: 48</p>\n<p># Comments: 8</p>\n",
-      "contentHash": "0c1a4fc6d593fb18a96ea080cf2d31227d100e13f95e15abeb8599afbf6c021c",
-      "ts": "2026-05-26T10:01:39.000Z",
-      "summary": "Uber's president has publicly stated that the company's AI spending is becoming increasingly difficult to justify, signaling potential re-evaluation of the company's artificial intelligence investment strategy and priorities.",
-      "importance": "normal",
-      "entities": [
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
         {
-          "canonicalName": "Uber",
-          "type": "company",
+          "canonicalName": "Iowa",
+          "type": "location",
           "aliases": []
         }
       ],
       "categoryNames": [
-        "AI infra"
+        "Elections",
+        "Politics"
       ],
       "axisAssignments": [
         {
@@ -357,11 +128,11 @@
         },
         {
           "axisName": "reader level",
-          "value": "intermediate"
+          "value": "beginner"
         },
         {
           "axisName": "region",
-          "value": "global"
+          "value": "US"
         },
         {
           "axisName": "tonality",
@@ -370,114 +141,42 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://ni5arga.com/blog/posts/hacking-cbse",
-      "title": "Exposing Critical Vulnerabilities in CBSE's On-Screen Marking Portal",
-      "body": "\n<p>Article URL: <a href=\"https://ni5arga.com/blog/posts/hacking-cbse/\">https://ni5arga.com/blog/posts/hacking-cbse/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48277357\">https://news.ycombinator.com/item?id=48277357</a></p>\n<p>Points: 26</p>\n<p># Comments: 3</p>\n",
-      "contentHash": "70a2f486497fc86ea4e62eff025c0f80e765dcd0f1e855cce819ff3149de9a0a",
-      "ts": "2026-05-26T09:43:40.000Z",
-      "summary": "A security researcher has identified and publicly disclosed critical vulnerabilities in the Central Board of Secondary Education (CBSE) on-screen marking portal, exposing flaws that could allow unauthorized access or data compromise. The findings were shared on a technical blog and discussed on Hacker News, indicating a serious security issue affecting India's largest secondary education examination system.",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/trump-irs-settlement.html",
+      "title": "Order Shielding Trump Family From I.R.S. Audits Will Remain, Blanche Says",
+      "body": "The acting attorney general said the administration was preserving a broad order protecting the president and his family from audits of already filed returns, despite dropping a $1.8 billion payout fund.",
+      "contentHash": "52a87e0aa55e65c537bcd2b901acd72439e2cb4d2502edc2bbefd3b107be9b7c",
+      "ts": "2026-06-03T00:53:19.000Z",
+      "summary": "The Trump administration is maintaining an executive order that shields President Trump and his family from IRS audits of previously filed tax returns, according to acting attorney general Todd Blanche. The administration is nonetheless terminating a $1.8 billion payout fund, signaling a selective approach to reversing Biden-era policies.",
       "importance": "high",
       "entities": [
         {
-          "canonicalName": "CBSE",
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
+        {
+          "canonicalName": "Internal Revenue Service",
           "type": "company",
           "aliases": [
-            "Central Board of Secondary Education"
+            "IRS"
           ]
-        }
-      ],
-      "categoryNames": [
-        "Web dev"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "analysis"
         },
         {
-          "axisName": "reader level",
-          "value": "expert"
-        },
-        {
-          "axisName": "region",
-          "value": "global"
-        },
-        {
-          "axisName": "tonality",
-          "value": "critical"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://dynip.dev/",
-      "title": "DynIP – Dynamic DNS with RFC 2136, IPv6, DNSSEC, and BYOD",
-      "body": "\n<p>Article URL: <a href=\"https://dynip.dev/\">https://dynip.dev/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48276363\">https://news.ycombinator.com/item?id=48276363</a></p>\n<p>Points: 208</p>\n<p># Comments: 88</p>\n",
-      "contentHash": "bf2822beccaf8cb54c56ddf96345d5224c09a6c98f8bf7391013fc8170ac3d4e",
-      "ts": "2026-05-26T07:35:20.000Z",
-      "summary": "DynIP is a dynamic DNS service supporting RFC 2136, IPv6, DNSSEC, and bring-your-own-domain functionality. The project garnered significant community discussion on Hacker News with 208 points and 88 comments, indicating solid technical interest in the DDNS space.",
-      "importance": "normal",
-      "entities": [
-        {
-          "canonicalName": "DynIP",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Hacker News",
-          "type": "product",
-          "aliases": [
-            "news.ycombinator.com",
-            "Y Combinator News",
-            "YCombinator News",
-            "HN"
-          ]
-        }
-      ],
-      "categoryNames": [
-        "DevTools"
-      ],
-      "axisAssignments": [
-        {
-          "axisName": "content type",
-          "value": "news"
-        },
-        {
-          "axisName": "tonality",
-          "value": "neutral"
-        }
-      ]
-    },
-    {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior",
-      "title": "Motorola phones have started hijacking the Amazon app to insert affiliate codes",
-      "body": "\n<p>Article URL: <a href=\"https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior/\">https://9to5google.com/2026/05/25/motorola-amazon-app-hijacking-behavior/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48274794\">https://news.ycombinator.com/item?id=48274794</a></p>\n<p>Points: 280</p>\n<p># Comments: 145</p>\n",
-      "contentHash": "fdbd24b9850ccc5661772bc1948b5ad17d29a1aecb93b94e2839071ef09d198e",
-      "ts": "2026-05-26T03:56:09.000Z",
-      "summary": "Motorola has been caught modifying the Amazon app on its phones to insert affiliate codes, redirecting user transactions to generate revenue for the company. This practice intercepts normal app behavior without user consent and raises privacy and competition concerns.",
-      "importance": "high",
-      "entities": [
-        {
-          "canonicalName": "Motorola",
-          "type": "company",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Amazon",
-          "type": "company",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Amazon app",
-          "type": "product",
+          "canonicalName": "Todd Blanche",
+          "type": "person",
           "aliases": []
         }
       ],
       "categoryNames": [
-        "Hardware",
-        "Crypto regulation"
+        "Politics"
       ],
       "axisAssignments": [
         {
@@ -494,46 +193,49 @@
         },
         {
           "axisName": "tonality",
-          "value": "critical"
+          "value": "neutral"
         }
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://earthiongame.com/",
-      "title": "Earthion: A New Mega Drive-Style Shoot-Em-Up",
-      "body": "\n<p>Article URL: <a href=\"https://earthiongame.com/\">https://earthiongame.com/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48274711\">https://news.ycombinator.com/item?id=48274711</a></p>\n<p>Points: 102</p>\n<p># Comments: 47</p>\n",
-      "contentHash": "845a7e9ae7a67b275302c5dc04ce5568fc0332f14fb996d5609bd49cc53e2130",
-      "ts": "2026-05-26T03:42:23.000Z",
-      "summary": "Earthion is a new shoot-em-up video game styled after classic Sega Mega Drive titles. The game has generated modest community interest on Hacker News with 102 points and 47 comments, suggesting some appeal among retro gaming enthusiasts.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/us/politics/house-vote-trump-iran-war-powers.html",
+      "title": "Out of Time to Delay, House to Vote on Trump’s Power to Continue War in Iran",
+      "body": "A measure to direct the president to halt U.S. engagement in Iran had been on track to pass in late May, but Republican leaders postponed action. They have run out of time to delay the vote.",
+      "contentHash": "3d5273eda073691d9365ce530debf6be67201fcefc103454bd5b2bec8e6e61a4",
+      "ts": "2026-06-03T14:17:36.000Z",
+      "summary": "The U.S. House is preparing to vote on legislation that would require the president to halt U.S. military engagement in Iran. The measure had been delayed by Republican leadership in late May but must now proceed to a vote as time runs out.",
+      "importance": "high",
       "entities": [
         {
-          "canonicalName": "Earthion",
-          "type": "product",
-          "aliases": []
-        },
-        {
-          "canonicalName": "Sega Mega Drive",
-          "type": "product",
+          "canonicalName": "United States House of Representatives",
+          "type": "company",
           "aliases": [
-            "Mega Drive",
-            "Genesis"
+            "House",
+            "U.S. House"
           ]
         },
         {
-          "canonicalName": "Hacker News",
-          "type": "product",
+          "canonicalName": "Iran",
+          "type": "location",
           "aliases": [
-            "news.ycombinator.com",
-            "Y Combinator News",
-            "YCombinator News",
-            "HN"
+            "Islamic Republic of Iran",
+            "Іран",
+            "Tehran"
+          ]
+        },
+        {
+          "canonicalName": "Republican Party",
+          "type": "company",
+          "aliases": [
+            "GOP",
+            "Republicans",
+            "Republican"
           ]
         }
       ],
       "categoryNames": [
-        "Hardware"
+        "Politics"
       ],
       "axisAssignments": [
         {
@@ -541,35 +243,65 @@
           "value": "news"
         },
         {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
           "axisName": "tonality",
           "value": "neutral"
         }
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly",
-      "title": "Using AI to write better code more slowly",
-      "body": "\n<p>Article URL: <a href=\"https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly/\">https://nolanlawson.com/2026/05/25/using-ai-to-write-better-code-more-slowly/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272984\">https://news.ycombinator.com/item?id=48272984</a></p>\n<p>Points: 858</p>\n<p># Comments: 332</p>\n",
-      "contentHash": "1bae6ceba8b84ba08443d936e44779b36445ad794010277e875d411372136cc8",
-      "ts": "2026-05-25T23:16:59.000Z",
-      "summary": "A blog post exploring the tradeoff between using AI for code generation and code quality. The article, which garnered significant discussion (858 points, 332 comments on Hacker News), argues that AI tools can improve code quality but may slow down development velocity—challenging the assumption that AI-assisted coding is purely a productivity accelerator.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/todd-blanche-house-hearing.html",
+      "title": "Justice Dept. Won’t Proceed With Trump’s $1.8 Billion Fund, Blanche Says",
+      "body": "The acting attorney general told lawmakers that he would leave in place an order forcing the I.R.S. to drop investigations into President Trump, his family and his businesses.",
+      "contentHash": "1cd618af864ae4505b5b35b98989e14859731952296fb4075740a802ff69880c",
+      "ts": "2026-06-03T02:33:54.000Z",
+      "summary": "The Justice Department will not pursue a Trump-related $1.8 billion fund, and the acting attorney general has confirmed he will maintain an order directing the IRS to cease investigations into Trump, his family, and his businesses. This signals a significant shift in federal enforcement posture toward the former president.",
+      "importance": "high",
       "entities": [
         {
-          "canonicalName": "Nolan Lawson",
+          "canonicalName": "Donald Trump",
           "type": "person",
-          "aliases": []
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
+        {
+          "canonicalName": "Justice Department",
+          "type": "company",
+          "aliases": [
+            "Department of Justice",
+            "DOJ"
+          ]
+        },
+        {
+          "canonicalName": "Internal Revenue Service",
+          "type": "company",
+          "aliases": [
+            "IRS"
+          ]
         }
       ],
       "categoryNames": [
-        "AI infra",
-        "DevTools"
+        "Politics",
+        "Economy"
       ],
       "axisAssignments": [
         {
           "axisName": "content type",
-          "value": "opinion"
+          "value": "news"
         },
         {
           "axisName": "reader level",
@@ -577,7 +309,7 @@
         },
         {
           "axisName": "region",
-          "value": "global"
+          "value": "US"
         },
         {
           "axisName": "tonality",
@@ -586,74 +318,139 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://ente.com/blog/how-shamirs-secret-sharing-works",
-      "title": "How Shamir's Secret Sharing Works",
-      "body": "\n<p>Article URL: <a href=\"https://ente.com/blog/how-shamirs-secret-sharing-works/\">https://ente.com/blog/how-shamirs-secret-sharing-works/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272715\">https://news.ycombinator.com/item?id=48272715</a></p>\n<p>Points: 287</p>\n<p># Comments: 49</p>\n",
-      "contentHash": "87853411db1997a57b2b420a8d800e72e2cdcf303a79505c86bd407d9284111f",
-      "ts": "2026-05-25T22:37:24.000Z",
-      "summary": "An educational explainer on Shamir's Secret Sharing, a cryptographic technique for splitting secrets into shares such that a threshold number of shares can reconstruct the original secret. The article appears on Ente's blog and received significant engagement on Hacker News with 287 points and 49 comments, indicating audience interest in cryptographic methods.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/supreme-court-alabama-congressional-map.html",
+      "title": "Supreme Court Clears the Way for Republican-Friendly Map in Alabama",
+      "body": "In the first major case since the justices narrowed the Voting Rights Act, the court cleared the way for Alabama to use a map preferred by Republicans that leaves the state with only one majority-Black district.",
+      "contentHash": "6d5803022ab6849cf6fe250e1734247e100bab11057ead35f6c8f0d2474cf08d",
+      "ts": "2026-06-03T03:14:37.000Z",
+      "summary": "The Supreme Court has approved Alabama's use of a congressional redistricting map that reduces the state to a single majority-Black district, marking the first major case since the justices weakened the Voting Rights Act. This decision enables a Republican-preferred map and reflects the court's narrowed approach to federal voting protections.",
+      "importance": "high",
       "entities": [
         {
-          "canonicalName": "Ente",
+          "canonicalName": "Supreme Court",
           "type": "company",
-          "aliases": []
+          "aliases": [
+            "U.S. Supreme Court",
+            "Supreme Court of the United States"
+          ]
         },
         {
-          "canonicalName": "Shamir's Secret Sharing",
+          "canonicalName": "Voting Rights Act",
           "type": "technology",
           "aliases": []
         },
         {
-          "canonicalName": "Hacker News",
-          "type": "product",
-          "aliases": [
-            "news.ycombinator.com",
-            "Y Combinator News",
-            "YCombinator News",
-            "HN"
-          ]
+          "canonicalName": "Alabama",
+          "type": "location",
+          "aliases": []
         }
       ],
       "categoryNames": [
-        "DevTools"
+        "Elections",
+        "Politics"
       ],
       "axisAssignments": [
         {
           "axisName": "content type",
-          "value": "tutorial"
+          "value": "news"
         },
         {
           "axisName": "reader level",
           "value": "intermediate"
         },
         {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
           "axisName": "tonality",
           "value": "neutral"
         }
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.apa.org/news/press/releases/2014/04/creativity-walk",
-      "title": "Taking a walk may lead to more creativity than sitting, study finds (2014)",
-      "body": "\n<p>Article URL: <a href=\"https://www.apa.org/news/press/releases/2014/04/creativity-walk\">https://www.apa.org/news/press/releases/2014/04/creativity-walk</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48272670\">https://news.ycombinator.com/item?id=48272670</a></p>\n<p>Points: 421</p>\n<p># Comments: 179</p>\n",
-      "contentHash": "5cc114ea0ea443b950b369d2ae54373934867ce6f19740a28e5378c23d53ee64",
-      "ts": "2026-05-25T22:30:27.000Z",
-      "summary": "A 2014 study by researchers found that walking increases creative thinking compared to sitting. The research suggests that taking walks may enhance divergent thinking and creative problem-solving abilities.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/elections/new-mexico-democrat-governor-haaland.html",
+      "title": "Deb Haaland Wins Nomination in New Mexico Governor’s Race",
+      "body": "Ms. Haaland, a former Interior secretary, took a big step toward making history as the first Native American woman to be a governor when she won the primary in her Democratic state.",
+      "contentHash": "f0a7b7e765b22bad47f38a80e0fdcd1dcc26e39ef3a091374d5b2a5994783218",
+      "ts": "2026-06-03T10:26:04.000Z",
+      "summary": "Deb Haaland, the former Interior Secretary, won the Democratic primary in New Mexico's governor's race, putting her on track to potentially become the first Native American woman to serve as governor.",
+      "importance": "high",
       "entities": [
         {
-          "canonicalName": "American Psychological Association",
+          "canonicalName": "Deb Haaland",
+          "type": "person",
+          "aliases": [
+            "Ms. Haaland"
+          ]
+        },
+        {
+          "canonicalName": "New Mexico",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Democratic Party",
           "type": "company",
           "aliases": [
-            "APA"
+            "Democrats"
           ]
         }
       ],
       "categoryNames": [
-        "DevTools"
+        "Elections",
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/business/trump-tariffs-force-labor.html",
+      "title": "Trump Aims New Tariffs at 59 Countries and the European Union",
+      "body": "Trump administration officials said they planned to impose levies of up to 12.5 percent on countries that failed to crack down on goods made with forced labor.",
+      "contentHash": "251083124f4f3fbdf1dee23def815cc55430413a93edc69caf997e1841c6136d",
+      "ts": "2026-06-03T11:34:18.000Z",
+      "summary": "The Trump administration plans to impose tariffs of up to 12.5% on 59 countries and the European Union if they fail to enforce regulations against goods made with forced labor. The policy targets trade partners across multiple regions through a compliance-based tariff mechanism.",
+      "importance": "high",
+      "entities": [
+        {
+          "canonicalName": "Trump administration",
+          "type": "company",
+          "aliases": [
+            "Trump admin"
+          ]
+        },
+        {
+          "canonicalName": "European Union",
+          "type": "company",
+          "aliases": [
+            "EU",
+            "ЄС"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Economy",
+        "Politics"
       ],
       "axisAssignments": [
         {
@@ -675,36 +472,358 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.ferrari.com/en-EN/auto/ferrari-luce",
-      "title": "Ferrari Luce",
-      "body": "\n<p><a href=\"https://www.topgear.com/car-news/electric/its-finally-here-meet-ferrari-luce-maranellos-first-ever-fully-electric-car\" rel=\"nofollow\">https://www.topgear.com/car-news/electric/its-finally-here-m...</a></p>\n<hr>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48271629\">https://news.ycombinator.com/item?id=48271629</a></p>\n<p>Points: 357</p>\n<p># Comments: 663</p>\n",
-      "contentHash": "af79b82a831bec32508d108d792184fe9f461f6167ef9ca2403f889e20ceeaff",
-      "ts": "2026-05-25T21:00:38.000Z",
-      "summary": "Ferrari has unveiled the Luce, its first fully electric vehicle. The announcement marks a significant shift in strategy for the storied Italian luxury automaker as it enters the EV market.",
-      "importance": "high",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/homenews/campaign/5907526-adam-hamawy-democratic-primary-new-jersey-house-race",
+      "title": "Hamawy wins Democratic primary in race to replace Watson Coleman in New Jersey",
+      "body": "Adam Hamawy, a doctor and veteran, is the projected winner of the Democratic primary in New Jersey’s 12th Congressional District, according to Decision Desk HQ. Hamawy locked down the nomination for the seat, which covers a large area of central New Jersey from Trenton to Plainfield, with 28.1 percent of the vote, per DDHQ. His...",
+      "contentHash": "f825c46da57110ea33a026848047ffe8bfacd6c283a8de73bac108c993aa6870",
+      "ts": "2026-06-03T13:16:21.000Z",
+      "summary": "Adam Hamawy, a doctor and veteran, won the Democratic primary in New Jersey's 12th Congressional District with 28.1% of the vote, securing the party's nomination for the seat covering central New Jersey from Trenton to Plainfield.",
+      "importance": "normal",
       "entities": [
         {
-          "canonicalName": "Ferrari",
-          "type": "company",
+          "canonicalName": "Adam Hamawy",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "New Jersey's 12th Congressional District",
+          "type": "location",
           "aliases": [
-            "Ferrari SpA",
-            "Maranello"
+            "NJ-12"
           ]
         },
         {
-          "canonicalName": "Ferrari Luce",
-          "type": "product",
+          "canonicalName": "Decision Desk HQ",
+          "type": "company",
+          "aliases": [
+            "DDHQ"
+          ]
+        },
+        {
+          "canonicalName": "Watson Coleman",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Trenton",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Plainfield",
+          "type": "location",
           "aliases": []
         }
       ],
       "categoryNames": [
-        "Hardware"
+        "Elections",
+        "Politics"
       ],
       "axisAssignments": [
         {
           "axisName": "content type",
           "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/video-clips/5907518-watch-live-rubio-house-foreign-relations-committee-state-department-fiscal-2027-budget-iran-war-ebola",
+      "title": "Watch live: Rubio faces House questions over Iran, State Department budget",
+      "body": "Secretary of State Marco Rubio is back on Capitol Hill Wednesday morning, where he will face questions from the House Foreign Relations Committee about President Trump‘s fiscal 2027 budget request for the State Department and ongoing conflict with Iran. Rubio, in back-to-back hearings before a House and Senate panel on Tuesday, faced Democrats' ire over...",
+      "contentHash": "fc8febff6b86d146e91e754602991d9e5006f758927ac4b4fe94c1ba4f1c344a",
+      "ts": "2026-06-03T13:48:27.000Z",
+      "summary": "Secretary of State Marco Rubio testifies before the House Foreign Relations Committee about the Trump administration's fiscal 2027 State Department budget and Iran policy, following contentious hearings with Democrats the previous day.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Marco Rubio",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "House Foreign Relations Committee",
+          "type": "company",
+          "aliases": [
+            "House Committee on Foreign Affairs"
+          ]
+        },
+        {
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
+        {
+          "canonicalName": "Iran",
+          "type": "location",
+          "aliases": [
+            "Islamic Republic of Iran",
+            "Іран",
+            "Tehran"
+          ]
+        },
+        {
+          "canonicalName": "United States State Department",
+          "type": "company",
+          "aliases": [
+            "State Department",
+            "U.S. State Department",
+            "DOS"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/video-clips/5907520-watch-live-scott-bessent-senate-hearing-treasury-budget-affordability-iran-war-gas-prices",
+      "title": "Watch live: Bessent testifies before Senate on Treasury budget as affordability concerns rise",
+      "body": "Treasury Secretary Scott Bessent will testify Wednesday morning before the Senate Finance Committee on President Trump's fiscal 2027 budget request for the department. The White House is seeking $11.5 billion in budget authority for the Treasury Department’s domestic programs in 2027, a 12 percent decrease from 2026. The hearing comes as affordability concerns and the...",
+      "contentHash": "b126624d8a8b93fa463b503079c14b3accf0ee1e95588f5a1ac7e01071292dd8",
+      "ts": "2026-06-03T13:45:43.000Z",
+      "summary": "Treasury Secretary Scott Bessent testifies before the Senate Finance Committee on President Trump's fiscal 2027 budget request for the Treasury Department, which seeks $11.5 billion in domestic programs funding—a 12% decrease from 2026—amid rising affordability concerns.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Scott Bessent",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Senate Finance Committee",
+          "type": "company",
+          "aliases": []
+        },
+        {
+          "canonicalName": "United States Treasury Department",
+          "type": "company",
+          "aliases": [
+            "Treasury Department",
+            "Treasury"
+          ]
+        },
+        {
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Economy",
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/platner-senate-democrats-washington-meeting.html",
+      "title": "Graham Platner Meets With Senate Democrats Amid Texting Scandal",
+      "body": "Mr. Platner, the likely Democratic nominee for Senate in Maine, met in Washington with several senators. Chuck Schumer, the minority leader, dodged questions about his confidence in Mr. Platner.",
+      "contentHash": "6714573bdf5830973c51b29c28ad6d85b826358ea224949db7d848903fa77018",
+      "ts": "2026-06-03T01:53:33.000Z",
+      "summary": "Graham Platner, the likely Democratic nominee for Senate in Maine, met with several senators in Washington including Minority Leader Chuck Schumer. Schumer declined to directly address his confidence in Platner amid an ongoing texting scandal.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Graham Platner",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Chuck Schumer",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Maine",
+          "type": "location",
+          "aliases": []
+        },
+        {
+          "canonicalName": "US Senate",
+          "type": "company",
+          "aliases": [
+            "Senate"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Elections",
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/homenews/campaign/5902998-scott-wiener-connie-chan-nancy-pelosi-house-seat",
+      "title": "Chan, Wiener face off for Pelosi House seat in San Francisco",
+      "body": "California state Sen. Scott Wiener (D) and San Francisco Supervisor Connie Chan, who enjoys former House Speaker Nancy Pelosi’s (D-Calif.) endorsement, are projected to go head-to-head for the retiring lawmaker's seat representing San Francisco in November, according to Decision Desk HQ. Wiener and Chan, running as a Democrat, defeated nine other candidates for spots in the November election....",
+      "contentHash": "7810d28e10417382ef3aeca4e92bce5424e7b8ff3e9066a3bf7a78dd90ee37bf",
+      "ts": "2026-06-03T14:49:36.000Z",
+      "summary": "California state Sen. Scott Wiener and San Francisco Supervisor Connie Chan have advanced to a November runoff for Nancy Pelosi's retiring House seat representing San Francisco. Chan has secured Pelosi's endorsement ahead of the general election.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Scott Wiener",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Connie Chan",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Nancy Pelosi",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "San Francisco",
+          "type": "location",
+          "aliases": [
+            "SF"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Elections",
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/business/iran-war-oecd-economy.html",
+      "title": "Even if Oil Prices Peak Soon, the Global Economy Will Slow This Year",
+      "body": "The Organization for Economic Cooperation and Development, in a report, said the Middle East war’s consequences “are likely to be felt for some time.”",
+      "contentHash": "37b09612595e30f13bd76bef4f87e937bfa273a8ebc72da791cbc171aa360fbf",
+      "ts": "2026-06-03T07:02:38.000Z",
+      "summary": "The Organization for Economic Cooperation and Development warned that the Middle East war will have prolonged economic consequences, and indicated that global economic growth will slow this year even if oil prices peak soon.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Organization for Economic Cooperation and Development",
+          "type": "company",
+          "aliases": [
+            "OECD"
+          ]
+        },
+        {
+          "canonicalName": "Middle East",
+          "type": "location",
+          "aliases": []
+        }
+      ],
+      "categoryNames": [
+        "Economy"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "analysis"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
         },
         {
           "axisName": "region",
@@ -717,34 +836,45 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://thefrontpage.dev/",
-      "title": "Hacker News front page as a site",
-      "body": "\n<p>Article URL: <a href=\"https://thefrontpage.dev/\">https://thefrontpage.dev/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48271127\">https://news.ycombinator.com/item?id=48271127</a></p>\n<p>Points: 357</p>\n<p># Comments: 98</p>\n",
-      "contentHash": "038abe13d2417d924b0e3204179ac878d5b002966105cf5efade3506a27d4780",
-      "ts": "2026-05-25T20:12:29.000Z",
-      "summary": "A Hacker News user created a site that presents the Hacker News front page as a standalone website at thefrontpage.dev. The post received 357 points and 98 comments on Hacker News, indicating notable community interest in the project.",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/trump-iran-strait-of-hormuz.html",
+      "title": "War Games and Warnings on Strait of Hormuz Went Unheeded by Trump",
+      "body": "Over the past two decades, Iran repeatedly threatened to close down the waterway. President Trump underestimated Iran’s ability to do so.",
+      "contentHash": "4abb8d51eab4328954d0595dcd2af4f7aed187c032f505d46a14f8979d8b774a",
+      "ts": "2026-06-02T23:54:31.000Z",
+      "summary": "Iran has repeatedly threatened over two decades to close the Strait of Hormuz, but President Trump underestimated the country's capability to execute such a blockade. The article indicates that prior warnings and war game scenarios about this threat went unheeded by the Trump administration.",
       "importance": "normal",
       "entities": [
         {
-          "canonicalName": "Hacker News",
-          "type": "product",
+          "canonicalName": "Iran",
+          "type": "location",
           "aliases": [
-            "news.ycombinator.com",
-            "Y Combinator News",
-            "YCombinator News",
-            "HN"
+            "Islamic Republic of Iran",
+            "Іран",
+            "Tehran"
           ]
         },
         {
-          "canonicalName": "thefrontpage.dev",
-          "type": "product",
+          "canonicalName": "Strait of Hormuz",
+          "type": "location",
           "aliases": []
+        },
+        {
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
         }
       ],
       "categoryNames": [
-        "Web dev",
-        "DevTools"
+        "Economy",
+        "Politics"
       ],
       "axisAssignments": [
         {
@@ -752,37 +882,52 @@
           "value": "news"
         },
         {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "global"
+        },
+        {
           "axisName": "tonality",
-          "value": "neutral"
+          "value": "critical"
         }
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us",
-      "title": "A successful Japanese trial of a ramjet engine designed for Mach‑5 aircraft",
-      "body": "\n<p>Article URL: <a href=\"https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us/\">https://www.bgr.com/2178211/japan-hypersonic-engine-ramjet-2-hour-flights-to-us/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48270812\">https://news.ycombinator.com/item?id=48270812</a></p>\n<p>Points: 200</p>\n<p># Comments: 151</p>\n",
-      "contentHash": "e1fbc5cf80197b163fc11586adc3dbb904e54ef39e9cfe6ac6cb2a9dc2ff6653",
-      "ts": "2026-05-25T19:43:45.000Z",
-      "summary": "Japan has successfully tested a ramjet engine designed to power Mach-5 hypersonic aircraft, with potential to enable 2-hour transatlantic flights to the United States. This represents a significant milestone in hypersonic propulsion technology development.",
-      "importance": "high",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.bbc.com/sport/cricket/articles/cx21wj02zmjo?at_medium=RSS&at_campaign=rss",
+      "title": "England do not need massive change after Ashes - Stokes",
+      "body": "Captain Ben Stokes insists England do not have to make a \"massive change\", despite their 4-1 Ashes hammering in Australia.",
+      "contentHash": "448d30084dec381d4e1b9d661ac78cffdb5f4bd1d64bbe423cbe6173ee47009b",
+      "ts": "2026-06-03T14:01:54.000Z",
+      "summary": "England captain Ben Stokes downplayed the need for major strategic overhaul after the team suffered a 4-1 loss in the Ashes cricket series against Australia, suggesting incremental adjustments rather than wholesale changes.",
+      "importance": "normal",
       "entities": [
         {
-          "canonicalName": "Japan",
+          "canonicalName": "Ben Stokes",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "England",
           "type": "location",
           "aliases": []
         },
         {
-          "canonicalName": "United States",
+          "canonicalName": "Australia",
           "type": "location",
-          "aliases": [
-            "US",
-            "USA"
-          ]
+          "aliases": []
+        },
+        {
+          "canonicalName": "Ashes",
+          "type": "product",
+          "aliases": []
         }
       ],
       "categoryNames": [
-        "Hardware"
+        "Sports"
       ],
       "axisAssignments": [
         {
@@ -804,31 +949,90 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910",
-      "title": "Norway's 2 petabytes of Huawei flash storage and LLM training",
-      "body": "\n<p>Article URL: <a href=\"https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910\">https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48270770\">https://news.ycombinator.com/item?id=48270770</a></p>\n<p>Points: 302</p>\n<p># Comments: 195</p>\n",
-      "contentHash": "d489782625c2bee8ec1b4f42a4b50ff82574013a162dabe8d5f9a2f47dd75632",
-      "ts": "2026-05-25T19:37:57.000Z",
-      "summary": "Norway is deploying 2 petabytes of Huawei flash storage for large language model training, according to a report from Blocks and Files. The significant infrastructure investment highlights China-based hardware usage in critical AI infrastructure within Europe, raising potential geopolitical and supply-chain considerations.",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/arts/music/nba-finals-music.html",
+      "title": "N.B.A. Finals Introduce Music by Nicholas Britell and Nas",
+      "body": "The league is rolling out music by the composer Nicholas Britell and the rapper Nas that, if successful, could become the sport’s sonic shorthand.",
+      "contentHash": "068f5035d5c2f3bd47105ab66ba04e657d9a1724b3db0210c7c5b833ebc88c40",
+      "ts": "2026-06-03T13:45:46.000Z",
+      "summary": "The NBA is introducing new original music composed by Nicholas Britell and featuring rapper Nas for the NBA Finals. The league aims to establish this music as the sport's iconic sonic identity if the rollout proves successful.",
       "importance": "normal",
       "entities": [
         {
-          "canonicalName": "Norway",
-          "type": "location",
+          "canonicalName": "NBA Finals",
+          "type": "product",
+          "aliases": [
+            "NBA Finals Championship"
+          ]
+        },
+        {
+          "canonicalName": "Nicholas Britell",
+          "type": "person",
           "aliases": []
         },
         {
-          "canonicalName": "Huawei",
+          "canonicalName": "Nas",
+          "type": "person",
+          "aliases": [
+            "Nasir Jones"
+          ]
+        },
+        {
+          "canonicalName": "National Basketball Association",
           "type": "company",
           "aliases": [
-            "Huawei Technologies"
+            "NBA"
           ]
         }
       ],
       "categoryNames": [
-        "AI infra",
-        "Hardware"
+        "Sports"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "news"
+        },
+        {
+          "axisName": "tonality",
+          "value": "neutral"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        }
+      ]
+    },
+    {
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.bbc.com/sport/tennis/articles/clypeq8ljp6o?at_medium=RSS&at_campaign=rss",
+      "title": "Sabalenka crumbles in quarter-finals in yet another French Open shock",
+      "body": "World number one Aryna Sabalenka sees her French Open title hopes vanish as she unravels in a crushing quarter-final defeat by Diana Shnaider.",
+      "contentHash": "e6278468c5cc2d9d18bc8f00082afa87a9e0450509f0b286fd1933793ac89153",
+      "ts": "2026-06-03T14:07:28.000Z",
+      "summary": "World number one Aryna Sabalenka was knocked out of the French Open quarter-finals by Diana Shnaider in a shocking upset. Sabalenka's loss marks another unexpected exit for a top player at the tournament, dealing a blow to her title defense hopes.",
+      "importance": "normal",
+      "entities": [
+        {
+          "canonicalName": "Aryna Sabalenka",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "Diana Shnaider",
+          "type": "person",
+          "aliases": []
+        },
+        {
+          "canonicalName": "French Open",
+          "type": "product",
+          "aliases": [
+            "Roland Garros"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Sports"
       ],
       "axisAssignments": [
         {
@@ -837,11 +1041,11 @@
         },
         {
           "axisName": "reader level",
-          "value": "expert"
+          "value": "beginner"
         },
         {
           "axisName": "region",
-          "value": "EU"
+          "value": "global"
         },
         {
           "axisName": "tonality",
@@ -850,33 +1054,53 @@
       ]
     },
     {
-      "feedUrl": "demo://hn-snapshot",
-      "url": "https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law",
-      "title": "California moves to exempt Linux from its age-verification law after backlash",
-      "body": "\n<p>Article URL: <a href=\"https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law\">https://www.tomshardware.com/software/linux/california-moves-to-exempt-linux-from-its-upcoming-age-verification-law-after-backlash-over-forcing-operating-systems-to-collect-users-ages-amendment-proposed-by-the-same-lawmaker-who-wrote-the-original-law</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48269961\">https://news.ycombinator.com/item?id=48269961</a></p>\n<p>Points: 966</p>\n<p># Comments: 420</p>\n",
-      "contentHash": "f985807c95754916baf93b61e067a13dd6a536e0a641d948002b56f53c870fc7",
-      "ts": "2026-05-25T18:19:58.000Z",
-      "summary": "California is moving to exempt Linux from its age-verification law following significant backlash over requirements that operating systems collect user age data. The amendment is being proposed by the same legislator who authored the original law, suggesting a retreat from the earlier mandate that faced criticism from the open-source and tech communities.",
-      "importance": "normal",
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/arts/television/late-night-trump-iran-war-negotiations.html",
+      "title": "Late Night Wants Trump to Give Peace Talks a Chance",
+      "body": "“Oh, I’m sorry, is wrapping up the war you started not interesting enough?” Michael Kosta said on Tuesday, after the president called negotiations with Iran “boring.”",
+      "contentHash": "9c6f6fd130f3cca0726962e5b645c18b17d1a10b473dec989b9b6147472ab904",
+      "ts": "2026-06-03T06:26:06.000Z",
+      "summary": "Michael Kosta, a late-night talk show host, criticized President Trump for dismissing peace negotiations with Iran as \"boring,\" sarcastically implying the president should take diplomatic efforts more seriously rather than characterizing them as uninteresting.",
+      "importance": "junk",
       "entities": [
         {
-          "canonicalName": "California",
-          "type": "location",
+          "canonicalName": "Michael Kosta",
+          "type": "person",
           "aliases": []
         },
         {
-          "canonicalName": "Linux",
-          "type": "technology",
-          "aliases": []
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
+        {
+          "canonicalName": "Iran",
+          "type": "location",
+          "aliases": [
+            "Islamic Republic of Iran",
+            "Іран",
+            "Tehran"
+          ]
         }
       ],
       "categoryNames": [
-        "Crypto regulation"
+        "Politics"
       ],
       "axisAssignments": [
         {
           "axisName": "content type",
-          "value": "news"
+          "value": "opinion"
+        },
+        {
+          "axisName": "reader level",
+          "value": "beginner"
         },
         {
           "axisName": "region",
@@ -884,107 +1108,165 @@
         },
         {
           "axisName": "tonality",
-          "value": "neutral"
+          "value": "critical"
         }
       ]
     },
     {
-      "feedUrl": "demo://techcrunch-mirror",
-      "url": "https://retrogamecoders.com/overhead-camera-view?utm_source=techcrunch",
-      "title": "C64 Basic: Game Map Overhead \"Camera View\"",
-      "body": "\n<p>Article URL: <a href=\"https://retrogamecoders.com/overhead-camera-view/\">https://retrogamecoders.com/overhead-camera-view/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279842\">https://news.ycombinator.com/item?id=48279842</a></p>\n<p>Points: 6</p>\n<p># Comments: 0</p>\n",
-      "contentHash": "eb0c1bed3499908529cd23321253151d19ed8c5b78dc9c06612f60c82fbdc5cb",
-      "ts": "2026-05-26T13:48:39.000Z",
-      "summary": null,
-      "importance": null,
-      "entities": [],
-      "categoryNames": [],
-      "axisAssignments": [],
-      "duplicateOfUrl": "https://retrogamecoders.com/overhead-camera-view"
+      "feedUrl": "demo://nyt-snapshot",
+      "url": "https://thehill.com/opinion/campaign/5906021-partisan-divisions-america-250",
+      "title": "Party of 1: How Trump's ego destroyed America 250",
+      "body": "America’s 250th birthday could have been — should have been — a celebration to end all celebrations. The nation’s biggest birthday yet could have been an opportunity for both commemoration and recommitment, a festival marking a quarter millennium of democracy and a challenge to envision a bolder, better, brighter America for the generations to come.   Instead, we...",
+      "contentHash": "a78f0b4d7f65159684e99d7e485070a9103dea15fe90dc26e735df4a455424b5",
+      "ts": "2026-06-03T13:00:00.000Z",
+      "summary": "Opinion piece critiquing Trump's handling of America's 250th anniversary celebrations, arguing his ego undermined what should have been a unifying national commemoration of democracy and shared civic purpose.",
+      "importance": "junk",
+      "entities": [
+        {
+          "canonicalName": "Donald Trump",
+          "type": "person",
+          "aliases": [
+            "Trump",
+            "the president",
+            "Дональд Трамп",
+            "Трамп",
+            "President Trump",
+            "Donald Trump"
+          ]
+        },
+        {
+          "canonicalName": "United States",
+          "type": "location",
+          "aliases": [
+            "US",
+            "USA",
+            "U.S.",
+            "America",
+            "Washington",
+            "Вашингтон",
+            "Америка"
+          ]
+        }
+      ],
+      "categoryNames": [
+        "Politics"
+      ],
+      "axisAssignments": [
+        {
+          "axisName": "content type",
+          "value": "opinion"
+        },
+        {
+          "axisName": "reader level",
+          "value": "intermediate"
+        },
+        {
+          "axisName": "region",
+          "value": "US"
+        },
+        {
+          "axisName": "tonality",
+          "value": "critical"
+        }
+      ]
     },
     {
-      "feedUrl": "demo://verge-mirror",
-      "url": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26?utm_source=verge",
-      "title": "Spain blocks prediction markets Polymarket, Kalshi over lack of gambling licence",
-      "body": "\n<p>Article URL: <a href=\"https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/\">https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48279316\">https://news.ycombinator.com/item?id=48279316</a></p>\n<p>Points: 11</p>\n<p># Comments: 0</p>\n",
-      "contentHash": "f55ba54e6f2dcdf45f4d133edf021b6c846a6838f79c47779a2afcdbd5f9a213",
-      "ts": "2026-05-26T13:09:13.000Z",
+      "feedUrl": "demo://thehill-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/business/media/scott-pelley-cbs-bari-weiss.html?utm_source=thehill",
+      "title": "CBS News Fires Scott Pelley of ‘60 Minutes’",
+      "body": "Mr. Pelley, a former “CBS Evening News” anchor, was ousted after months of tensions between staff and Bari Weiss, the network’s editor in chief.",
+      "contentHash": "d5ee06ddc163ffded9e7d3e43ce2f6bd27a490219fe3dd23ed3f28ee031e2fd4",
+      "ts": "2026-06-03T11:59:10.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://www.reuters.com/business/spain-blocks-prediction-markets-polymarket-kalshi-over-lack-gambling-licences-2026-05-26"
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/02/business/media/scott-pelley-cbs-bari-weiss.html"
     },
     {
-      "feedUrl": "demo://techcrunch-mirror",
-      "url": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs?utm_source=techcrunch",
-      "title": "Outsourcing plus LocalAI will soon become more economical vs. Frontier labs",
-      "body": "\n<p>Article URL: <a href=\"https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/\">https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278610\">https://news.ycombinator.com/item?id=48278610</a></p>\n<p>Points: 25</p>\n<p># Comments: 15</p>\n",
-      "contentHash": "4dcd7648317b2c4d9ffa66b22bd75ab3d88e3df190706852c7b4a35f563f0663",
-      "ts": "2026-05-26T12:09:33.000Z",
+      "feedUrl": "demo://bbc-snapshot",
+      "url": "https://thehill.com/homenews/campaign/5907672-trump-iowa-primary-loss?utm_source=bbc",
+      "title": "Iowa hands Trump first major statewide primary loss of 2026 in governor's race",
+      "body": "Zach Lahn defeated Rep. Randy Feenstra in the Iowa Republican gubernatorial primary, marking President Trump's first major primary loss of the 2026 midterm election cycle.",
+      "contentHash": "d75dce61baad21a834ba32b3ba6b5c97c260da8052fc21a50507c99ce6cd1117",
+      "ts": "2026-06-03T14:10:12.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://www.signalbloom.ai/posts/outsourcing-plus-localai-will-soon-become-more-economical-vs-frontier-labs"
+      "duplicateOfUrl": "https://thehill.com/homenews/campaign/5907672-trump-iowa-primary-loss"
     },
     {
-      "feedUrl": "demo://verge-mirror",
-      "url": "https://vllm.ai/blog/2026-05-26-eagle-3-1?utm_source=verge",
-      "title": "Eagle 3.1: Collaboration Between the EAGLE Team, vLLM Team, and TorchSpec Team",
-      "body": "\n<p>Article URL: <a href=\"https://vllm.ai/blog/2026-05-26-eagle-3-1\">https://vllm.ai/blog/2026-05-26-eagle-3-1</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278407\">https://news.ycombinator.com/item?id=48278407</a></p>\n<p>Points: 28</p>\n<p># Comments: 11</p>\n",
-      "contentHash": "e785c2d5b5bd28131b579c982b6c7788bbc8fd39154879845a50489c160f1856",
-      "ts": "2026-05-26T11:47:10.000Z",
+      "feedUrl": "demo://thehill-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/trump-irs-settlement.html?utm_source=thehill",
+      "title": "Order Shielding Trump Family From I.R.S. Audits Will Remain, Blanche Says",
+      "body": "The acting attorney general said the administration was preserving a broad order protecting the president and his family from audits of already filed returns, despite dropping a $1.8 billion payout fund.",
+      "contentHash": "52a87e0aa55e65c537bcd2b901acd72439e2cb4d2502edc2bbefd3b107be9b7c",
+      "ts": "2026-06-03T00:54:19.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://vllm.ai/blog/2026-05-26-eagle-3-1"
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/02/us/politics/trump-irs-settlement.html"
     },
     {
-      "feedUrl": "demo://techcrunch-mirror",
-      "url": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier?utm_source=techcrunch",
-      "title": "Netherlands blocks US takeover of vital digital supplier",
-      "body": "\n<p>Article URL: <a href=\"https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/\">https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278406\">https://news.ycombinator.com/item?id=48278406</a></p>\n<p>Points: 181</p>\n<p># Comments: 52</p>\n",
-      "contentHash": "a4cb195b079fa306c1e7d485817dd2997b45bd23893fcab7fe17fb08808fdf70",
-      "ts": "2026-05-26T11:47:08.000Z",
+      "feedUrl": "demo://bbc-snapshot",
+      "url": "https://www.nytimes.com/2026/06/03/us/politics/house-vote-trump-iran-war-powers.html?utm_source=bbc",
+      "title": "Out of Time to Delay, House to Vote on Trump’s Power to Continue War in Iran",
+      "body": "A measure to direct the president to halt U.S. engagement in Iran had been on track to pass in late May, but Republican leaders postponed action. They have run out of time to delay the vote.",
+      "contentHash": "3d5273eda073691d9365ce530debf6be67201fcefc103454bd5b2bec8e6e61a4",
+      "ts": "2026-06-03T14:18:36.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://www.politico.eu/article/netherlands-blocks-us-takeover-vital-digital-supplier"
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/03/us/politics/house-vote-trump-iran-war-powers.html"
     },
     {
-      "feedUrl": "demo://verge-mirror",
-      "url": "https://www.githubstatus.com/?today=&utm_source=verge",
-      "title": "GitHub Actions down again today",
-      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/?today\">https://www.githubstatus.com/?today</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278374\">https://news.ycombinator.com/item?id=48278374</a></p>\n<p>Points: 383</p>\n<p># Comments: 189</p>\n",
-      "contentHash": "d469d2826ea250e31d812a280332eca3cbdae1c93efc9d1830a675883584ea12",
-      "ts": "2026-05-26T11:43:58.000Z",
+      "feedUrl": "demo://thehill-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/todd-blanche-house-hearing.html?utm_source=thehill",
+      "title": "Justice Dept. Won’t Proceed With Trump’s $1.8 Billion Fund, Blanche Says",
+      "body": "The acting attorney general told lawmakers that he would leave in place an order forcing the I.R.S. to drop investigations into President Trump, his family and his businesses.",
+      "contentHash": "1cd618af864ae4505b5b35b98989e14859731952296fb4075740a802ff69880c",
+      "ts": "2026-06-03T02:34:54.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://www.githubstatus.com/?today="
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/02/us/politics/todd-blanche-house-hearing.html"
     },
     {
-      "feedUrl": "demo://techcrunch-mirror",
-      "url": "https://www.githubstatus.com/incidents/gnftqj9htp0g?utm_source=techcrunch",
-      "title": "Incident with Actions and Pages",
-      "body": "\n<p>Article URL: <a href=\"https://www.githubstatus.com/incidents/gnftqj9htp0g\">https://www.githubstatus.com/incidents/gnftqj9htp0g</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=48278090\">https://news.ycombinator.com/item?id=48278090</a></p>\n<p>Points: 39</p>\n<p># Comments: 11</p>\n",
-      "contentHash": "ba1c6f13f3515bffc3f3622a70b2a8f4dc899b597a34f7e57982cd21b88284d7",
-      "ts": "2026-05-26T11:11:19.000Z",
+      "feedUrl": "demo://bbc-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/politics/supreme-court-alabama-congressional-map.html?utm_source=bbc",
+      "title": "Supreme Court Clears the Way for Republican-Friendly Map in Alabama",
+      "body": "In the first major case since the justices narrowed the Voting Rights Act, the court cleared the way for Alabama to use a map preferred by Republicans that leaves the state with only one majority-Black district.",
+      "contentHash": "6d5803022ab6849cf6fe250e1734247e100bab11057ead35f6c8f0d2474cf08d",
+      "ts": "2026-06-03T03:15:37.000Z",
       "summary": null,
       "importance": null,
       "entities": [],
       "categoryNames": [],
       "axisAssignments": [],
-      "duplicateOfUrl": "https://www.githubstatus.com/incidents/gnftqj9htp0g"
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/02/us/politics/supreme-court-alabama-congressional-map.html"
+    },
+    {
+      "feedUrl": "demo://thehill-snapshot",
+      "url": "https://www.nytimes.com/2026/06/02/us/elections/new-mexico-democrat-governor-haaland.html?utm_source=thehill",
+      "title": "Deb Haaland Wins Nomination in New Mexico Governor’s Race",
+      "body": "Ms. Haaland, a former Interior secretary, took a big step toward making history as the first Native American woman to be a governor when she won the primary in her Democratic state.",
+      "contentHash": "f0a7b7e765b22bad47f38a80e0fdcd1dcc26e39ef3a091374d5b2a5994783218",
+      "ts": "2026-06-03T10:27:04.000Z",
+      "summary": null,
+      "importance": null,
+      "entities": [],
+      "categoryNames": [],
+      "axisAssignments": [],
+      "duplicateOfUrl": "https://www.nytimes.com/2026/06/02/us/elections/new-mexico-democrat-governor-haaland.html"
     }
   ]
 }
