@@ -3,6 +3,8 @@ import type {
   ArticleAnalysisResult,
   BuildDigestLlmInput,
   BuildDigestLlmResult,
+  CategorizeInput,
+  CategorizeResult,
 } from '@intelligencehub/shared';
 
 /** Token + latency usage returned by an `analyzeArticle` call. Identical across
@@ -28,6 +30,12 @@ export type LlmDigestResult = {
   model: string;
 };
 
+export type LlmCategorizeResult = {
+  data: CategorizeResult;
+  telemetry: LlmCallTelemetry;
+  model: string;
+};
+
 /**
  * The provider-agnostic contract both LLM adapters implement (FR-3). Each
  * adapter encapsulates request shaping, structured-output parsing, Zod
@@ -41,4 +49,5 @@ export interface LlmAdapter {
   readonly model: string;
   analyzeArticle(input: ArticleAnalysisInput): Promise<LlmAnalyzeResult>;
   buildDigest(input: BuildDigestLlmInput): Promise<LlmDigestResult>;
+  categorizeArticle(input: CategorizeInput): Promise<LlmCategorizeResult>;
 }
