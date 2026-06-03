@@ -7,6 +7,7 @@ import type { Db } from '../db/client';
 import { articles, feeds } from '../db/schema';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { feedPullJobOpts, type FeedPullJobData } from '../feeds/feeds.service';
+import { nextFeedFailureState } from '../feeds/feed-failure';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 // value import required for Nest DI metadata
@@ -228,8 +229,10 @@ export class FeedPullWorker extends WorkerHost {
       // quarantine it as 'disabled' so the sweep (which selects active+error)
       // stops re-fetching a permanently-dead source every tick. A later success
       // or a manual re-activate resets the counter back to 0.
-      const failures = (feed.consecutiveFailures ?? 0) + 1;
-      const disabled = failures >= FEED_GIVE_UP_AFTER_FAILURES;
+      const { consecutiveFailures: failures, disabled } = nextFeedFailureState(
+        feed.consecutiveFailures,
+        FEED_GIVE_UP_AFTER_FAILURES,
+      );
       await this.db
         .update(feeds)
         .set({
