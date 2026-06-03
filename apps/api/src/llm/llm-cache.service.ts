@@ -181,7 +181,7 @@ export class LlmResponseCacheService {
           eq(llmResponseCache.contentHash, contentHash),
           eq(llmResponseCache.provider, provider),
           eq(llmResponseCache.model, model),
-          eq(llmResponseCache.operation, 'categorize_article_v1'),
+          eq(llmResponseCache.operation, 'categorize_article_v2'),
           eq(llmResponseCache.configHash, configHash),
         ),
       )
@@ -202,7 +202,7 @@ export class LlmResponseCacheService {
         contentHash,
         provider,
         model,
-        operation: 'categorize_article_v1',
+        operation: 'categorize_article_v2',
         responseJson: categorize,
         configHash,
       })

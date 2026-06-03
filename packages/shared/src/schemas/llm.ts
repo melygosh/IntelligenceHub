@@ -72,6 +72,10 @@ export type LlmOperation =
   // bumped to force re-extraction rather than serving v1 (old-prompt) results.
   | 'extract_article_v2'
   | 'categorize_article_v1'
+  // v2: category instruction rewritten for better recall (topical relevance,
+  // multi-label, no strict-omit bias). Bumped so categorizations recompute on
+  // the new prompt instead of serving the old, stingy v1 tags.
+  | 'categorize_article_v2'
   | 'build_digest_v1'
   | 'build_digest_v2';
 

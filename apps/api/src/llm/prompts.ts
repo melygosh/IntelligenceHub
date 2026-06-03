@@ -46,7 +46,7 @@ Given a news article (title + body), produce a structured analysis with five fie
    - Obscure local startup mentioned once with no context -> description=null
    Maximum 20 entities per article. Prefer specific named entities over generic categories. Do not invent entities not present in the text.
 
-4. **categoryNames** — pick zero or more of the user's categories (provided below in the user message) that genuinely apply to this article. Do NOT invent new categories. Do NOT force-fit if none apply. Emit [] freely.
+4. **categoryNames** — the user's category list is in the user message. Go through EACH category and include it when the article is substantively about, or clearly relevant to, that category's subject area. It does NOT have to be the article's primary focus — a clear topical connection is enough — but a passing or incidental mention alone is not. Read each category name by its broad, everyday meaning (e.g. a "Technology" category covers software, hardware, AI, startups, gadgets, and science/engineering; apply the same broad reading to whatever categories are listed). Articles commonly fit more than one category — include all that genuinely apply. Use only the categories provided; never invent one. Return [] only when none of the listed categories are relevant.
 
 5. **axisAssignments** — for each axis listed in the user message, pick exactly one of the allowed values that best fits the article, OR omit the axis entirely if no value is a clean fit. Never invent values not in the list. Emit [] when no axis applies.
 
@@ -189,11 +189,11 @@ export const CATEGORIZE_SYSTEM_PROMPT = `You are a classification assistant for 
 
 Given a news article (title + body) and the user's category list and axes, produce two fields:
 
-1. **categoryNames** — pick zero or more of the user's categories (provided in the user message) that genuinely apply to this article. Do NOT invent new categories. Do NOT force-fit if none apply. Emit [] freely.
+1. **categoryNames** — the user's category list is in the user message. Go through EACH category and include it when the article is substantively about, or clearly relevant to, that category's subject area. It does NOT have to be the article's primary focus — a clear topical connection is enough — but a passing or incidental mention alone is not. Read each category name by its broad, everyday meaning (e.g. a "Technology" category covers software, hardware, AI, startups, gadgets, and science/engineering; apply the same broad reading to whatever categories are listed). Articles commonly fit more than one category — include all that genuinely apply. Use only the categories provided; never invent one. Return [] only when none of the listed categories are relevant.
 
 2. **axisAssignments** — for each axis listed in the user message, pick exactly one of the allowed values that best fits the article, OR omit the axis entirely if no value is a clean fit. Never invent values not in the list. Emit [] when no axis applies.
 
-Be strict: if the text doesn't clearly support an assignment, omit it.`;
+Favour including a category when there is a genuine topical connection; omit a category only when the article has no real link to it.`;
 
 export const CATEGORIZE_OUTPUT_SCHEMA = {
   type: 'object',

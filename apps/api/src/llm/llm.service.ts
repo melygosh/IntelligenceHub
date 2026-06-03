@@ -98,7 +98,7 @@ export class LlmService implements ILlmService {
         userCategories: input.userCategories,
         userAxes: input.userAxes,
         configHash: input.configHash,
-        operationTrigger: 'categorize_article_v1',
+        operationTrigger: 'categorize_article_v2',
       };
       const cat = await this.withSemaphore(async () => {
         try {
@@ -118,7 +118,7 @@ export class LlmService implements ILlmService {
               primary: provider,
               fallback: this.fallbackProvider,
               reason,
-              operation: 'categorize_article_v1',
+              operation: 'categorize_article_v2',
             }),
           );
           return this.callOnceWithFallbackCategorize(catInput, reason);
@@ -185,7 +185,7 @@ export class LlmService implements ILlmService {
           model: result.model,
           status: 'success',
           telemetry: result.telemetry,
-          operation: 'categorize_article_v1',
+          operation: 'categorize_article_v2',
         });
         return result.data;
       } catch (err) {
@@ -204,7 +204,7 @@ export class LlmService implements ILlmService {
             // Record real elapsed (a failed attempt still burned wall-clock).
             latencyMs: Date.now() - t0,
           },
-          operation: 'categorize_article_v1',
+          operation: 'categorize_article_v2',
           errorMessage: (err as Error).message,
         });
         // Retry only on validation failure (likely transient model wobble).
@@ -598,7 +598,7 @@ export class LlmService implements ILlmService {
         model: result.model,
         status: 'success',
         telemetry: result.telemetry,
-        operation: 'categorize_article_v1',
+        operation: 'categorize_article_v2',
         provider,
         failoverReason,
       });
@@ -617,7 +617,7 @@ export class LlmService implements ILlmService {
           cacheCreationTokens: 0,
           latencyMs: Date.now() - t0,
         },
-        operation: 'categorize_article_v1',
+        operation: 'categorize_article_v2',
         provider,
         failoverReason,
         errorMessage: msg,
