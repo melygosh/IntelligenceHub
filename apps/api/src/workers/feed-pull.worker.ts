@@ -8,6 +8,7 @@ import { articles, feeds } from '../db/schema';
 import { QUEUE_NAMES } from '@intelligencehub/shared';
 import { feedPullJobOpts, type FeedPullJobData } from '../feeds/feeds.service';
 import { nextFeedFailureState } from '../feeds/feed-failure';
+import { loadEnv } from '../common/config/env';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
 // value import required for Nest DI metadata
@@ -44,14 +45,16 @@ export const FEED_PULL_SWEEP_JOB = 'sweep';
 // are fetched in parallel. Independent of LLM_CONCURRENCY (the downstream LLM
 // gate), so raising it never affects LLM cost. Default 1 (serial) so two feeds
 // carrying the same story can't interleave their dedup check and under-count
-// the cross-source similar counter — see env.ts for the trade-off.
-const CONCURRENCY = Number(process.env.FEED_PULL_CONCURRENCY) || 1;
+// the cross-source similar counter — see env.ts for the trade-off. Read via the
+// validated env (not raw process.env) so the Zod schema is the single config
+// authority and these are tunable through compose like every other knob.
+const _env = loadEnv();
+const CONCURRENCY = _env.FEED_PULL_CONCURRENCY;
 
 // After this many CONSECUTIVE failed pulls, a feed is auto-disabled (quarantined
 // out of the sweep) so a permanently-dead source stops burning a fetch budget
 // every tick forever. A success or a manual re-activate resets the counter.
-const FEED_GIVE_UP_AFTER_FAILURES =
-  Number(process.env.FEED_GIVE_UP_AFTER_FAILURES) || 10;
+const FEED_GIVE_UP_AFTER_FAILURES = _env.FEED_GIVE_UP_AFTER_FAILURES;
 
 @Processor(QUEUE_NAMES.FEED_PULL, { concurrency: CONCURRENCY })
 export class FeedPullWorker extends WorkerHost {

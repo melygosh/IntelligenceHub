@@ -169,6 +169,13 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().min(0).default(120),
     ),
+    // After this many CONSECUTIVE failed pulls a feed is auto-disabled
+    // (quarantined out of the sweep) so a permanently-dead source stops burning
+    // a fetch budget every tick. A success or manual re-activate resets it.
+    FEED_GIVE_UP_AFTER_FAILURES: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().positive().default(10),
+    ),
     // Digest builder: max articles fed to the LLM per digest. Aggregation
     // (top entities / categories / key articles) still runs over the full
     // in-scope set deterministically; only the prose-summary prompt is capped,
