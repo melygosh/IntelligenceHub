@@ -139,6 +139,16 @@ const EnvSchema = z
       emptyToUndef,
       z.coerce.number().int().positive().default(1),
     ),
+    // Read-through cache (Redis) for a fetched+parsed feed, keyed by URL. A feed
+    // subscribed by N users is N per-user rows with the same URL; the sweep
+    // re-fetches each, so within one tick the same RSS is pulled N times. This
+    // TTL collapses that fan-out: the first pull populates, the rest reuse it.
+    // MUST stay well below the sweep interval so every scheduled tick still does
+    // one genuine fresh fetch (default 120s « the 15-min cron). 0 disables.
+    FEED_FETCH_CACHE_TTL_SECONDS: z.preprocess(
+      emptyToUndef,
+      z.coerce.number().int().min(0).default(120),
+    ),
     // Digest builder: max articles fed to the LLM per digest. Aggregation
     // (top entities / categories / key articles) still runs over the full
     // in-scope set deterministically; only the prose-summary prompt is capped,

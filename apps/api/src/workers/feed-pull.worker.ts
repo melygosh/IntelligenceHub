@@ -13,6 +13,8 @@ import {
 } from '../feeds/feeds.service';
 // value import required for Nest DI metadata
 import { FeedFetcher, type FetchedItem } from '../feeds/feed-fetcher.service';
+// value import required for Nest DI metadata
+import { FeedFetchCache } from '../feeds/feed-fetch-cache';
 import { runPreFilter } from '../articles/pre-filter';
 import { decideDedupAction } from '../articles/dedup-decision';
 // value import required for Nest DI metadata
@@ -55,6 +57,7 @@ export class FeedPullWorker extends WorkerHost {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly fetcher: FeedFetcher,
+    private readonly fetchCache: FeedFetchCache,
     private readonly processor: ArticleProcessor,
     private readonly events: EventsService,
     @InjectQueue(QUEUE_NAMES.FEED_PULL)
@@ -158,7 +161,13 @@ export class FeedPullWorker extends WorkerHost {
     }
 
     try {
-      const fetched = await this.fetcher.fetch(feed.url);
+      // Read-through Redis cache keyed by URL: the first subscriber's pull of a
+      // shared feed (e.g. BBC) in a sweep does the real fetch; the other
+      // subscribers reuse it within the TTL. Per-user dedup/filter/insert below
+      // still run per pull, so isolation is unchanged.
+      const fetched = await this.fetchCache.getOrFetch(feed.url, () =>
+        this.fetcher.fetch(feed.url),
+      );
       let inserted = 0;
       let filtered = 0;
       let duplicates = 0;
