@@ -32,6 +32,9 @@ cp .env.example .env
 #   LLM_PROVIDER_API_KEY           required, for the active provider
 #   LLM_PROVIDER_MODEL             optional, defaults to claude-haiku-4-5 / gpt-4o-mini
 #   LLM_FALLBACK_PROVIDER / _API_KEY / _MODEL   optional cross-provider failover
+# Everything else is optional with sane defaults (token / summary-length /
+# digest-paragraph limits, pull cadence, cache TTLs, dead-feed give-up) — see
+# the comments in .env.example.
 
 docker compose up --build
 ```
@@ -59,8 +62,9 @@ default categorization axes per user at registration. Once all five services
    basic auth (the `BULL_BOARD_USER` / `BULL_BOARD_PASS` you set in `.env`).
    It is not linked from the UI — the credentials are the gate, so opening
    `/admin/queues` directly is the documented entry point. Use it to inspect
-   queue state (`active` / `delayed` / `failed`) for any of the five
-   pipelines: feed-pull, article-analyze, regeneration, digest, demo-seed.
+   queue state (`active` / `delayed` / `failed`) for any of the seven
+   pipelines: feed-pull, article-analyze, regeneration, retag-article, digest,
+   demo-seed, embed-backfill.
 
 ### Ports
 
@@ -105,21 +109,30 @@ end-to-end (not `403`, to avoid leaking existence).
 Add an RSS or Atom feed by URL. `POST /api/feeds/validate` pre-flights it
 (returns the channel title + normalised URL + item count, or one of
 `unreachable | not_a_feed | malformed_url | empty`). Feeds have an explicit
-status (`active | paused | error`); pause/resume/delete and a manual
-**Pull now** action are available per row. Deleting a feed detaches its
+status (`active | paused | error | disabled`); pause/resume/delete and a manual
+**Pull now** action are available per row. A feed that fails to pull
+`FEED_GIVE_UP_AFTER_FAILURES` times in a row (default 10) is auto-`disabled`
+and dropped from the sweep so a permanently-dead source stops burning a fetch
+budget every tick; a success or a manual re-activate resets the counter. Deleting a feed detaches its
 articles (`articles.feed_id` becomes `NULL`) instead of cascading them away,
 so the user's archive is never lost (US-3).
 
 A repeatable BullMQ scheduler (cron from `FEED_PULL_CRON`, default every 15
-minutes; empty disables it) sweeps every active feed across all users and
-enqueues a per-feed pull; manual **Pull now** (single feed or all) enqueues
-the same jobs on demand. Overlapping pulls for the same (user, feed) are
-deduplicated while one is still in flight, so a scheduled tick landing on a
+minutes; empty disables it) sweeps every `active` **or `error`** feed across
+all users (so a transient failure self-heals on the next tick) and enqueues a
+per-feed pull via one `addBulk`; manual **Pull now** (single feed or all)
+enqueues the same jobs on demand. Overlapping pulls for the same (user, feed)
+are deduplicated while one is still in flight, so a scheduled tick landing on a
 feed still pulling from the previous tick is skipped rather than piling up,
 and feeds are fetched up to `FEED_PULL_CONCURRENCY` at a time (default 1 —
 serial, so cross-source dedup stays exact; network-bound and independent of
-the LLM concurrency gate, so it's safe to raise for faster sweeps). The pull
-worker
+the LLM concurrency gate, so it's safe to raise for faster sweeps). Because a
+feed subscribed by N users is N per-user rows with the same URL, the fetched +
+parsed result is held in a short-TTL Redis read-through cache
+(`FEED_FETCH_CACHE_TTL_SECONDS`, default 120s, well below the sweep): the first
+subscriber's pull does the real HTTP fetch and the rest reuse it, collapsing N
+identical fetches per tick into one while per-user dedup/filter/insert still
+run independently. The pull worker
 normalises each item's URL (strips tracking params), computes a SHA-256
 content hash, deduplicates against existing articles for the same user, runs
 a deterministic pre-filter (length / emptiness / spam markers / link
@@ -131,16 +144,30 @@ an LLM call directly.
 
 ### LLM analysis
 
-The analyse worker takes one pending article and makes exactly one
-structured LLM call per article in normal mode (FR-10). The active provider
+The analyse worker takes one pending article. The active provider
 (`anthropic | openai`) is chosen via `LLM_PROVIDER`; the inactive adapter
 stays inert. The Anthropic adapter uses `tool_use` for structured output
 with `cache_control: ephemeral` on the system prompt; the OpenAI adapter
 uses `response_format.json_schema` with automatic prefix caching. Both
 return the same Zod-validated `{summary, importance, entities, aliases,
-categoryNames, axisAssignments}` shape; an invalid response is retried once
-in-call and otherwise propagates. On success the worker promotes the row to
-`status='ready'`; on terminal failure the row lands at `status='failed'`.
+categoryNames, axisAssignments}` shape (the summary's max length is
+configurable via `SUMMARY_MAX_CHARS`); an invalid response is retried once
+in-call and otherwise propagates.
+
+The call is split into two cacheable concerns so a new article costs ≤1 LLM
+call (FR-10) while repeat content is cheaper still — see ADR-4: an **extract**
+half (summary/importance/entities, article-specific, identical for every user)
+and a **categorize** half (categories/axes, per-user config). A cold article
+makes one combined call and caches both halves; the same content seen again
+under a different config (another user, or a regeneration) needs only a cheap
+categorize-only call, and a fully-cached hit makes zero calls.
+
+Entity `type` is a small enum; if the model returns a value outside it (e.g. an
+organisation kind the schema doesn't list) the parser coerces that one entity
+to `unknown` rather than rejecting the whole analysis, and the entity-detail
+page exposes a dropdown to reclassify it by hand. On success the worker
+promotes the row to `status='ready'`; on terminal failure the row lands at
+`status='failed'`.
 
 ### Deduplication
 
@@ -255,12 +282,15 @@ aggregations gated by `WHERE user_id`.
 
 Every LLM call is recorded in `llm_calls` (provider, model, operation,
 status, input/output/cache tokens, latency, error message). `LLM_CONCURRENCY`
-caps parallel calls. A content-addressed cache (`llm_response_cache`, keyed
-on `content_hash + config_hash + operation`) short-circuits the model when
-the same content + config has been seen, including across users — so a
-config revert during regeneration completes with zero LLM calls. The
-deterministic pre-filter and exact-dedup pipeline gate the queue so junk
-and duplicates never reach the model. `/telemetry` aggregates lifetime
+caps parallel calls. The content-addressed cache (`llm_response_cache`, keyed
+on `content_hash + config_hash + operation`) is split by concern (ADR-4): the
+**extract** row (`config_hash=''`) is shared by every user of a piece of
+content, while the **categorize** row is per-config — so identical content
+analysed by a second user, or re-tagged after a config revert, short-circuits
+the expensive half and often completes with zero LLM calls. On the network
+side, the per-URL feed-fetch cache keeps a feed shared by N users from being
+fetched N times per sweep. The deterministic pre-filter and exact-dedup
+pipeline gate the queue so junk and duplicates never reach the model. `/telemetry` aggregates lifetime
 calls per `(operation, provider, model)` with token totals (input/output),
 average latency, success rate, and failover count. Tokens are the cost proxy —
 no USD figure is computed, since the providers don't return per-call pricing.
@@ -285,8 +315,13 @@ duplicates, three paused demo feeds, the resolved entity set, categories,
 axis assignments) into the new account in ~200 ms. The data ships as a
 static JSON with pre-generated LLM summaries and entities, so the seed
 makes zero LLM calls. Demo feeds stay paused so the puller never tries to
-GET `demo://...`. To refresh the snapshot from live HN content:
-`cd apps/api && tsx scripts/dump-demo-snapshot.ts <email>`.
+GET `demo://...`. The current snapshot is a curated "US news week" (NYT /
+The Hill / BBC sources; categories Politics / Elections / Economy / Sports),
+hand-picked for a dense, interconnected graph. To regenerate it,
+`dump-demo-snapshot.ts` projects a curated URL list from a source user's
+analysed articles: `cd apps/api && pnpm exec tsx scripts/dump-demo-snapshot.ts
+<email>` (when run on the host, point `DATABASE_URL` at `localhost:5433`, since
+`.env` uses the in-network `postgres` host).
 
 ## Architectural decisions
 
@@ -365,24 +400,39 @@ commits for verification.
   return, a provider outage is opt-in survivable, a poisoned feed never
   poisons the rest, and every failure is auditable post hoc.
 
-## ADR-4: Cost control: content-addressed cache + config_hash + pre-filter (FR-10)
+## ADR-4: Cost control: split content-addressed cache + config_hash + pre-filter (FR-10)
 
 - **Context.** FR-10 caps ≤1 LLM call per article in normal mode, mandates
   a content-hash cache, a concurrency cap, and telemetry, and forbids
-  pre-filter and dedup from fanning out LLM calls.
+  pre-filter and dedup from fanning out LLM calls. On `claude-haiku` output
+  tokens dominate per-call cost, and the analysis splits cleanly into an
+  article-specific part (summary/importance/entities — identical for every
+  user) and a per-user part (categories/axes).
 - **Decision.** `llm_response_cache` keyed on `content_hash + config_hash +
-  operation`, so a repeated body — or a reverted config — short-circuits
-  before the model. The deterministic pre-filter and exact-dedup pipeline
-  gate the queue so junk and duplicates never reach the LLM at all.
-  `LLM_CONCURRENCY` caps parallelism; every call lands in `llm_calls` with
-  tokens and latency and aggregates at `/telemetry` (token counts as the cost
-  proxy; no USD figure).
-- **Alternatives.** No cache (every re-pull or regen re-bills). Per-user
-  cache only (identical configs across users wouldn't share). Cache by raw
-  URL (would miss content-identical cross-source copies).
-- **Trade-offs.** Correctness hinges on the `config_hash` covering every
-  input the LLM actually sees; in return, regeneration after a config
-  revert is effectively free and cross-source duplicates cost zero tokens.
+  operation`, **split into two operations**: an **extract** row
+  (`config_hash=''`) shared by every user of a body, and a **categorize** row
+  per config. A cold article makes one combined call and writes both halves;
+  the same content under a new config (a second user, or a regeneration)
+  issues a cheap categorize-only call that reuses the extract, and a
+  both-cached hit makes zero calls. Separately, a per-URL Redis read-through
+  cache (`FEED_FETCH_CACHE_TTL_SECONDS`) collapses the N identical RSS fetches
+  a feed shared by N users would otherwise cause each sweep. The deterministic
+  pre-filter and exact-dedup pipeline gate the queue so junk and duplicates
+  never reach the LLM at all. `LLM_CONCURRENCY` caps parallelism; every call
+  lands in `llm_calls` with tokens and latency and aggregates at `/telemetry`
+  (token counts as the cost proxy; no USD figure).
+- **Alternatives.** No cache (every re-pull or regen re-bills). One combined
+  cache row (a second user or a config change re-bills the article-specific
+  half too — the split avoids that). Per-user cache only (identical content
+  across users wouldn't share). Cache by raw URL (would miss content-identical
+  cross-source copies). One global shared feed/article row (a larger refactor,
+  deferred — the extract-vs-categorize split is the analysis-layer version of
+  the same global-vs-per-user boundary).
+- **Trade-offs.** More cache rows and a 3-path analyse flow; in return, a
+  second user's analysis of shared content is a cheap categorize-only call
+  (far fewer output tokens than a full analysis), regeneration after a config
+  revert is effectively free, and a shared feed is fetched once per sweep
+  instead of once per subscriber.
 
 ## ADR-5: Entity dedup: LLM-emitted aliases + deterministic resolver (FR-6)
 
@@ -606,7 +656,23 @@ under "What the app does" above and verified against §4.1 / §9.4.
   `text-embedding-3-small`; pgvector HNSW kNN powers a "Related
   (semantic)" section on `/articles/:id`. Threshold-gated (default 0.85
   cosine). See ADR-7.
-- ❌ Timeline scrubber. Not built.
+- ✅ **Timeline scrubber** — a `timeline` toggle on `/graph` plays the graph
+  back chronologically by co-mention bucket: a play/pause scrubber with a
+  user-adjustable speed, dimming earlier nodes to spotlight the current step.
+
+**Beyond the spec (extras added on top):**
+
+- **Split extract / categorize LLM cache** plus a **cross-user feed-fetch
+  cache** — two cost levers beyond the mandated content-hash cache (ADR-4):
+  the article-specific extract is computed once and reused across users/configs,
+  and a feed shared by N users is fetched once per sweep.
+- **Auto-disable of permanently-dead feeds** after N consecutive failures
+  (`disabled` status, excluded from the sweep).
+- **Editable entity types** — a dropdown on the entity page to reclassify,
+  plus a parser `unknown` fallback so one stray type never voids an analysis.
+- **Configurable summary length and digest paragraph count** via env
+  (`SUMMARY_MAX_CHARS`, `DIGEST_MIN_PARAGRAPHS`, `DIGEST_MAX_PARAGRAPHS`).
+- **Per-route rate limits** on auth, outbound-fetch, and LLM-cost endpoints.
 
 ## Local development outside Docker
 
