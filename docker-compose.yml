@@ -92,9 +92,11 @@ services:
       <<: *api-env
       APP_ROLE: api
     ports:
-      # Host port 3010 -> container port 3011. Both 3000 and 3005 are taken on the
-      # dev host, so the container listens on 3011 for defense in depth.
-      - "3010:3011"
+      # Host port 3010 -> the container's API_PORT (default 3011). Both 3000 and
+      # 3005 are taken on the dev host, so the container listens on 3011 for
+      # defense in depth. The container side follows ${API_PORT} so the publish
+      # mapping, the app's bind port, and the healthcheck can never drift.
+      - "3010:${API_PORT}"
     # The app binds the port only AFTER migrations finish, so "port open" is a
     # safe readiness signal — the worker waits on it before starting (schema is
     # guaranteed present and the worker skips migrate).
