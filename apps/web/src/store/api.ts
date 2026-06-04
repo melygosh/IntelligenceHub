@@ -50,29 +50,45 @@ const rawBaseQuery = fetchBaseQuery({
   credentials: 'include',
 });
 
-const baseQueryWithUnconfirmedHandling: BaseQueryFn<
+// Global auth-redirect layer. Any API call can reveal that the session has
+// ended (e.g. signed out in another tab) or that the user is unconfirmed. We
+// react to the response status here, once, instead of relying on each page or
+// on AuthGuard's (cache-stale) getMe:
+//   401  → session is gone → always send to the login screen.
+//   403 {error:'email_unconfirmed'} → confirmed-email guard → check-email.
+// The redirect is suppressed while already on an /auth/* page so a failed
+// login/register (which legitimately 401s) shows its inline error instead of
+// looping, and so we never bounce away from the login screen we're sending to.
+// window.location.assign (full reload) also discards the stale RTK cache.
+const baseQueryWithAuthRedirects: BaseQueryFn<
   string | FetchArgs,
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   const result = await rawBaseQuery(args, api, extraOptions);
+  const error = result.error;
   if (
-    result.error &&
-    result.error.status === 403 &&
-    typeof result.error.data === 'object' &&
-    result.error.data &&
-    (result.error.data as { error?: string }).error === 'email_unconfirmed' &&
+    error &&
     typeof window !== 'undefined' &&
     !window.location.pathname.startsWith('/auth/')
   ) {
-    window.location.assign('/auth/check-email');
+    if (error.status === 401) {
+      window.location.assign('/auth/login');
+    } else if (
+      error.status === 403 &&
+      typeof error.data === 'object' &&
+      error.data &&
+      (error.data as { error?: string }).error === 'email_unconfirmed'
+    ) {
+      window.location.assign('/auth/check-email');
+    }
   }
   return result;
 };
 
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery: baseQueryWithUnconfirmedHandling,
+  baseQuery: baseQueryWithAuthRedirects,
   tagTypes: [
     'Me',
     'Feeds',
