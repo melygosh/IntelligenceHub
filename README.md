@@ -25,7 +25,7 @@ the last section.)
 ```bash
 cp .env.example .env
 # Fill in:
-#   POSTGRES_PASSWORD              your choice; DATABASE_URL below must match
+#   POSTGRES_USER / _PASSWORD / _DB   your choice; DATABASE_URL is a literal — keep it in sync
 #   JWT_SECRET                     openssl rand -base64 32
 #   BULL_BOARD_USER / _PASS        protects /admin/queues
 #   LLM_PROVIDER                   anthropic | openai (default anthropic)
