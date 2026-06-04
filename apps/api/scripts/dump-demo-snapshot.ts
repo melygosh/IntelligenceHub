@@ -35,36 +35,51 @@ import {
 } from '../src/db/schema';
 import { loadEnv } from '../src/common/config/env';
 
-// Hand-curated demo set: a coherent "US news week" — Trump-centric politics as a
-// dense co-mention hub, plus elections / economy / a sports sidebar, and a couple
-// of junk items to show importance grading. English-only (readable by anyone).
-// Ordered high-importance first. Re-run after re-curating this list.
+// Hand-curated demo set sourced from FULL-TEXT feeds (The Intercept, The Verge,
+// Ars Technica) so every article carries a realistic multi-paragraph body — not
+// the 100-400 char RSS teasers the major-wire feeds ship. A coherent recent news
+// window: investigative US politics / elections / economy (dense co-mention hub
+// around Trump, ICE, Israel, the Democrats) bridging into a technology cluster
+// (AI, chips, surveillance) via shared entities. English-only (readable by
+// anyone). Ordered high-importance first. Re-run after re-curating this list.
 const CURATED_URLS = [
-  // High
-  'https://www.nytimes.com/2026/06/02/business/media/scott-pelley-cbs-bari-weiss.html',
-  'https://thehill.com/homenews/campaign/5907672-trump-iowa-primary-loss',
-  'https://www.nytimes.com/2026/06/02/us/politics/trump-irs-settlement.html',
-  'https://www.nytimes.com/2026/06/03/us/politics/house-vote-trump-iran-war-powers.html',
-  'https://www.nytimes.com/2026/06/02/us/politics/todd-blanche-house-hearing.html',
-  'https://www.nytimes.com/2026/06/02/us/politics/supreme-court-alabama-congressional-map.html',
-  'https://www.nytimes.com/2026/06/02/us/elections/new-mexico-democrat-governor-haaland.html',
-  'https://www.nytimes.com/2026/06/03/business/trump-tariffs-force-labor.html',
-  // Normal — politics / elections / economy
-  'https://thehill.com/homenews/campaign/5907526-adam-hamawy-democratic-primary-new-jersey-house-race',
-  'https://thehill.com/video-clips/5907518-watch-live-rubio-house-foreign-relations-committee-state-department-fiscal-2027-budget-iran-war-ebola',
-  'https://thehill.com/video-clips/5907520-watch-live-scott-bessent-senate-hearing-treasury-budget-affordability-iran-war-gas-prices',
-  'https://www.nytimes.com/2026/06/02/us/politics/platner-senate-democrats-washington-meeting.html',
-  'https://thehill.com/homenews/campaign/5902998-scott-wiener-connie-chan-nancy-pelosi-house-seat',
-  'https://www.nytimes.com/2026/06/03/business/iran-war-oecd-economy.html',
-  'https://www.nytimes.com/2026/06/02/us/politics/trump-iran-strait-of-hormuz.html',
-  // Sports sidebar
-  'https://www.bbc.com/sport/cricket/articles/cx21wj02zmjo?at_medium=RSS&at_campaign=rss',
-  'https://www.nytimes.com/2026/06/03/arts/music/nba-finals-music.html',
-  'https://www.bbc.com/sport/tennis/articles/clypeq8ljp6o?at_medium=RSS&at_campaign=rss',
-  // Junk (importance grading)
-  'https://www.nytimes.com/2026/06/03/arts/television/late-night-trump-iran-war-negotiations.html',
-  'https://thehill.com/opinion/campaign/5906021-partisan-divisions-america-250',
+  // High — investigative politics / elections / economy (The Intercept, full text)
+  'https://theintercept.com/2026/05/28/israeli-government-money-brad-parsc',
+  'https://theintercept.com/2026/06/02/new-jersey-primary-results-adam-hamawy',
+  'https://theintercept.com/2026/05/28/graham-platner-jake-auchincloss-democrats-maine-senate',
+  'https://theintercept.com/2026/05/27/trump-donroe-doctrine-violence-western-hemisphere-cartels',
+  'https://theintercept.com/2026/06/03/california-house-results-chakrabarti-wiener-gomez-gonzales-torres',
+  'https://theintercept.com/2026/05/26/us-iran-war-casualties-ceasefire',
+  'https://theintercept.com/2026/06/02/la-tilde-propaganda-latin-america-pentagon',
+  'https://theintercept.com/2026/06/01/dinapoli-new-york-comptroller-israel-trip-primary',
+  'https://theintercept.com/2026/05/28/garden-grove-california-chemical-leak-f-35-israel',
+  // High — technology (The Verge / Ars Technica, full text)
+  'https://www.theverge.com/tech/942588/nvidia-rtx-spark-n2x-n3x-r2-d2-star-trek-star-wars-plan',
+  'https://arstechnica.com/tech-policy/2026/06/google-ordered-to-put-clearer-links-in-ai-search-and-let-uk-publishers-opt-out',
+  'https://arstechnica.com/science/2026/06/judge-blocks-part-of-trump-admins-effort-to-hurt-colorado-research-center',
+  'https://arstechnica.com/tech-policy/2026/06/amazon-owned-ring-should-pay-americans-for-scanning-their-faces-lawsuit-says',
+  // Normal — politics / technology
+  'https://theintercept.com/2026/05/27/sunrise-movement-endorses-saikat-chakrabarti-congress-california',
+  'https://arstechnica.com/gadgets/2026/06/microsoft-plans-linux-tools-and-an-rtx-spark-desktop-for-windows-developers',
+  'https://arstechnica.com/tech-policy/2026/06/trumps-ai-executive-order-may-not-prevent-dangerous-deployments',
+  'https://arstechnica.com/ai/2026/06/inside-metas-attempts-to-play-catch-up-with-ai',
+  'https://www.theverge.com/ai-artificial-intelligence/942629/as-ai-gets-better-it-reveals-an-empty-promise',
 ];
+
+// Synthetic source feeds (one per real outlet) + a newswire that carries the
+// syndicated duplicates so the "N similar in other feeds" counter is populated.
+const FEED_INTERCEPT = 'demo://intercept-snapshot';
+const FEED_VERGE = 'demo://theverge-snapshot';
+const FEED_ARS = 'demo://arstechnica-snapshot';
+const FEED_WIRE = 'demo://newswire-snapshot';
+
+// Map each curated article to the synthetic source feed it anchors to, by host.
+function sourceFeedFor(url: string): string {
+  if (url.includes('theintercept.com')) return FEED_INTERCEPT;
+  if (url.includes('theverge.com')) return FEED_VERGE;
+  if (url.includes('arstechnica.com')) return FEED_ARS;
+  throw new Error(`No source-feed mapping for ${url}`);
+}
 
 async function main(): Promise<void> {
   const email = process.argv[2];
@@ -209,36 +224,37 @@ async function main(): Promise<void> {
     axesByArticle.set(a.articleId, list);
   }
 
-  // Build the demo-data JSON. Originals anchor to the main feed; the first few
-  // are syndicated to the two mirror feeds as duplicates to populate the
-  // "N similar in other feeds" counter.
-  const FEED_MAIN = 'demo://nyt-snapshot';
-  const FEED_HILL = 'demo://thehill-snapshot';
-  const FEED_BBC = 'demo://bbc-snapshot';
-
+  // Build the demo-data JSON. Each original anchors to its real source feed
+  // (Intercept / Verge / Ars); the first few are syndicated to a generic
+  // newswire feed as exact duplicates to populate the "N similar in other
+  // feeds" counter (wire services routinely re-run outlet stories).
   const seed = {
     feeds: [
       {
-        url: FEED_MAIN,
-        title: 'The New York Times (demo snapshot)',
-        iconUrl: 'https://www.nytimes.com/favicon.ico',
+        url: FEED_INTERCEPT,
+        title: 'The Intercept (demo snapshot)',
+        iconUrl: 'https://theintercept.com/favicon.ico',
       },
       {
-        url: FEED_HILL,
-        title: 'The Hill (demo snapshot)',
-        iconUrl: 'https://thehill.com/favicon.ico',
+        url: FEED_VERGE,
+        title: 'The Verge (demo snapshot)',
+        iconUrl: 'https://www.theverge.com/favicon.ico',
       },
       {
-        url: FEED_BBC,
-        title: 'BBC News (demo snapshot)',
-        iconUrl: 'https://www.bbc.com/favicon.ico',
+        url: FEED_ARS,
+        title: 'Ars Technica (demo snapshot)',
+        iconUrl: 'https://arstechnica.com/favicon.ico',
+      },
+      {
+        url: FEED_WIRE,
+        title: 'Global Newswire (demo snapshot)',
       },
     ],
-    categories: ['Politics', 'Elections', 'Economy', 'Sports'],
+    categories: ['Politics', 'Elections', 'Economy', 'Technology'],
     articles: [
-      // Pass 1: all originals anchored to the main feed.
+      // Pass 1: each original anchored to its real source feed.
       ...articleRows.map((a) => ({
-        feedUrl: FEED_MAIN,
+        feedUrl: sourceFeedFor(a.url),
         url: a.url,
         title: a.title,
         body: a.body,
@@ -250,29 +266,23 @@ async function main(): Promise<void> {
         categoryNames: categoriesByArticle.get(a.id) ?? [],
         axisAssignments: axesByArticle.get(a.id) ?? [],
       })),
-      // Pass 2: duplicates — pick the first 7 articles, syndicate them
-      // to alternating TechCrunch / Verge feeds with URL variants so
-      // they're distinguishable while still sharing content_hash.
-      ...articleRows.slice(0, 7).flatMap((a, i) => {
-        const mirrorFeed = i % 2 === 0 ? FEED_HILL : FEED_BBC;
-        const mirrorTag = mirrorFeed === FEED_HILL ? 'thehill' : 'bbc';
-        return [
-          {
-            feedUrl: mirrorFeed,
-            url: a.url + (a.url.includes('?') ? '&' : '?') + `utm_source=${mirrorTag}`,
-            title: a.title,
-            body: a.body,
-            contentHash: a.contentHash, // same content_hash → triggers similar match
-            ts: new Date(a.ts.getTime() + 60_000).toISOString(), // +1 min, sorts after original
-            summary: null, // duplicates don't carry LLM output (they're status='duplicate', not 'ready')
-            importance: null,
-            entities: [], // duplicates not LLM-processed
-            categoryNames: [],
-            axisAssignments: [],
-            duplicateOfUrl: a.url, // resolved during seedFor's pass 2
-          },
-        ];
-      }),
+      // Pass 2: duplicates — syndicate the first 6 articles to the newswire
+      // feed with a URL variant so they're distinguishable while still
+      // sharing content_hash (which is what triggers the similar match).
+      ...articleRows.slice(0, 6).map((a) => ({
+        feedUrl: FEED_WIRE,
+        url: a.url + (a.url.includes('?') ? '&' : '?') + 'utm_source=newswire',
+        title: a.title,
+        body: a.body,
+        contentHash: a.contentHash, // same content_hash → triggers similar match
+        ts: new Date(a.ts.getTime() + 60_000).toISOString(), // +1 min, sorts after original
+        summary: null, // duplicates don't carry LLM output (they're status='duplicate', not 'ready')
+        importance: null,
+        entities: [], // duplicates not LLM-processed
+        categoryNames: [],
+        axisAssignments: [],
+        duplicateOfUrl: a.url, // resolved during seedFor's pass 2
+      })),
     ],
   };
 
