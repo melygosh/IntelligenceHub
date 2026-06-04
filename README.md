@@ -427,7 +427,13 @@ commits for verification.
   across users wouldn't share). Cache by raw URL (would miss content-identical
   cross-source copies). One global shared feed/article row (a larger refactor,
   deferred — the extract-vs-categorize split is the analysis-layer version of
-  the same global-vs-per-user boundary).
+  the same global-vs-per-user boundary). Splitting the per-user **categorize**
+  operation itself into two prompts — one for categories, one for axes
+  (considered for regeneration) — was rejected: a single Haiku call tags an
+  article against both the user's categories and axes in one pass, so splitting
+  would double the per-article call count and add a second cache dimension for
+  no quality gain. Categories and axes stay in one combined `categorize` prompt
+  (and one `retag` on regeneration).
 - **Trade-offs.** More cache rows and a 3-path analyse flow; in return, a
   second user's analysis of shared content is a cheap categorize-only call
   (far fewer output tokens than a full analysis), regeneration after a config
